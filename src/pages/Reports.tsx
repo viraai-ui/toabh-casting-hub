@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Download, Loader2, Calendar } from 'lucide-react'
+import { Download, Loader2 } from 'lucide-react'
 import { BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { api } from '@/lib/api'
 import { cn, formatCurrency } from '@/lib/utils'
@@ -332,7 +332,7 @@ export function Reports() {
                     border: '1px solid rgba(0,0,0,0.1)',
                     borderRadius: 12,
                   }}
-                  formatter={(value: number) => [formatCurrency(value), 'Revenue']}
+                  formatter={(value) => [formatCurrency(value as number), 'Revenue']}
                 />
                 <Area
                   type="monotone"

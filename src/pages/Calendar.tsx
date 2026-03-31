@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Loader2, Calendar as CalendarIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
-import { cn, formatDate, getInitials } from '@/lib/utils'
+import { cn, getInitials } from '@/lib/utils'
 import { CastingModal } from '@/components/CastingModal'
 import type { Casting, PipelineStage } from '@/types'
 import {
@@ -18,7 +17,6 @@ import {
   isSameDay,
   addDays,
   parseISO,
-  startOfDay,
 } from 'date-fns'
 
 export function Calendar() {
@@ -68,17 +66,6 @@ export function Calendar() {
       if (!c.shoot_date_start) return false
       return isSameDay(parseISO(c.shoot_date_start), date)
     })
-  }
-
-  const handleCastingDrop = async (castingId: number, newDate: Date) => {
-    try {
-      await api.put(`/castings/${castingId}`, {
-        shoot_date_start: format(newDate, 'yyyy-MM-dd'),
-      })
-      fetchData()
-    } catch (err) {
-      console.error('Failed to update:', err)
-    }
   }
 
   const goToToday = () => setCurrentDate(new Date())

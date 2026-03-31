@@ -8,7 +8,6 @@ import {
   Search,
   Filter,
   Plus,
-  MoreHorizontal,
   Phone,
   MessageCircle,
   Calendar,
@@ -25,13 +24,13 @@ import { AdvancedFilters } from '@/components/AdvancedFilters'
 import type { Casting, PipelineStage } from '@/types'
 import {
   DndContext,
-  DragEndEvent,
   DragOverlay,
-  DragStart,
   PointerSensor,
   useSensor,
   useSensors,
   closestCorners,
+  type DragEndEvent,
+  type DragStartEvent,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -161,7 +160,7 @@ export function Castings() {
     setActiveId(null)
   }
 
-  const handleDragStart = (event: DragStart) => {
+  const handleDragStart = (event: DragStartEvent) => {
     setActiveId(String(event.active.id))
   }
 
@@ -547,7 +546,7 @@ function KanbanView({
   onCastingClick: (c: Casting) => void
   sensors: any
   handleDragEnd: (e: DragEndEvent) => void
-  handleDragStart: (e: DragStart) => void
+  handleDragStart: (e: DragStartEvent) => void
   activeId: string | null
 }) {
   const activeCasting = castings.find((c) => String(c.id) === activeId)

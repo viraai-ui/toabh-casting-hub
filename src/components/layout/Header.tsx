@@ -2,7 +2,6 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { Menu, Search, Bell, User, Settings, LogOut, ChevronDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { cn } from '@/lib/utils'
 import { useAppStore } from '@/hooks/useStore'
 
 const pageTitles: { [key: string]: string } = {

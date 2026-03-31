@@ -88,7 +88,7 @@ export function CustomFields() {
   const resetForm = () => {
     setEditingField(null)
     setIsCreating(false)
-    setForm({ name: '', field_type: 'text', group: activeGroup, options: '', required: false })
+    setForm({ name: '', field_type: 'text' as const, group: 'project_info' as const, options: '', required: false })
   }
 
   const startEdit = (field: CustomField) => {

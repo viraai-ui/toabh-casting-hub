@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Loader2, Phone, Mail, Building } from 'lucide-react'
+import { Search, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Loader2, Phone, Mail } from 'lucide-react'
 import { api } from '@/lib/api'
-import { cn, formatDate, formatRelativeTime, getInitials } from '@/lib/utils'
+import { cn, formatDate, getInitials } from '@/lib/utils'
 import type { Client, Casting } from '@/types'
 
 export function Clients() {

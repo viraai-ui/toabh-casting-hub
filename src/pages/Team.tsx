@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Pencil, Trash2, Loader2, Mail, Phone, UserCircle } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, Mail, Phone } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import type { TeamMember, Casting } from '@/types'

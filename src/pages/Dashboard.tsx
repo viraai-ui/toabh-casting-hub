@@ -11,18 +11,17 @@ import {
   Search,
   ArrowUpRight,
   ArrowDownRight,
-  Loader2,
   RefreshCw,
 } from 'lucide-react'
-import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { api } from '@/lib/api'
 import { cn, formatCurrency, formatRelativeTime, getInitials } from '@/lib/utils'
+import { useAppStore } from '@/hooks/useStore'
 import type { DashboardStats } from '@/types'
-
-const COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#ec4899']
 
 export function Dashboard() {
   const navigate = useNavigate()
+  const { setSearchOpen } = useAppStore()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -107,7 +106,6 @@ export function Dashboard() {
           value={formatCurrency(stats?.total_revenue ?? 0)}
           trend={8}
           iconColor="text-green-500"
-          isCurrency
         />
         <StatCard
           icon={Calendar}
@@ -222,10 +220,7 @@ export function Dashboard() {
               <span className="font-medium">New Casting</span>
             </button>
             <button
-              onClick={() => {
-                const { setSearchOpen } = require('@/hooks/useStore').useAppStore.getState()
-                setSearchOpen(true)
-              }}
+              onClick={() => setSearchOpen(true)}
               className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
             >
               <Search className="w-5 h-5" />
@@ -280,14 +275,12 @@ function StatCard({
   value,
   trend,
   iconColor,
-  isCurrency,
 }: {
   icon: React.ElementType
   label: string
   value: number | string
   trend: number
   iconColor: string
-  isCurrency?: boolean
 }) {
   return (
     <motion.div

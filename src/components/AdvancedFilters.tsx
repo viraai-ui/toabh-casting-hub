@@ -1,7 +1,5 @@
 import { useState } from 'react'
-import { X, Save, Loader2 } from 'lucide-react'
-import { motion } from 'framer-motion'
-import { cn } from '@/lib/utils'
+import { Save, Loader2 } from 'lucide-react'
 import type { PipelineStage } from '@/types'
 
 interface AdvancedFiltersProps {
@@ -42,12 +40,6 @@ export function AdvancedFilters({ pipeline, filters, onFiltersChange }: Advanced
 
   const handleLoadPreset = (preset: { name: string; filters: { [key: string]: string[] } }) => {
     onFiltersChange(preset.filters)
-  }
-
-  const handleDeletePreset = (name: string) => {
-    const updated = presets.filter((p) => p.name !== name)
-    localStorage.setItem('casting_filter_presets', JSON.stringify(updated))
-    setPresets(updated)
   }
 
   const handleClearAll = () => {

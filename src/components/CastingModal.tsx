@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Phone, MessageCircle, Loader2, Calendar, Users, DollarSign, FileText, Activity, MessageSquare } from 'lucide-react'
+import { X, Phone, MessageCircle, Loader2, Users, FileText, Activity, MessageSquare } from 'lucide-react'
 import { api } from '@/lib/api'
-import { cn, formatDate, formatRelativeTime, getInitials } from '@/lib/utils'
+import { cn, formatRelativeTime, getInitials } from '@/lib/utils'
 import type { Casting, Client, TeamMember, PipelineStage, LeadSource, Activity as ActivityType, Comment } from '@/types'
 
 interface CastingModalProps {
