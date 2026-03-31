@@ -48,9 +48,12 @@ export function Header() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setSearchOpen(true)}
-            className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+            className="p-2 rounded-lg hover:bg-slate-100 transition-colors relative group"
           >
             <Search className="w-5 h-5 text-slate-600" />
+            <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 hidden group-hover:block text-[10px] bg-slate-800 text-white px-1.5 py-0.5 rounded whitespace-nowrap z-50">
+              Ctrl+K
+            </span>
           </button>
           
           <button className="p-2 rounded-lg hover:bg-slate-100 transition-colors relative">

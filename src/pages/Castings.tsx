@@ -120,6 +120,14 @@ export function Castings() {
       if (activeFilters.source?.length && !activeFilters.source.includes(c.source)) {
         return false
       }
+      // Team member filter
+      if (activeFilters.team_member?.length) {
+        const castingIds = (c.assigned_ids || '').toString().split(',').map(s => s.trim())
+        const hasMatchingMember = activeFilters.team_member.some(memberId => 
+          castingIds.includes(memberId)
+        )
+        if (!hasMatchingMember) return false
+      }
       return true
     })
     .sort((a, b) => {
@@ -437,46 +445,95 @@ function GridView({
 }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {castings.map((casting) => (
-        <motion.div
-          key={casting.id}
-          whileHover={{ scale: 1.02 }}
-          onClick={() => onCastingClick(casting)}
-          className="card p-4 cursor-pointer hover:shadow-lg transition-all"
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-sm font-medium">
-              {getInitials(casting.client_name)}
+      {castings.map((casting) => {
+        // Parse assigned team members for avatars
+        const assignedNames = casting.assigned_names ? casting.assigned_names.split(',') : []
+        const displayNames = assignedNames.slice(0, 3)
+        const overflowCount = assignedNames.length > 3 ? assignedNames.length - 3 : 0
+        
+        return (
+          <motion.div
+            key={casting.id}
+            whileHover={{ scale: 1.02 }}
+            onClick={() => onCastingClick(casting)}
+            className="card p-4 cursor-pointer hover:shadow-lg transition-all"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-sm font-medium">
+                {getInitials(casting.client_name)}
+              </div>
+              <div className="flex items-center gap-2">
+                {/* Team avatars */}
+                {displayNames.length > 0 && (
+                  <div className="flex -space-x-2">
+                    {displayNames.map((name, i) => (
+                      <div
+                        key={i}
+                        className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-[8px] font-medium border-2 border-white"
+                        title={name}
+                      >
+                        {getInitials(name)}
+                      </div>
+                    ))}
+                    {overflowCount > 0 && (
+                      <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 text-[8px] font-medium border-2 border-white">
+                        +{overflowCount}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <span className={cn(
+                  'px-2 py-0.5 rounded-full text-[10px] font-medium',
+                  statusColors[casting.status] || 'bg-slate-100 text-slate-600'
+                )}>
+                  {casting.status}
+                </span>
+              </div>
             </div>
-            <span className={cn(
-              'px-2 py-0.5 rounded-full text-[10px] font-medium',
-              statusColors[casting.status] || 'bg-slate-100 text-slate-600'
-            )}>
-              {casting.status}
-            </span>
-          </div>
-          <h3 className="font-semibold text-slate-900 mb-1 truncate">
-            {casting.project_name || 'Untitled'}
-          </h3>
-          <p className="text-sm text-slate-500 mb-3">{casting.client_name}</p>
-          <div className="space-y-2">
-            {casting.shoot_date_start && (
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <Calendar className="w-3 h-3" />
-                {formatDate(casting.shoot_date_start)}
+            <h3 className="font-semibold text-slate-900 mb-1 truncate">
+              {casting.project_name || 'Untitled'}
+            </h3>
+            <p className="text-sm text-slate-500 mb-3">{casting.client_name}</p>
+            <div className="space-y-2">
+              {casting.shoot_date_start && (
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <Calendar className="w-3 h-3" />
+                  {formatDate(casting.shoot_date_start)}
+                </div>
+              )}
+              {(casting.budget_min || casting.budget_max) && (
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <DollarSign className="w-3 h-3" />
+                  {formatCurrency(casting.budget_min)}
+                  {casting.budget_min && casting.budget_max && ' - '}
+                  {formatCurrency(casting.budget_max)}
+                </div>
+              )}
+            </div>
+            {/* WhatsApp/Call buttons */}
+            {casting.client_contact && (
+              <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100">
+                <a
+                  href={`tel:${casting.client_contact.startsWith('+') ? casting.client_contact : '+91' + casting.client_contact}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                </a>
+                <a
+                  href={`https://wa.me/${casting.client_contact.replace('+', '')}?text=Regarding ${casting.project_name || 'your casting'}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                </a>
               </div>
             )}
-            {(casting.budget_min || casting.budget_max) && (
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <DollarSign className="w-3 h-3" />
-                {formatCurrency(casting.budget_min)}
-                {casting.budget_min && casting.budget_max && ' - '}
-                {formatCurrency(casting.budget_max)}
-              </div>
-            )}
-          </div>
-        </motion.div>
-      ))}
+          </motion.div>
+        )
+      })}
     </div>
   )
 }

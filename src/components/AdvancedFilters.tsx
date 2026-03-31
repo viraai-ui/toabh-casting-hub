@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Save, Loader2 } from 'lucide-react'
-import type { PipelineStage } from '@/types'
+import { api } from '@/lib/api'
+import type { PipelineStage, TeamMember } from '@/types'
 
 interface AdvancedFiltersProps {
   pipeline: PipelineStage[]
@@ -11,6 +12,8 @@ interface AdvancedFiltersProps {
 export function AdvancedFilters({ pipeline, filters, onFiltersChange }: AdvancedFiltersProps) {
   const [presetName, setPresetName] = useState('')
   const [savingPreset, setSavingPreset] = useState(false)
+  const [team, setTeam] = useState<TeamMember[]>([])
+  const [loadingTeam, setLoadingTeam] = useState(true)
   const [presets, setPresets] = useState<{ name: string; filters: { [key: string]: string[] } }[]>(() => {
     try {
       return JSON.parse(localStorage.getItem('casting_filter_presets') || '[]')
@@ -19,12 +22,34 @@ export function AdvancedFilters({ pipeline, filters, onFiltersChange }: Advanced
     }
   })
 
+  useEffect(() => {
+    const fetchTeam = async () => {
+      try {
+        const data = await api.get('/team')
+        setTeam(data)
+      } catch (err) {
+        console.error('Failed to fetch team:', err)
+      } finally {
+        setLoadingTeam(false)
+      }
+    }
+    fetchTeam()
+  }, [])
+
   const handleStatusChange = (status: string) => {
     const current = filters.status || []
     const updated = current.includes(status)
       ? current.filter((s) => s !== status)
       : [...current, status]
     onFiltersChange({ ...filters, status: updated })
+  }
+
+  const handleTeamMemberChange = (memberId: string) => {
+    const current = filters.team_member || []
+    const updated = current.includes(memberId)
+      ? current.filter((id) => id !== memberId)
+      : [...current, memberId]
+    onFiltersChange({ ...filters, team_member: updated })
   }
 
   const handleSavePreset = () => {
@@ -48,11 +73,11 @@ export function AdvancedFilters({ pipeline, filters, onFiltersChange }: Advanced
 
   return (
     <div className="card p-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
         {/* Status Filter */}
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">Status</label>
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 max-h-40 overflow-y-auto">
             {pipeline.map((stage) => (
               <label key={stage.id} className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -105,6 +130,30 @@ export function AdvancedFilters({ pipeline, filters, onFiltersChange }: Advanced
             className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
             onChange={(e) => onFiltersChange({ ...filters, date_to: e.target.value ? [e.target.value] : [] })}
           />
+        </div>
+
+        {/* Team Member Filter */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Team Member</label>
+          {loadingTeam ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+            </div>
+          ) : (
+            <div className="space-y-1.5 max-h-40 overflow-y-auto">
+              {team.map((member) => (
+                <label key={member.id} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters.team_member?.includes(String(member.id)) || false}
+                    onChange={() => handleTeamMemberChange(String(member.id))}
+                    className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-slate-600">{member.name}</span>
+                </label>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

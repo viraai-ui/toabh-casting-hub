@@ -26,6 +26,8 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
   const [comments, setComments] = useState<Comment[]>([])
   const [newNote, setNewNote] = useState('')
 
+  const [customFields, setCustomFields] = useState<any[]>([])
+
   const [form, setForm] = useState({
     client_name: '',
     client_company: '',
@@ -40,12 +42,23 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
     assigned_to: [] as number[],
     budget_min: '',
     budget_max: '',
+    custom_fields: {} as { [key: string]: string },
   })
 
   useEffect(() => {
     if (open) {
       fetchData()
       if (casting) {
+        const customFieldsData = casting.custom_fields ? JSON.parse(casting.custom_fields) : {}
+        // Parse assigned_to from the backend format
+        let assignedToIds: number[] = []
+        if (casting.assigned_ids) {
+          if (typeof casting.assigned_ids === 'string') {
+            assignedToIds = casting.assigned_ids.split(',').map(Number).filter(Boolean)
+          } else if (Array.isArray(casting.assigned_ids)) {
+            assignedToIds = casting.assigned_ids
+          }
+        }
         setForm({
           client_name: casting.client_name || '',
           client_company: casting.client_company || '',
@@ -57,9 +70,10 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
           location: casting.location || '',
           status: casting.status || 'NEW',
           source: casting.source || '',
-          assigned_to: casting.assigned_ids || [],
+          assigned_to: assignedToIds,
           budget_min: casting.budget_min?.toString() || '',
           budget_max: casting.budget_max?.toString() || '',
+          custom_fields: customFieldsData,
         })
       } else {
         setForm({
@@ -76,6 +90,7 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
           assigned_to: [],
           budget_min: '',
           budget_max: '',
+          custom_fields: {},
         })
       }
     }
@@ -84,16 +99,18 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [clientsData, teamData, pipelineData, sourcesData] = await Promise.all([
+      const [clientsData, teamData, pipelineData, sourcesData, customFieldsData] = await Promise.all([
         api.get('/clients'),
         api.get('/team'),
         api.get('/settings/pipeline'),
         api.get('/settings/sources'),
+        api.get('/settings/custom-fields'),
       ])
       setClients(clientsData)
       setTeamMembers(teamData)
       setPipeline(pipelineData)
       setSources(sourcesData)
+      setCustomFields(customFieldsData)
     } catch (err) {
       console.error('Failed to fetch data:', err)
     } finally {
@@ -134,6 +151,7 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
         ...form,
         budget_min: form.budget_min ? Number(form.budget_min) : null,
         budget_max: form.budget_max ? Number(form.budget_max) : null,
+        custom_fields: JSON.stringify(form.custom_fields),
       }
       if (casting) {
         await api.put(`/castings/${casting.id}`, payload)
@@ -154,7 +172,8 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
     try {
       await api.post('/comments', {
         casting_id: casting.id,
-        content: newNote,
+        text: newNote,
+        user_name: 'Admin',
       })
       setNewNote('')
       fetchComments()
@@ -393,14 +412,14 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
                       {form.client_contact && (
                         <div className="flex gap-2">
                           <a
-                            href={`tel:+91${form.client_contact}`}
+                            href={`tel:${form.client_contact.startsWith('+') ? form.client_contact : '+91' + form.client_contact}`}
                             className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-xl text-slate-700 hover:bg-slate-200 transition-colors"
                           >
                             <Phone className="w-4 h-4" />
                             Call
                           </a>
                           <a
-                            href={`https://wa.me/91${form.client_contact}?text=Regarding ${form.project_name || 'your casting'}`}
+                            href={`https://wa.me/${form.client_contact.replace('+', '')}?text=Regarding ${form.project_name || 'your casting'}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 px-4 py-2 bg-green-100 rounded-xl text-green-700 hover:bg-green-200 transition-colors"
@@ -415,6 +434,42 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
 
                   {activeTab === 'Team' && (
                     <div className="space-y-4">
+                      {/* Currently assigned members */}
+                      {form.assigned_to.length > 0 && (
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-2">
+                            Assigned Members
+                          </label>
+                          <div className="flex flex-wrap gap-2">
+                            {form.assigned_to.map((memberId) => {
+                              const member = teamMembers.find(m => m.id === memberId)
+                              if (!member) return null
+                              return (
+                                <div
+                                  key={memberId}
+                                  className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 rounded-full"
+                                >
+                                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-xs font-medium">
+                                    {getInitials(member.name)}
+                                  </div>
+                                  <span className="text-sm text-slate-700">{member.name}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setForm({
+                                      ...form,
+                                      assigned_to: form.assigned_to.filter((id) => id !== memberId),
+                                    })}
+                                    className="ml-1 p-0.5 rounded-full hover:bg-amber-200 transition-colors"
+                                  >
+                                    <X className="w-3.5 h-3.5 text-slate-500" />
+                                  </button>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      
                       <label className="block text-sm font-medium text-slate-700 mb-1.5">
                         Team Members
                       </label>
@@ -493,7 +548,79 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
 
                   {activeTab === 'Custom Fields' && (
                     <div className="space-y-4">
-                      <p className="text-slate-500 text-sm">Custom fields will appear here once configured in Settings.</p>
+                      {customFields.length === 0 ? (
+                        <p className="text-slate-500 text-sm">No custom fields configured.</p>
+                      ) : (
+                        customFields.map((field) => (
+                          <div key={field.id}>
+                            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                              {field.name}
+                            </label>
+                            {field.type === 'text' && (
+                              <input
+                                type="text"
+                                value={form.custom_fields?.[field.id] || ''}
+                                onChange={(e) => setForm({
+                                  ...form,
+                                  custom_fields: {
+                                    ...form.custom_fields,
+                                    [field.id]: e.target.value,
+                                  }
+                                })}
+                                className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                                placeholder={`Enter ${field.name.toLowerCase()}`}
+                              />
+                            )}
+                            {field.type === 'number' && (
+                              <input
+                                type="number"
+                                value={form.custom_fields?.[field.id] || ''}
+                                onChange={(e) => setForm({
+                                  ...form,
+                                  custom_fields: {
+                                    ...form.custom_fields,
+                                    [field.id]: e.target.value,
+                                  }
+                                })}
+                                className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                                placeholder={`Enter ${field.name.toLowerCase()}`}
+                              />
+                            )}
+                            {field.type === 'date' && (
+                              <input
+                                type="date"
+                                value={form.custom_fields?.[field.id] || ''}
+                                onChange={(e) => setForm({
+                                  ...form,
+                                  custom_fields: {
+                                    ...form.custom_fields,
+                                    [field.id]: e.target.value,
+                                  }
+                                })}
+                                className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                              />
+                            )}
+                            {field.type === 'dropdown' && (
+                              <select
+                                value={form.custom_fields?.[field.id] || ''}
+                                onChange={(e) => setForm({
+                                  ...form,
+                                  custom_fields: {
+                                    ...form.custom_fields,
+                                    [field.id]: e.target.value,
+                                  }
+                                })}
+                                className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                              >
+                                <option value="">Select...</option>
+                                {(field.options || '').split(',').map((opt: string, i: number) => (
+                                  <option key={i} value={opt.trim()}>{opt.trim()}</option>
+                                ))}
+                              </select>
+                            )}
+                          </div>
+                        ))
+                      )}
                     </div>
                   )}
 
@@ -506,20 +633,20 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
                           <div key={activity.id} className="flex items-start gap-3">
                             <div className={cn(
                               'w-8 h-8 rounded-lg flex items-center justify-center',
-                              activity.type === 'CREATED' ? 'bg-green-100 text-green-600' :
-                              activity.type === 'STATUS_CHANGED' ? 'bg-blue-100 text-blue-600' :
-                              activity.type === 'ASSIGNED' ? 'bg-purple-100 text-purple-600' :
-                              activity.type === 'COMMENTED' ? 'bg-amber-100 text-amber-600' :
+                              activity.action === 'CREATED' ? 'bg-green-100 text-green-600' :
+                              activity.action === 'STATUS_CHANGE' || activity.action === 'STATUS_CHANGED' ? 'bg-blue-100 text-blue-600' :
+                              activity.action === 'ASSIGNED' ? 'bg-purple-100 text-purple-600' :
+                              activity.action === 'NOTE' ? 'bg-amber-100 text-amber-600' :
                               'bg-slate-100 text-slate-600'
                             )}>
-                              {activity.type === 'CREATED' && <Activity className="w-4 h-4" />}
-                              {activity.type === 'STATUS_CHANGED' && <Activity className="w-4 h-4" />}
-                              {activity.type === 'ASSIGNED' && <Users className="w-4 h-4" />}
-                              {activity.type === 'COMMENTED' && <MessageSquare className="w-4 h-4" />}
-                              {activity.type === 'UPDATED' && <FileText className="w-4 h-4" />}
+                              {activity.action === 'CREATED' && <Activity className="w-4 h-4" />}
+                              {activity.action === 'STATUS_CHANGE' && <Activity className="w-4 h-4" />}
+                              {activity.action === 'ASSIGNED' && <Users className="w-4 h-4" />}
+                              {activity.action === 'NOTE' && <MessageSquare className="w-4 h-4" />}
+                              {activity.action === 'UPDATED' && <FileText className="w-4 h-4" />}
                             </div>
                             <div className="flex-1">
-                              <p className="text-sm text-slate-700">{activity.details}</p>
+                              <p className="text-sm text-slate-700">{activity.description || activity.details}</p>
                               <p className="text-xs text-slate-400 mt-0.5">
                                 {activity.user_name} • {formatRelativeTime(activity.created_at)}
                               </p>
@@ -555,7 +682,7 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
                       <div className="space-y-3">
                         {comments.map((comment) => (
                           <div key={comment.id} className="p-3 bg-slate-50 rounded-xl">
-                            <p className="text-sm text-slate-700">{comment.content}</p>
+                            <p className="text-sm text-slate-700">{comment.text || comment.content}</p>
                             <p className="text-xs text-slate-400 mt-1">
                               {comment.user_name} • {formatRelativeTime(comment.created_at)}
                             </p>

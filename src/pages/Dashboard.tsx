@@ -12,6 +12,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   RefreshCw,
+  MessageSquare,
 } from 'lucide-react'
 import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { api } from '@/lib/api'
@@ -72,8 +73,11 @@ export function Dashboard() {
     )
   }
 
-  const pipelineData = stats?.pipeline 
-    ? Object.entries(stats.pipeline).map(([name, count]) => ({ name, count }))
+  const pipelineData = Array.isArray(stats?.pipeline) 
+    ? stats.pipeline.map((p: { status?: string; name?: string; count: number }) => ({ 
+        name: p.status || p.name || '', 
+        count: p.count 
+      }))
     : []
 
   const trendData = stats?.trend || []
@@ -144,33 +148,39 @@ export function Dashboard() {
         <div className="card p-5">
           <h3 className="font-semibold text-slate-900 mb-4">Monthly Trend</h3>
           <div className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData}>
-                <defs>
-                  <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="month" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: 'rgba(255,255,255,0.95)',
-                    border: '1px solid rgba(0,0,0,0.1)',
-                    borderRadius: 12,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="count"
-                  stroke="#f59e0b"
-                  strokeWidth={2}
-                  fill="url(#colorCount)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {trendData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trendData}>
+                  <defs>
+                    <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'rgba(255,255,255,0.95)',
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      borderRadius: 12,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="count"
+                    stroke="#f59e0b"
+                    strokeWidth={2}
+                    fill="url(#colorCount)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-slate-400">
+                No trend data available yet
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -181,24 +191,24 @@ export function Dashboard() {
         <div className="card p-5">
           <h3 className="font-semibold text-slate-900 mb-4">Recent Activity</h3>
           <div className="space-y-3">
-            {stats?.activities?.slice(0, 8).map((activity) => (
+            {stats?.recent_activity?.slice(0, 8).map((activity) => (
               <div key={activity.id} className="flex items-start gap-3">
                 <div className={cn(
                   'w-8 h-8 rounded-lg flex items-center justify-center',
-                  activity.type === 'CREATED' ? 'bg-green-100 text-green-600' :
-                  activity.type === 'STATUS_CHANGED' ? 'bg-blue-100 text-blue-600' :
-                  activity.type === 'ASSIGNED' ? 'bg-purple-100 text-purple-600' :
-                  activity.type === 'COMMENTED' ? 'bg-amber-100 text-amber-600' :
+                  activity.action === 'CREATED' ? 'bg-green-100 text-green-600' :
+                  activity.action === 'STATUS_CHANGE' || activity.action === 'STATUS_CHANGED' ? 'bg-blue-100 text-blue-600' :
+                  activity.action === 'ASSIGNED' ? 'bg-purple-100 text-purple-600' :
+                  activity.action === 'NOTE' ? 'bg-amber-100 text-amber-600' :
                   'bg-slate-100 text-slate-600'
                 )}>
-                  {activity.type === 'CREATED' && <Plus className="w-4 h-4" />}
-                  {activity.type === 'STATUS_CHANGED' && <TrendingUp className="w-4 h-4" />}
-                  {activity.type === 'ASSIGNED' && <Users className="w-4 h-4" />}
-                  {activity.type === 'COMMENTED' && <Search className="w-4 h-4" />}
-                  {activity.type === 'UPDATED' && <RefreshCw className="w-4 h-4" />}
+                  {activity.action === 'CREATED' && <Plus className="w-4 h-4" />}
+                  {activity.action === 'STATUS_CHANGE' && <TrendingUp className="w-4 h-4" />}
+                  {activity.action === 'ASSIGNED' && <Users className="w-4 h-4" />}
+                  {activity.action === 'NOTE' && <MessageSquare className="w-4 h-4" />}
+                  {activity.action === 'UPDATED' && <RefreshCw className="w-4 h-4" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-slate-700">{activity.details}</p>
+                  <p className="text-sm text-slate-700">{activity.description}</p>
                   <p className="text-xs text-slate-400 mt-0.5">
                     {activity.user_name} • {formatRelativeTime(activity.created_at)}
                   </p>
@@ -240,8 +250,8 @@ export function Dashboard() {
         <div className="card p-5">
           <h3 className="font-semibold text-slate-900 mb-4">Team Workload</h3>
           <div className="space-y-3">
-            {stats?.team_workload?.slice(0, 6).map((member, i) => {
-              const maxCount = Math.max(...(stats?.team_workload?.map(m => m.count) || [1]))
+            {stats?.workload?.slice(0, 6).map((member: { id?: number; name: string; count: number }, i: number) => {
+              const maxCount = Math.max(...(stats?.workload?.map((m: { count: number }) => m.count) || [1]))
               return (
                 <div key={i} className="space-y-1.5">
                   <div className="flex items-center justify-between">

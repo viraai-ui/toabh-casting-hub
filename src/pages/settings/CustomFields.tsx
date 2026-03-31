@@ -50,7 +50,11 @@ export function CustomFields() {
     fetchFields()
   }, [])
 
-  const groupedFields = fields.filter((f) => f.group === activeGroup)
+  const groupedFields = fields.filter((f) => {
+    if (activeGroup === 'all') return true
+    const groupKey = f.tab?.toLowerCase().replace(/ /g, '_') || f.group?.toLowerCase().replace(/ /g, '_')
+    return groupKey === activeGroup || f.tab === activeGroup || f.group === activeGroup
+  })
 
   const handleSave = async () => {
     setSaving(true)

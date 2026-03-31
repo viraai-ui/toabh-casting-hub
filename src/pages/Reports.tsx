@@ -6,6 +6,7 @@ import { api } from '@/lib/api'
 import { cn, formatCurrency } from '@/lib/utils'
 import Papa from 'papaparse'
 import type { Casting } from '@/types'
+import { isWithinInterval, parseISO } from 'date-fns'
 
 const COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#ec4899']
 
@@ -30,32 +31,32 @@ export function Reports() {
     fetchCastings()
   }, [])
 
-  // Filter by date range
+  // Filter by date range using shoot_date_start
   const filteredCastings = castings.filter((c) => {
-    if (!c.created_at) return true
-    const created = new Date(c.created_at)
+    if (!c.shoot_date_start) return true
+    const shootDate = parseISO(c.shoot_date_start)
     const now = new Date()
     
     if (dateRange === 'week') {
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-      return created >= weekAgo
+      return isWithinInterval(shootDate, { start: weekAgo, end: now })
     }
     if (dateRange === 'month') {
       const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate())
-      return created >= monthAgo
+      return isWithinInterval(shootDate, { start: monthAgo, end: now })
     }
     if (dateRange === '30days') {
       const daysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-      return created >= daysAgo
+      return isWithinInterval(shootDate, { start: daysAgo, end: now })
     }
     if (dateRange === 'quarter') {
       const quarterAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate())
-      return created >= quarterAgo
+      return isWithinInterval(shootDate, { start: quarterAgo, end: now })
     }
     if (dateRange === 'custom' && customRange.from && customRange.to) {
-      const from = new Date(customRange.from)
-      const to = new Date(customRange.to)
-      return created >= from && created <= to
+      const from = parseISO(customRange.from)
+      const to = parseISO(customRange.to)
+      return isWithinInterval(shootDate, { start: from, end: to })
     }
     return true
   })
@@ -132,6 +133,7 @@ export function Reports() {
       Budget_Min: c.budget_min,
       Budget_Max: c.budget_max,
       Location: c.location,
+      Assigned_To: c.assigned_names ? c.assigned_names.split(',').join('; ') : '',
       Created: c.created_at,
     })))
     const blob = new Blob([csv], { type: 'text/csv' })

@@ -377,7 +377,14 @@ function DayView({
                   {getInitials(casting.client_name)}
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-semibold text-slate-900">{casting.project_name || 'Untitled'}</h4>
+                  <h4 className="font-semibold text-slate-900">
+                    {casting.project_name || 'Untitled'}
+                    {casting.shoot_date_start && (
+                      <span className="ml-2 text-sm font-normal text-slate-500">
+                        {new Date(casting.shoot_date_start).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    )}
+                  </h4>
                   <p className="text-sm text-slate-500">{casting.client_name}</p>
                   {casting.location && (
                     <p className="text-xs text-slate-400 mt-1">{casting.location}</p>

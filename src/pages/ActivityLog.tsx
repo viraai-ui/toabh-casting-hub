@@ -9,6 +9,7 @@ const activityIcons: { [key: string]: React.ElementType } = {
   CREATED: Plus,
   UPDATED: Edit,
   STATUS_CHANGED: ArrowRight,
+  STATUS_CHANGE: ArrowRight,
   ASSIGNED: UserPlus,
   COMMENTED: MessageSquare,
   DELETED: Trash2,
@@ -19,6 +20,7 @@ const activityColors: { [key: string]: string } = {
   CREATED: 'bg-green-100 text-green-600',
   UPDATED: 'bg-blue-100 text-blue-600',
   STATUS_CHANGED: 'bg-purple-100 text-purple-600',
+  STATUS_CHANGE: 'bg-purple-100 text-purple-600',
   ASSIGNED: 'bg-amber-100 text-amber-600',
   COMMENTED: 'bg-cyan-100 text-cyan-600',
   DELETED: 'bg-red-100 text-red-600',
@@ -153,8 +155,8 @@ export function ActivityLog() {
         <>
           <div className="space-y-3">
             {activities.map((activity) => {
-              const Icon = activityIcons[activity.type] || MessageSquare
-              const colorClass = activityColors[activity.type] || 'bg-slate-100 text-slate-600'
+              const Icon = activityIcons[activity.action] || MessageSquare
+              const colorClass = activityColors[activity.action] || 'bg-slate-100 text-slate-600'
 
               return (
                 <motion.div
@@ -168,7 +170,7 @@ export function ActivityLog() {
                       <Icon className="w-5 h-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-slate-700">{activity.details}</p>
+                      <p className="text-slate-700">{activity.description || activity.details}</p>
                       <div className="flex items-center gap-3 mt-1.5 text-sm text-slate-500">
                         <span className="flex items-center gap-1">
                           <div className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-[10px] font-medium">
@@ -186,7 +188,7 @@ export function ActivityLog() {
                       'px-2 py-0.5 rounded-full text-xs font-medium capitalize',
                       colorClass
                     )}>
-                      {activity.type.replace('_', ' ').toLowerCase()}
+                      {(activity.action || activity.type || 'Unknown').replace('_', ' ').toLowerCase()}
                     </span>
                   </div>
                 </motion.div>

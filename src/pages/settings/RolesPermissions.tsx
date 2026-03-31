@@ -20,20 +20,23 @@ const permissions = [
 export function RolesPermissions() {
   const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   const fetchRoles = async () => {
     try {
       const data = await api.get('/settings/roles')
-      setRoles(data)
+      // Handle both {roles: [...]} and [...] formats
+      if (Array.isArray(data)) {
+        setRoles(data)
+      } else if (data && Array.isArray(data.roles)) {
+        setRoles(data.roles)
+      } else {
+        throw new Error('Invalid roles data')
+      }
     } catch (err) {
       console.error('Failed to fetch:', err)
-      // Set default roles if none exist
-      setRoles([
-        { id: 1, name: 'Admin', permissions: permissions.map(p => p.id) },
-        { id: 2, name: 'Booker', permissions: ['castings_view', 'castings_edit', 'clients_view', 'clients_edit', 'team_view', 'reports_view'] },
-        { id: 3, name: 'Viewer', permissions: ['castings_view', 'clients_view', 'team_view', 'reports_view'] },
-      ])
+      setError('Failed to load roles')
     } finally {
       setLoading(false)
     }
@@ -71,6 +74,15 @@ export function RolesPermissions() {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <p className="text-red-500 mb-2">{error}</p>
+        <button onClick={fetchRoles} className="btn-primary">Retry</button>
       </div>
     )
   }

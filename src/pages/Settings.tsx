@@ -7,8 +7,8 @@ import { LeadSources } from './settings/LeadSources'
 import { CustomFields } from './settings/CustomFields'
 import { RolesPermissions } from './settings/RolesPermissions'
 import { TeamManagement } from './settings/TeamManagement'
-import { EmailConfig } from './settings/EmailConfig'
 import { DashboardSettings } from './settings/DashboardSettings'
+import { EmailTemplates } from './settings/EmailTemplates'
 import { cn } from '@/lib/utils'
 
 const tabs = [
@@ -17,7 +17,7 @@ const tabs = [
   { id: 'custom-fields', label: 'Custom Fields' },
   { id: 'roles', label: 'Roles' },
   { id: 'team', label: 'Team' },
-  { id: 'email', label: 'Email Config' },
+  { id: 'email', label: 'Email Templates' },
   { id: 'dashboard', label: 'Dashboard' },
 ]
 
@@ -112,7 +112,7 @@ export function Settings() {
           {activeTab === 'custom-fields' && <CustomFields />}
           {activeTab === 'roles' && <RolesPermissions />}
           {activeTab === 'team' && <TeamManagement />}
-          {activeTab === 'email' && <EmailConfig />}
+          {activeTab === 'email' && <EmailTemplates />}
           {activeTab === 'dashboard' && <DashboardSettings />}
         </motion.div>
       </div>

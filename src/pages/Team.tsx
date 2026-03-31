@@ -37,8 +37,12 @@ export function Team() {
     fetchCastings()
   }, [])
 
-  const getMemberAssignments = (memberId: number) => {
-    return castings.filter((c) => c.assigned_ids?.includes(memberId)).length
+  const getMemberAssignments = (memberId: string | number) => {
+    return castings.filter((c) => {
+      if (!c.assigned_ids) return false
+      const ids = (c.assigned_ids || '').toString().split(',').map(s => s.trim())
+      return ids.includes(String(memberId))
+    }).length
   }
 
   const handleToggleActive = async (member: TeamMember) => {

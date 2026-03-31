@@ -15,7 +15,6 @@ import {
   LogOut,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useAppStore } from '@/hooks/useStore'
 
 const mainItems = [
   { icon: LayoutDashboard, label: 'Home', path: '/dashboard' },
@@ -36,7 +35,6 @@ export function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
   const [moreOpen, setMoreOpen] = useState(false)
-  const { setSearchOpen } = useAppStore()
 
   const handleLogout = () => {
     sessionStorage.removeItem('admin_verified')
@@ -73,7 +71,6 @@ export function BottomNav() {
                 onClick={() => {
                   if (item.path === '#') {
                     setMoreOpen(true)
-                    setSearchOpen(true)
                   } else {
                     navigate(item.path)
                   }

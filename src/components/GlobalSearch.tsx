@@ -14,8 +14,24 @@ export function GlobalSearch() {
   const [results, setResults] = useState<SearchResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [recentSearches, setRecentSearches] = useState<string[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Load recent searches from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('recent_searches')
+      if (saved) setRecentSearches(JSON.parse(saved))
+    } catch {}
+  }, [])
+
+  const saveSearch = (q: string) => {
+    if (!q.trim()) return
+    const updated = [q, ...recentSearches.filter(s => s !== q)].slice(0, 5)
+    setRecentSearches(updated)
+    localStorage.setItem('recent_searches', JSON.stringify(updated))
+  }
 
   // Keyboard shortcut
   useEffect(() => {
@@ -55,6 +71,11 @@ export function GlobalSearch() {
     }, 300)
   }, [])
 
+  const handleSelectRecent = (q: string) => {
+    setQuery(q)
+    search(q)
+  }
+
   useEffect(() => {
     search(query)
   }, [query, search])
@@ -77,9 +98,10 @@ export function GlobalSearch() {
       setSelectedIndex(i => Math.max(i - 1, 0))
     } else if (e.key === 'Enter' && allResults[selectedIndex]) {
       const item = allResults[selectedIndex]
-      if (item.type === 'casting') navigate(`/castings`)
-      else if (item.type === 'client') navigate(`/clients`)
-      else if (item.type === 'team') navigate(`/team`)
+      saveSearch(query)
+      if (item.type === 'casting') navigate(`/castings?id=${item.data.id}`)
+      else if (item.type === 'client') navigate(`/clients?id=${item.data.id}`)
+      else if (item.type === 'team') navigate(`/team?id=${item.data.id}`)
       setSearchOpen(false)
     }
   }
@@ -126,7 +148,24 @@ export function GlobalSearch() {
 
           {/* Results */}
           <div className="max-h-[60vh] overflow-y-auto p-2">
-            {!query && (
+            {!query && recentSearches.length > 0 && (
+              <div>
+                <p className="px-3 py-2 text-xs font-medium text-slate-500 uppercase tracking-wide">
+                  Recent Searches
+                </p>
+                {recentSearches.map((q, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleSelectRecent(q)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors hover:bg-slate-50"
+                  >
+                    <Search className="w-4 h-4 text-slate-400" />
+                    <span className="text-slate-700">{q}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {!query && recentSearches.length === 0 && (
               <p className="text-center text-slate-400 py-8">
                 Type to search...
               </p>
@@ -149,7 +188,8 @@ export function GlobalSearch() {
                     <button
                       key={casting.id}
                       onClick={() => {
-                        navigate(`/castings`)
+                        saveSearch(query)
+                        navigate(`/castings?id=${casting.id}`)
                         setSearchOpen(false)
                       }}
                       className={cn(
@@ -179,7 +219,8 @@ export function GlobalSearch() {
                     <button
                       key={client.id}
                       onClick={() => {
-                        navigate(`/clients`)
+                        saveSearch(query)
+                        navigate(`/clients?id=${client.id}`)
                         setSearchOpen(false)
                       }}
                       className={cn(
@@ -209,7 +250,8 @@ export function GlobalSearch() {
                     <button
                       key={member.id}
                       onClick={() => {
-                        navigate(`/team`)
+                        saveSearch(query)
+                        navigate(`/team?id=${member.id}`)
                         setSearchOpen(false)
                       }}
                       className={cn(

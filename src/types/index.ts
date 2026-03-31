@@ -16,7 +16,7 @@ export interface Casting {
   budget_min: number | null
   budget_max: number | null
   assigned_to: string[]
-  assigned_ids: number[]
+  assigned_ids: string | number[]
   assigned_names: string | null
   custom_fields: string
   created_at: string
@@ -49,20 +49,22 @@ export interface TeamMember {
 export interface Activity {
   id: number
   casting_id: number
-  user_id: number
+  user_id?: number
   user_name: string
   action: string
-  type: 'CREATED' | 'STATUS_CHANGED' | 'ASSIGNED' | 'COMMENTED' | 'UPDATED' | 'DELETED' | 'NOTE'
-  details: string
+  type?: string
+  details?: string
+  description?: string
   created_at: string
 }
 
 export interface Comment {
   id: number
   casting_id: number
-  user_id: number
+  user_id?: number
   user_name: string
-  content: string
+  text?: string
+  content?: string
   created_at: string
 }
 
@@ -82,7 +84,8 @@ export interface CustomField {
   id: number
   name: string
   field_type: 'text' | 'dropdown' | 'date' | 'number' | 'file'
-  group: 'contact_info' | 'project_info' | 'financials' | 'custom'
+  group?: 'contact_info' | 'project_info' | 'financials' | 'custom'
+  tab?: string
   options?: string
   required: boolean
 }
@@ -101,12 +104,14 @@ export interface Permission {
 export interface DashboardStats {
   total_castings: number
   active_castings: number
+  closed_castings: number
   total_revenue: number
   total_clients: number
-  pipeline: { [key: string]: number }
+  pipeline: { status: string; count: number }[]
   trend: { month: string; count: number }[]
-  activities: Activity[]
-  team_workload: { name: string; count: number }[]
+  recent_activity: Activity[]
+  workload: { id?: number; name: string; count: number }[]
+  sources: { source: string; count: number }[]
 }
 
 export interface SearchResult {
