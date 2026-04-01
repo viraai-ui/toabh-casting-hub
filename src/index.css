@@ -4,9 +4,22 @@
 @layer base {
   * {
     font-family: 'Inter', system-ui, sans-serif;
+    /* Prevent text size adjustment on orientation change */
+    -webkit-text-size-adjust: 100%;
+  }
+  html {
+    /* iOS safe area — ensure notch and home indicator don't clip content */
+    scroll-padding-top: env(safe-area-inset-top, 0px);
   }
   body {
     @apply bg-slate-50 text-slate-900 antialiased;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* Smooth scrolling */
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Prevent overscroll bounce on iOS */
+  #root {
+    min-height: 100dvh;
   }
 }
 

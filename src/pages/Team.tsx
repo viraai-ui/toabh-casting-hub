@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Pencil, Trash2, Loader2, Mail, Phone } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, Mail, Phone, X, Camera, User } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import type { TeamMember, Casting } from '@/types'
+import Dialog from '@mui/material/Dialog'
+import DialogContent from '@mui/material/DialogContent'
+import IconButton from '@mui/material/IconButton'
+import Button from '@mui/material/Button'
 
 export function Team() {
   const [team, setTeam] = useState<TeamMember[]>([])
@@ -11,8 +15,9 @@ export function Team() {
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null)
+  const [viewMember, setViewMember] = useState<TeamMember | null>(null)
 
-  const fetchTeam = async () => {
+  const fetchTeam = useCallback(async () => {
     try {
       const data = await api.get('/team')
       setTeam(Array.isArray(data) ? data : [])
@@ -22,9 +27,9 @@ export function Team() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const fetchCastings = async () => {
+  const fetchCastings = useCallback(async () => {
     try {
       const data = await api.get('/castings')
       setCastings(Array.isArray(data) ? data : [])
@@ -32,24 +37,24 @@ export function Team() {
       console.error('Failed to fetch castings:', err)
       setCastings([])
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchTeam()
     fetchCastings()
-  }, [])
+  }, [fetchTeam, fetchCastings])
 
   const getMemberAssignments = (memberId: string | number) => {
     return castings.filter((c) => {
       if (!c.assigned_ids) return false
-      const ids = (c.assigned_ids || '').toString().split(',').map(s => s.trim())
+      const ids = (c.assigned_ids || '').toString().split(',').map((s) => s.trim())
       return ids.includes(String(memberId))
     }).length
   }
 
   const handleToggleActive = async (member: TeamMember) => {
     try {
-      await api.put(`/team/${member.id}`, { ...member, active: !member.active })
+      await api.put(`/team/${member.id}`, { ...member, is_active: !member.is_active })
       fetchTeam()
     } catch (err) {
       console.error('Failed to toggle:', err)
@@ -74,13 +79,13 @@ export function Team() {
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex justify-end">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <button
           onClick={() => {
             setEditingMember(null)
             setModalOpen(true)
           }}
-          className="btn-primary flex items-center gap-2"
+          className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
         >
           <Plus className="w-4 h-4" />
           Add Member
@@ -97,7 +102,7 @@ export function Team() {
           <p className="text-slate-500">No team members yet</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
           {team.map((member) => {
             const assignments = getMemberAssignments(member.id)
             const maxAssignments = Math.max(...team.map((m) => getMemberAssignments(m.id)), 1)
@@ -106,15 +111,19 @@ export function Team() {
               <motion.div
                 key={member.id}
                 layout
-                className={cn('card p-4', !member.active && 'opacity-60')}
+                onClick={() => setViewMember(member)}
+                className={cn(
+                  'card p-4 cursor-pointer transition-all hover:border-amber-300 hover:shadow-md',
+                  !member.is_active && 'opacity-60'
+                )}
               >
+                {/* Top row: avatar + action buttons */}
                 <div className="flex items-start justify-between mb-3">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-lg font-semibold">
-                    {getInitials(member.name)}
-                  </div>
+                  <MemberAvatar member={member} size={56} />
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation()
                         setEditingMember(member)
                         setModalOpen(true)
                       }}
@@ -123,7 +132,10 @@ export function Team() {
                       <Pencil className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDelete(member)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete(member)
+                      }}
                       className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -132,25 +144,27 @@ export function Team() {
                 </div>
 
                 <h3 className="font-semibold text-slate-900 mb-0.5">{member.name}</h3>
-                <p className="text-sm text-slate-500 mb-3">{member.role}</p>
+                <p className="text-sm text-slate-500 mb-3">{member.role || 'Team Member'}</p>
 
                 <div className="space-y-2 mb-3">
                   {member.email && (
                     <a
                       href={`mailto:${member.email}`}
+                      onClick={(e) => e.stopPropagation()}
                       className="flex items-center gap-2 text-sm text-slate-600 hover:text-amber-600"
                     >
-                      <Mail className="w-3.5 h-3.5" />
+                      <Mail className="w-3.5 h-3.5 shrink-0" />
                       <span className="truncate">{member.email}</span>
                     </a>
                   )}
                   {member.phone && (
                     <a
                       href={`tel:${member.phone}`}
+                      onClick={(e) => e.stopPropagation()}
                       className="flex items-center gap-2 text-sm text-slate-600 hover:text-amber-600"
                     >
-                      <Phone className="w-3.5 h-3.5" />
-                      {member.phone}
+                      <Phone className="w-3.5 h-3.5 shrink-0" />
+                      <span>{member.phone}</span>
                     </a>
                   )}
                 </div>
@@ -159,30 +173,35 @@ export function Team() {
                 <div className="mb-3">
                   <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
                     <span>Workload</span>
-                    <span>{assignments} castings</span>
+                    <span>{assignments} casting{assignments !== 1 ? 's' : ''}</span>
                   </div>
                   <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-amber-500 to-amber-600 rounded-full transition-all"
-                      style={{ width: `${(assignments / maxAssignments) * 100}%` }}
+                      className="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full transition-all"
+                      style={{ width: `${Math.min((assignments / maxAssignments) * 100, 100)}%` }}
                     />
                   </div>
                 </div>
 
                 {/* Active Toggle */}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">Active</span>
+                  <span className="text-xs text-slate-500">
+                    {member.is_active ? 'Active' : 'Inactive'}
+                  </span>
                   <button
-                    onClick={() => handleToggleActive(member)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleToggleActive(member)
+                    }}
                     className={cn(
                       'relative w-10 h-5 rounded-full transition-colors',
-                      member.active ? 'bg-amber-500' : 'bg-slate-200'
+                      member.is_active ? 'bg-amber-500' : 'bg-slate-200'
                     )}
                   >
                     <span
                       className={cn(
                         'absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform',
-                        member.active ? 'left-5' : 'left-0.5'
+                        member.is_active ? 'left-5' : 'left-0.5'
                       )}
                     />
                   </button>
@@ -193,7 +212,7 @@ export function Team() {
         </div>
       )}
 
-      {/* Team Member Modal */}
+      {/* Team Member Modal (Create/Edit) */}
       <TeamMemberModal
         open={modalOpen}
         onClose={() => {
@@ -203,9 +222,232 @@ export function Team() {
         member={editingMember}
         onSave={fetchTeam}
       />
+
+      {/* View Member Modal (Read-only) */}
+      <MemberViewModal
+        member={viewMember}
+        onClose={() => setViewMember(null)}
+        onEdit={() => {
+          if (!viewMember) return
+          setViewMember(null)
+          setEditingMember(viewMember)
+          setModalOpen(true)
+        }}
+        castings={castings}
+      />
     </div>
   )
 }
+
+// ─── Avatar ────────────────────────────────────────────────────────────────────
+
+function MemberAvatar({
+  member,
+  size = 56,
+  showFallback = true,
+}: {
+  member: TeamMember
+  size?: number
+  showFallback?: boolean
+}) {
+  const [imgError, setImgError] = useState(false)
+  const initials = getInitials(member.name)
+
+  const avatarSrc = member.avatar_url
+    ? (member.avatar_url.startsWith('/') ? `${import.meta.env.VITE_API_URL || ''}${member.avatar_url}` : member.avatar_url)
+    : null
+
+  if (avatarSrc && !imgError) {
+    return (
+      <img
+        src={avatarSrc}
+        alt={member.name}
+        onError={() => setImgError(true)}
+        className="rounded-2xl object-cover bg-slate-100"
+        style={{ width: size, height: size }}
+      />
+    )
+  }
+
+  if (showFallback) {
+    return (
+      <div
+        className="rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-semibold flex-shrink-0"
+        style={{ width: size, height: size, fontSize: size * 0.35 }}
+      >
+        {initials}
+      </div>
+    )
+  }
+
+  return null
+}
+
+// ─── View Modal ────────────────────────────────────────────────────────────────
+
+function MemberViewModal({
+  member,
+  onClose,
+  onEdit,
+  castings,
+}: {
+  member: TeamMember | null
+  onClose: () => void
+  onEdit: () => void
+  castings: Casting[]
+}) {
+  if (!member) return null
+
+  const assignedCastings = castings.filter((c) => {
+    if (!c.assigned_ids) return false
+    const ids = (c.assigned_ids || '').toString().split(',').map((s) => s.trim())
+    return ids.includes(String(member.id))
+  })
+
+  return (
+    <Dialog
+      open={!!member}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: '20px',
+          overflow: 'hidden',
+        },
+      }}
+    >
+      {/* Header with avatar + name */}
+      <div className="relative bg-gradient-to-br from-amber-500 to-amber-700 px-6 pt-6 pb-16">
+        <IconButton
+          onClick={onClose}
+          size="small"
+          sx={{
+            position: 'absolute', right: 8, top: 8,
+            color: 'white', bgcolor: 'rgba(255,255,255,0.2)',
+          }}
+        >
+          <X className="w-5 h-5" />
+        </IconButton>
+
+        {/* Large avatar centered */}
+        <div className="flex flex-col items-center">
+          <div
+            className="rounded-full bg-white/20 backdrop-blur-sm p-1"
+          >
+            {member.avatar_url ? (
+              <img
+                src={`${import.meta.env.VITE_API_URL || ''}${member.avatar_url}`}
+                alt={member.name}
+                className="w-20 h-20 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-full bg-white/30 flex items-center justify-center text-white font-bold text-2xl">
+                {getInitials(member.name)}
+              </div>
+            )}
+          </div>
+          <h2 className="mt-3 text-xl font-bold text-white">{member.name}</h2>
+          <p className="text-amber-100 text-sm">{member.role || 'Team Member'}</p>
+          <span
+            className={cn(
+              'mt-2 inline-block px-3 py-0.5 rounded-full text-xs font-medium',
+              member.is_active
+                ? 'bg-green-500/30 text-green-100'
+                : 'bg-slate-500/30 text-slate-200'
+            )}
+          >
+            {member.is_active ? 'Active' : 'Inactive'}
+          </span>
+        </div>
+      </div>
+
+      <DialogContent sx={{ px: 3, pb: 3, pt: 5 }}>
+        {/* Contact info */}
+        <div className="space-y-3 mb-5">
+          {member.email && (
+            <a
+              href={`mailto:${member.email}`}
+              className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-amber-50 transition-colors"
+            >
+              <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                <Mail className="w-4 h-4 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Email</p>
+                <p className="text-sm font-medium text-slate-900">{member.email}</p>
+              </div>
+            </a>
+          )}
+          {member.phone && (
+            <a
+              href={`tel:${member.phone}`}
+              className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-amber-50 transition-colors"
+            >
+              <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                <Phone className="w-4 h-4 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Phone</p>
+                <p className="text-sm font-medium text-slate-900">{member.phone}</p>
+              </div>
+            </a>
+          )}
+          {!member.email && !member.phone && (
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50">
+              <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                <User className="w-4 h-4 text-slate-400" />
+              </div>
+              <p className="text-sm text-slate-400 italic">No contact info provided</p>
+            </div>
+          )}
+        </div>
+
+        {/* Assigned castings */}
+        <div>
+          <p className="text-xs font-medium text-slate-500 uppercase mb-2">
+            Assigned Castings ({assignedCastings.length})
+          </p>
+          {assignedCastings.length === 0 ? (
+            <p className="text-sm text-slate-400 italic">No castings assigned</p>
+          ) : (
+            <div className="space-y-2">
+              {assignedCastings.slice(0, 5).map((c) => (
+                <div key={c.id} className="flex items-center justify-between p-2 rounded-lg bg-slate-50">
+                  <span className="text-sm font-medium text-slate-700 truncate">{c.project_name || c.client_name}</span>
+                  <span className="text-xs text-slate-400 ml-2 shrink-0">{c.status}</span>
+                </div>
+              ))}
+              {assignedCastings.length > 5 && (
+                <p className="text-xs text-slate-400 text-center">
+                  +{assignedCastings.length - 5} more
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-3 mt-5">
+          <Button variant="outlined" fullWidth onClick={onClose} sx={{ borderRadius: '12px' }}>
+            Close
+          </Button>
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={onEdit}
+            startIcon={<Pencil className="w-4 h-4" />}
+            sx={{ borderRadius: '12px', bgcolor: 'amber.500', '&:hover': { bgcolor: 'amber.600' } }}
+          >
+            Edit
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ─── Create/Edit Modal ─────────────────────────────────────────────────────────
 
 function TeamMemberModal({
   open,
@@ -224,10 +466,12 @@ function TeamMemberModal({
     phone: '',
     role: '',
     avatar_url: '',
-    active: true,
+    is_active: true,
   })
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [roles, setRoles] = useState<string[]>(['Admin', 'Booker', 'Viewer'])
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     api.get('/settings/roles')
@@ -246,12 +490,45 @@ function TeamMemberModal({
         phone: member.phone || '',
         role: member.role || '',
         avatar_url: member.avatar_url || '',
-        active: member.active !== false,
+        is_active: member.is_active !== false,
       })
     } else {
-      setForm({ name: '', email: '', phone: '', role: '', avatar_url: '', active: true })
+      setForm({ name: '', email: '', phone: '', role: '', avatar_url: '', is_active: true })
     }
   }, [member, open])
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !member?.id) return
+
+    const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp']
+    if (!allowed.includes(file.type)) {
+      alert('Please select a PNG, JPG, GIF, or WebP image.')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be under 5MB.')
+      return
+    }
+
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch(`/api/team/${member.id}/avatar`, {
+        method: 'POST',
+        body: fd,
+      })
+      if (!res.ok) throw new Error('Upload failed')
+      const data = await res.json()
+      setForm((prev) => ({ ...prev, avatar_url: data.avatar_url }))
+    } catch {
+      alert('Failed to upload image. Please try again.')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -270,6 +547,10 @@ function TeamMemberModal({
       setSaving(false)
     }
   }
+
+  const previewSrc = form.avatar_url
+    ? (form.avatar_url.startsWith('/') ? `${import.meta.env.VITE_API_URL || ''}${form.avatar_url}` : form.avatar_url)
+    : null
 
   return (
     <AnimatePresence>
@@ -291,11 +572,53 @@ function TeamMemberModal({
               <h2 className="text-lg font-semibold text-slate-900">
                 {member ? 'Edit Member' : 'Add Member'}
               </h2>
-              <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100">
+              <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500">
                 ×
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {/* Avatar upload */}
+              <div className="flex flex-col items-center gap-3">
+                <div className="relative">
+                  {previewSrc ? (
+                    <img
+                      src={previewSrc}
+                      alt="Avatar preview"
+                      className="w-20 h-20 rounded-2xl object-cover border-2 border-amber-200"
+                      onError={() => setForm((p) => ({ ...p, avatar_url: '' }))}
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-bold text-2xl">
+                      {form.name ? getInitials(form.name) : <Camera className="w-8 h-8" />}
+                    </div>
+                  )}
+                  {uploading && (
+                    <div className="absolute inset-0 rounded-2xl bg-black/40 flex items-center justify-center">
+                      <Loader2 className="w-5 h-5 text-white animate-spin" />
+                    </div>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading || !member}
+                  className={cn(
+                    'text-xs font-medium text-amber-600 hover:text-amber-700 flex items-center gap-1',
+                    (!member || uploading) && 'opacity-50 cursor-not-allowed'
+                  )}
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  {uploading ? 'Uploading...' : member ? 'Upload photo' : 'Save first to upload photo'}
+                </button>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Name *</label>
                 <input
@@ -337,30 +660,33 @@ function TeamMemberModal({
                   ))}
                 </select>
               </div>
+
+              {/* Avatar URL (manual fallback) */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Avatar URL</label>
                 <input
                   type="url"
                   value={form.avatar_url}
                   onChange={(e) => setForm({ ...form, avatar_url: e.target.value })}
-                  placeholder="https://..."
+                  placeholder="https://... (or use Upload above)"
                   className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
                 />
               </div>
+
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-slate-700">Active</span>
                 <button
                   type="button"
-                  onClick={() => setForm({ ...form, active: !form.active })}
+                  onClick={() => setForm({ ...form, is_active: !form.is_active })}
                   className={cn(
                     'relative w-10 h-5 rounded-full transition-colors',
-                    form.active ? 'bg-amber-500' : 'bg-slate-200'
+                    form.is_active ? 'bg-amber-500' : 'bg-slate-200'
                   )}
                 >
                   <span
                     className={cn(
                       'absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform',
-                      form.active ? 'left-5' : 'left-0.5'
+                      form.is_active ? 'left-5' : 'left-0.5'
                     )}
                   />
                 </button>

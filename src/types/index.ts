@@ -40,12 +40,13 @@ export interface Client {
 export interface TeamMember {
   id: number
   name: string
-  email: string
-  phone: string
+  email?: string
+  phone?: string
   role: string
-  avatar_url: string
-  active: boolean
-  created_at: string
+  avatar_url?: string
+  is_active: boolean
+  created_at?: string
+  active_castings_count?: number
 }
 
 export interface Activity {

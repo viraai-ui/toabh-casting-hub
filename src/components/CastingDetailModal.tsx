@@ -50,8 +50,8 @@ function SectionHeader({ icon: Icon, label }: { icon: React.ElementType; label: 
 function FieldRow({ label, value, action }: { label: string; value: React.ReactNode; action?: React.ReactNode }) {
   if (!value && !action) return null
   return (
-    <div className="flex items-start gap-3 px-4 py-2.5 border-t border-slate-100/60 first:border-t-0">
-      <span className="text-[12px] text-slate-400 font-medium w-24 shrink-0 pt-0.5">{label}</span>
+    <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3 px-4 py-2.5 border-t border-slate-100/60 first:border-t-0">
+      <span className="text-[12px] text-slate-400 font-medium sm:w-24 shrink-0 pt-0.5">{label}</span>
       <div className="flex-1 min-w-0">
         {value && <span className="text-[13px] text-slate-700 leading-relaxed">{value}</span>}
         {action && <div className="mt-1.5 flex items-center gap-2">{action}</div>}
@@ -83,7 +83,7 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-[2px]"
           >
-            <div className="bg-white rounded-2xl shadow-xl border border-white/20 w-full max-w-lg p-12 flex items-center justify-center">
+            <div className="bg-white rounded-2xl shadow-xl border border-white/20 w-full max-w-lg p-8 sm:p-12 flex items-center justify-center">
               <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
             </div>
           </motion.div>

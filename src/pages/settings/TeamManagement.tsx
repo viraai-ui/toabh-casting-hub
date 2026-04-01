@@ -112,7 +112,7 @@ export function TeamManagement() {
           <motion.div
             key={member.id}
             layout
-            className={cn('card p-4', !member.active && 'opacity-60')}
+            className={cn('card p-4', !member.is_active && 'opacity-60')}
           >
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-semibold">
@@ -193,7 +193,7 @@ function TeamMemberModal({
         phone: member.phone || '',
         role: member.role || '',
         avatar_url: member.avatar_url || '',
-        active: member.active !== false,
+        active: member.is_active !== false,
       })
     } else {
       setForm({ name: '', email: '', phone: '', role: '', avatar_url: '', active: true })

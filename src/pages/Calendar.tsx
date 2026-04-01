@@ -213,9 +213,9 @@ function MonthView({
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
 
   return (
-    <div className="card overflow-hidden">
+    <div className="card overflow-hidden overflow-x-auto">
       {/* Day headers */}
-      <div className="grid grid-cols-7 border-b border-slate-100">
+      <div className="grid grid-cols-7 border-b border-slate-100 min-w-[560px]">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
           <div key={day} className="px-2 py-3 text-center text-xs font-medium text-slate-500 uppercase">
             {day}
@@ -224,7 +224,7 @@ function MonthView({
       </div>
 
       {/* Days */}
-      <div className="grid grid-cols-7">
+      <div className="grid grid-cols-7 min-w-[560px]">
         {days.map((day) => {
           const dayCastings = getCastingsForDate(day)
           const isCurrentMonth = isSameMonth(day, currentDate)
@@ -288,7 +288,7 @@ function WeekView({
   return (
     <div className="card overflow-hidden">
       {/* Day headers */}
-      <div className="grid grid-cols-8 border-b border-slate-100">
+      <div className="grid grid-cols-8 border-b border-slate-100 min-w-[896px]">
         <div className="p-2" />
         {days.map((day) => (
           <div key={day.toISOString()} className="p-2 text-center border-l border-slate-100">
@@ -304,8 +304,8 @@ function WeekView({
       </div>
 
       {/* Time grid */}
-      <div className="overflow-y-auto max-h-[600px]">
-        <div className="grid grid-cols-8">
+      <div className="overflow-y-auto max-h-[600px] overflow-x-auto">
+        <div className="grid grid-cols-8 min-w-[896px]">
           {hours.map((hour) => (
             <div key={hour} className="contents">
               <div className="p-2 text-xs text-slate-400 text-right border-b border-slate-50">
