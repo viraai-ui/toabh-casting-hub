@@ -20,6 +20,7 @@ import { api } from '@/lib/api'
 import { cn, formatDate, formatCurrency, getInitials } from '@/lib/utils'
 import { useAppStore } from '@/hooks/useStore'
 import { CastingModal } from '@/components/CastingModal'
+import { CastingDetailModal } from '@/components/CastingDetailModal'
 import { AdvancedFilters } from '@/components/AdvancedFilters'
 import type { Casting, PipelineStage } from '@/types'
 import {
@@ -57,6 +58,7 @@ export function Castings() {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [selectedCasting, setSelectedCasting] = useState<Casting | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
+  const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [activeFilters, setActiveFilters] = useState<{ [key: string]: string[] }>({})
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
     key: 'created_at',
@@ -273,7 +275,7 @@ export function Castings() {
           pipeline={pipeline}
           onCastingClick={(c) => {
             setSelectedCasting(c)
-            setModalOpen(true)
+            setDetailModalOpen(true)
           }}
           sensors={sensors}
           handleDragEnd={handleDragEnd}
@@ -286,7 +288,7 @@ export function Castings() {
           pipeline={pipeline}
           onCastingClick={(c) => {
             setSelectedCasting(c)
-            setModalOpen(true)
+            setDetailModalOpen(true)
           }}
         />
       ) : (
@@ -296,7 +298,7 @@ export function Castings() {
           onSort={handleSort}
           onCastingClick={(c) => {
             setSelectedCasting(c)
-            setModalOpen(true)
+            setDetailModalOpen(true)
           }}
         />
       )}
@@ -313,6 +315,20 @@ export function Castings() {
           fetchCastings()
           fetchPipeline()
         }}
+      />
+
+      {/* Casting Detail Modal (read-only) */}
+      <CastingDetailModal
+        open={detailModalOpen}
+        onClose={() => {
+          setDetailModalOpen(false)
+          setSelectedCasting(null)
+        }}
+        onEdit={() => {
+          setDetailModalOpen(false)
+          setModalOpen(true)
+        }}
+        casting={selectedCasting}
       />
     </div>
   )
