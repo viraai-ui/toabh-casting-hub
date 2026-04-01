@@ -1,22 +1,6 @@
-import React from 'react'
-import {
-  Dialog,
-  DialogContent,
-  Box,
-  Typography,
-  Chip,
-  Button,
-  Divider,
-  Avatar,
-  Card,
-  CardContent,
-  Stack,
-  useMediaQuery,
-  useTheme,
-  CircularProgress,
-  IconButton,
-} from '@mui/material'
-import { X, Edit2, Phone, MessageCircle, Mail } from 'lucide-react'
+import React, { useEffect, useRef } from 'react'
+import { X, Edit2, Phone, MessageCircle, MapPin, User, Tag } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { getInitials } from '@/lib/utils'
 import type { Casting } from '@/types'
 
@@ -33,118 +17,78 @@ interface CastingDetailModalProps {
   casting: Casting | null
 }
 
-// Status color map (fallback colors if pipeline colors not available)
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  NEW: { bg: '#3b82f6', text: '#fff' },
-  IN_PROGRESS: { bg: '#f59e0b', text: '#000' },
-  REVIEW: { bg: '#8b5cf6', text: '#fff' },
-  COMPLETED: { bg: '#22c55e', text: '#fff' },
-  SHORTLISTED: { bg: '#06b6d4', text: '#fff' },
-  CANCELLED: { bg: '#ef4444', text: '#fff' },
-  OFFERED: { bg: '#ec4899', text: '#fff' },
-  REJECTED: { bg: '#6b7280', text: '#fff' },
+  NEW:        { bg: 'bg-blue-50 text-blue-700 border-blue-200',     text: '' },
+  IN_PROGRESS:{ bg: 'bg-amber-50 text-amber-700 border-amber-200',   text: '' },
+  REVIEW:     { bg: 'bg-purple-50 text-purple-700 border-purple-200',text: '' },
+  SHORTLISTED:{ bg: 'bg-cyan-50 text-cyan-700 border-cyan-200',     text: '' },
+  COMPLETED:  { bg: 'bg-green-50 text-green-700 border-green-200',  text: '' },
+  OFFERED:    { bg: 'bg-pink-50 text-pink-700 border-pink-200',    text: '' },
+  REJECTED:   { bg: 'bg-red-50 text-red-700 border-red-200',       text: '' },
+  CANCELLED:  { bg: 'bg-slate-100 text-slate-600 border-slate-200',text: '' },
 }
 
 function SectionCard({ children }: { children: React.ReactNode }) {
   return (
-    <Card
-      sx={{
-        bgcolor: 'grey.900',
-        border: '1px solid',
-        borderColor: 'grey.800',
-        borderRadius: 2,
-        overflow: 'hidden',
-      }}
-    >
-      <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
-        {children}
-      </CardContent>
-    </Card>
-  )
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <Typography
-      variant="caption"
-      sx={{
-        color: 'grey.500',
-        fontWeight: 600,
-        letterSpacing: '0.08em',
-        textTransform: 'uppercase',
-        fontSize: '0.65rem',
-        mb: 1,
-        display: 'block',
-      }}
-    >
+    <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-sm overflow-hidden">
       {children}
-    </Typography>
+    </div>
   )
 }
 
-function FieldRow({ label, value }: { label: string; value: React.ReactNode }) {
+function SectionHeader({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
   return (
-    <Box sx={{ display: 'flex', gap: 2, py: 0.75 }}>
-      <Typography
-        variant="body2"
-        sx={{
-          color: 'grey.500',
-          minWidth: 110,
-          fontSize: '0.8rem',
-          flexShrink: 0,
-        }}
-      >
+    <div className="flex items-center gap-2 px-4 pt-4 pb-2">
+      <Icon size={13} className="text-amber-500 shrink-0" />
+      <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">
         {label}
-      </Typography>
-      <Typography
-        variant="body2"
-        sx={{
-          color: 'grey.100',
-          fontSize: '0.8rem',
-          wordBreak: 'break-word',
-        }}
-      >
-        {value}
-      </Typography>
-    </Box>
+      </span>
+    </div>
   )
 }
 
-export function CastingDetailModal({
-  open,
-  onClose,
-  onEdit,
-  casting,
-}: CastingDetailModalProps) {
-  const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+function FieldRow({ label, value, action }: { label: string; value: React.ReactNode; action?: React.ReactNode }) {
+  if (!value && !action) return null
+  return (
+    <div className="flex items-start gap-3 px-4 py-2.5 border-t border-slate-100/60 first:border-t-0">
+      <span className="text-[12px] text-slate-400 font-medium w-24 shrink-0 pt-0.5">{label}</span>
+      <div className="flex-1 min-w-0">
+        {value && <span className="text-[13px] text-slate-700 leading-relaxed">{value}</span>}
+        {action && <div className="mt-1.5 flex items-center gap-2">{action}</div>}
+      </div>
+    </div>
+  )
+}
+
+function EmptyState({ message }: { message: string }) {
+  return <div className="px-4 pb-4 text-[12px] text-slate-400 italic">{message}</div>
+}
+
+export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDetailModalProps) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), 50)
+    }
+  }, [open, casting?.id])
 
   if (!casting) {
     return (
-      <Dialog
-        open={open}
-        onClose={onClose}
-        fullScreen={isMobile}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            bgcolor: 'grey.900',
-            color: 'grey.100',
-          },
-        }}
-      >
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: 300,
-          }}
-        >
-          <CircularProgress sx={{ color: 'amber.500' }} />
-        </Box>
-      </Dialog>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-[2px]"
+          >
+            <div className="bg-white rounded-2xl shadow-xl border border-white/20 w-full max-w-lg p-12 flex items-center justify-center">
+              <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     )
   }
 
@@ -153,403 +97,278 @@ export function CastingDetailModal({
   if (casting.custom_fields) {
     try {
       parsedCustomFields = JSON.parse(casting.custom_fields)
-    } catch {
-      parsedCustomFields = {}
-    }
+    } catch { /* ignore */ }
   }
   const customFieldEntries = Object.entries(parsedCustomFields).filter(
-    ([, v]) => v !== '' && v !== null && v !== undefined
+    ([, v]) => v !== '' && v != null
   )
 
   // Parse assigned_to
   const assignedTo: TeamMemberInfo[] = Array.isArray(casting.assigned_to)
     ? casting.assigned_to.map((m: any) => ({
-        id: typeof m.id === 'string' ? parseInt(m.id) : m.id,
+        id: typeof m.id === 'string' ? parseInt(m.id) : (m.id ?? 0),
         name: m.name || '',
         role: m.role,
       }))
     : []
 
-  // Budget display
   const hasBudget =
     (casting.budget_min != null && casting.budget_min > 0) ||
     (casting.budget_max != null && casting.budget_max > 0)
 
-  // Phone number for call/whatsapp
+  // Phone links
   const phoneRaw = casting.client_contact || ''
   const phoneDigits = phoneRaw.replace(/\D/g, '')
-  const phoneLink = phoneRaw.startsWith('+')
-    ? `tel:${phoneRaw}`
-    : `tel:+91${phoneDigits}`
+  const phoneLink = phoneRaw.startsWith('+') ? `tel:${phoneRaw}` : phoneDigits ? `tel:+91${phoneDigits}` : null
   const waLink = phoneDigits
     ? `https://wa.me/${phoneDigits}?text=Regarding ${encodeURIComponent(casting.project_name || 'your casting')}`
     : null
 
-  // Status badge color
-  const statusColor =
-    STATUS_COLORS[casting.status?.toUpperCase()] || STATUS_COLORS.NEW
+  // Status badge
+  const statusKey = casting.status?.toUpperCase() ?? 'NEW'
+  const statusColors = STATUS_COLORS[statusKey] ?? STATUS_COLORS.NEW
 
-  // Format dates
-  const formatDisplayDate = (dateStr: string) => {
-    if (!dateStr) return '—'
+  // Format date
+  const fmtDate = (d: string | null | undefined) => {
+    if (!d) return null
     try {
-      const d = new Date(dateStr)
-      return d.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
+      return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     } catch {
-      return dateStr || '—'
+      return d
     }
   }
 
+  const pb = (text: string | null | undefined) => text ?? null
+
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      fullScreen={isMobile}
-      maxWidth="md"
-      fullWidth
-      PaperProps={{
-        sx: {
-          bgcolor: 'grey.900',
-          color: 'grey.100',
-          backgroundImage: 'none',
-          maxHeight: isMobile ? '100%' : '90vh',
-        },
-      }}
-      slotProps={{
-        backdrop: {
-          sx: {
-            bgcolor: 'black/60',
-            backdropFilter: 'blur(4px)',
-          },
-        },
-      }}
-    >
-      {/* Header */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          px: 2.5,
-          py: 1.5,
-          borderBottom: '1px solid',
-          borderColor: 'grey.800',
-          flexShrink: 0,
-        }}
-      >
-        <IconButton
-          onClick={onClose}
-          size="small"
-          sx={{ color: 'grey.400', '&:hover': { color: 'grey.100', bgcolor: 'grey.800' } }}
-        >
-          <X size={18} />
-        </IconButton>
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<Edit2 size={14} />}
-          onClick={onEdit}
-          sx={{
-            borderColor: 'grey.700',
-            color: 'grey.300',
-            textTransform: 'none',
-            fontSize: '0.8rem',
-            '&:hover': {
-              borderColor: 'amber.500',
-              color: 'amber.400',
-              bgcolor: 'transparent',
-            },
-          }}
-        >
-          Edit
-        </Button>
-      </Box>
-
-      {/* Scrollable content */}
-      <DialogContent
-        sx={{
-          p: 0,
-          px: 2.5,
-          pb: 3,
-          pt: 2.5,
-          overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
-        }}
-      >
-        {/* Title + Status */}
-        <Box>
-          <Typography
-            variant="h6"
-            sx={{
-              color: 'amber.400',
-              fontWeight: 700,
-              fontSize: '1.1rem',
-              lineHeight: 1.3,
-              mb: 1,
-            }}
-          >
-            {casting.project_name || '—'}
-          </Typography>
-          <Chip
-            label={casting.status || '—'}
-            size="small"
-            sx={{
-              bgcolor: statusColor.bg,
-              color: statusColor.text,
-              fontWeight: 600,
-              fontSize: '0.7rem',
-              height: 22,
-            }}
+    <AnimatePresence>
+      {open && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={onClose}
+            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px]"
           />
-        </Box>
 
-        <Divider sx={{ borderColor: 'grey.800' }} />
-
-        {/* CLIENT */}
-        <Box>
-          <SectionLabel>Client</SectionLabel>
-          <SectionCard>
-            <Box sx={{ p: 2 }}>
-              <FieldRow label="Name" value={casting.client_name || '—'} />
-              {casting.client_contact && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75 }}>
-                  <Typography
-                    variant="body2"
-                    sx={{ color: 'grey.500', minWidth: 110, fontSize: '0.8rem', flexShrink: 0 }}
-                  >
-                    Phone
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ color: 'grey.100', fontSize: '0.8rem', mr: 1 }}
-                  >
-                    {casting.client_contact}
-                  </Typography>
-                  <Button
-                    href={phoneLink}
-                    component="a"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    size="small"
-                    startIcon={<Phone size={12} />}
-                    sx={{
-                      minWidth: 0,
-                      px: 1,
-                      py: 0.25,
-                      color: 'grey.400',
-                      border: '1px solid',
-                      borderColor: 'grey.700',
-                      fontSize: '0.7rem',
-                      textTransform: 'none',
-                      '&:hover': { color: 'grey.100', borderColor: 'grey.500', bgcolor: 'grey.800' },
-                    }}
-                  >
-                    Call
-                  </Button>
-                  {waLink && (
-                    <Button
-                      href={waLink}
-                      component="a"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      size="small"
-                      startIcon={<MessageCircle size={12} />}
-                      sx={{
-                        minWidth: 0,
-                        px: 1,
-                        py: 0.25,
-                        color: 'grey.400',
-                        border: '1px solid',
-                        borderColor: 'grey.700',
-                        fontSize: '0.7rem',
-                        textTransform: 'none',
-                        '&:hover': { color: '#22c55e', borderColor: '#22c55e', bgcolor: 'rgba(34,197,94,0.1)' },
-                      }}
-                    >
-                      WhatsApp
-                    </Button>
-                  )}
-                </Box>
-              )}
-              {casting.client_email && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75 }}>
-                  <Typography
-                    variant="body2"
-                    sx={{ color: 'grey.500', minWidth: 110, fontSize: '0.8rem', flexShrink: 0 }}
-                  >
-                    Email
-                  </Typography>
-                  <Button
-                    href={`mailto:${casting.client_email}`}
-                    component="a"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    size="small"
-                    startIcon={<Mail size={12} />}
-                    sx={{
-                      minWidth: 0,
-                      px: 1,
-                      py: 0.25,
-                      color: 'grey.400',
-                      border: '1px solid',
-                      borderColor: 'grey.700',
-                      fontSize: '0.7rem',
-                      textTransform: 'none',
-                      '&:hover': { color: 'grey.100', borderColor: 'grey.500', bgcolor: 'grey.800' },
-                    }}
-                  >
-                    {casting.client_email}
-                  </Button>
-                </Box>
-              )}
-              <FieldRow label="Company" value={casting.client_company || '—'} />
-            </Box>
-          </SectionCard>
-        </Box>
-
-        {/* DETAILS */}
-        <Box>
-          <SectionLabel>Details</SectionLabel>
-          <SectionCard>
-            <Box sx={{ p: 2 }}>
-              <FieldRow
-                label="Description"
-                value={casting.requirements || '—'}
-              />
-              <FieldRow label="Location" value={casting.location || '—'} />
-              <FieldRow
-                label="Start Date"
-                value={formatDisplayDate(casting.shoot_date_start)}
-              />
-              <FieldRow
-                label="End Date"
-                value={formatDisplayDate(casting.shoot_date_end)}
-              />
-              <FieldRow label="Lead Source" value={casting.source || '—'} />
-            </Box>
-          </SectionCard>
-        </Box>
-
-        {/* TEAM */}
-        <Box>
-          <SectionLabel>Team</SectionLabel>
-          <SectionCard>
-            <Box sx={{ p: 2 }}>
-              {assignedTo.length === 0 ? (
-                <Typography
-                  variant="body2"
-                  sx={{ color: 'grey.600', fontSize: '0.8rem', fontStyle: 'italic' }}
+          {/* Panel */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+          >
+            <div
+              className="bg-white/95 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col pointer-events-auto overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100/80 shrink-0">
+                <button
+                  onClick={onClose}
+                  className="p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-700"
                 >
-                  —
-                </Typography>
-              ) : (
-                <Stack spacing={1}>
-                  {assignedTo.map((member) => (
-                    <Box
-                      key={member.id}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1.5,
-                        py: 0.5,
-                      }}
-                    >
-                      <Avatar
-                        sx={{
-                          width: 28,
-                          height: 28,
-                          bgcolor: 'amber.600',
-                          color: 'white',
-                          fontSize: '0.65rem',
-                          fontWeight: 700,
-                        }}
-                      >
-                        {getInitials(member.name)}
-                      </Avatar>
-                      <Box>
-                        <Typography
-                          variant="body2"
-                          sx={{ color: 'grey.100', fontSize: '0.8rem', lineHeight: 1.2 }}
-                        >
-                          {member.name}
-                        </Typography>
-                        {member.role && (
-                          <Typography
-                            variant="caption"
-                            sx={{ color: 'grey.500', fontSize: '0.7rem' }}
+                  <X size={18} />
+                </button>
+                <button
+                  onClick={onEdit}
+                  className="flex items-center gap-1.5 px-4 py-1.5 text-[13px] font-medium text-amber-600 border border-amber-200 rounded-xl hover:bg-amber-50 hover:border-amber-400 transition-all"
+                >
+                  <Edit2 size={13} />
+                  Edit
+                </button>
+              </div>
+
+              {/* Scrollable content */}
+              <div ref={scrollRef} className="flex-1 overflow-y-auto">
+                <div className="p-5 flex flex-col gap-4">
+
+                  {/* Title + Status */}
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="text-[17px] font-bold text-slate-800 leading-snug">
+                      {pb(casting.project_name) ?? <span className="text-slate-400 italic font-normal">Untitled Casting</span>}
+                    </h2>
+                    {casting.status && (
+                      <span className={`shrink-0 px-2.5 py-0.5 text-[11px] font-semibold rounded-full border ${statusColors.bg}`}>
+                        {casting.status}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* CLIENT */}
+                  <SectionCard>
+                    <SectionHeader icon={User} label="Client" />
+                    <FieldRow
+                      label="Name"
+                      value={pb(casting.client_name) ?? '—'}
+                    />
+                    {casting.client_contact && (
+                      <FieldRow
+                        label="Phone"
+                        value={casting.client_contact}
+                        action={
+                          <>
+                            {phoneLink && (
+                              <a
+                                href={phoneLink}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all"
+                              >
+                                <Phone size={10} />
+                                Call
+                              </a>
+                            )}
+                            {waLink && (
+                              <a
+                                href={waLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-green-600 border border-green-200 rounded-lg hover:bg-green-50 hover:border-green-400 transition-all"
+                              >
+                                <MessageCircle size={10} />
+                                WhatsApp
+                              </a>
+                            )}
+                          </>
+                        }
+                      />
+                    )}
+                    {casting.client_email && (
+                      <FieldRow
+                        label="Email"
+                        value={
+                          <a
+                            href={`mailto:${casting.client_email}`}
+                            className="text-amber-600 hover:text-amber-700 hover:underline"
                           >
-                            {member.role}
-                          </Typography>
+                            {casting.client_email}
+                          </a>
+                        }
+                      />
+                    )}
+                    <FieldRow
+                      label="Company"
+                      value={pb(casting.client_company) ?? '—'}
+                    />
+                  </SectionCard>
+
+                  {/* DETAILS */}
+                  <SectionCard>
+                    <SectionHeader icon={Tag} label="Details" />
+                    <FieldRow
+                      label="Description"
+                      value={casting.requirements ? (
+                        <span className="whitespace-pre-wrap text-[13px] text-slate-600 leading-relaxed">
+                          {casting.requirements}
+                        </span>
+                      ) : null}
+                    />
+                    <FieldRow
+                      label="Location"
+                      value={pb(casting.location) ?? '—'}
+                      action={
+                        casting.location ? (
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(casting.location)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] text-amber-600 hover:text-amber-700 font-medium"
+                          >
+                            <MapPin size={10} />
+                            View on Maps
+                          </a>
+                        ) : undefined
+                      }
+                    />
+                    <FieldRow
+                      label="Start Date"
+                      value={fmtDate(casting.shoot_date_start) ?? '—'}
+                    />
+                    <FieldRow
+                      label="End Date"
+                      value={fmtDate(casting.shoot_date_end) ?? '—'}
+                    />
+                    <FieldRow
+                      label="Lead Source"
+                      value={pb(casting.source) ?? '—'}
+                    />
+                  </SectionCard>
+
+                  {/* TEAM */}
+                  <SectionCard>
+                    <SectionHeader icon={User} label="Team" />
+                    {assignedTo.length === 0 ? (
+                      <EmptyState message="No team members assigned" />
+                    ) : (
+                      <div className="px-4 pb-3 pt-1 flex flex-col gap-2">
+                        {assignedTo.map((member) => (
+                          <div key={member.id} className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-[11px] font-bold shrink-0 shadow-sm">
+                              {getInitials(member.name)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[13px] font-semibold text-slate-800 leading-tight truncate">
+                                {member.name}
+                              </p>
+                              {member.role && (
+                                <p className="text-[11px] text-slate-400 leading-tight">{member.role}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </SectionCard>
+
+                  {/* BUDGET */}
+                  {hasBudget && (
+                    <SectionCard>
+                      <SectionHeader icon={Tag} label="Budget" />
+                      <div className="px-4 pb-4 pt-1 flex flex-col gap-2">
+                        {casting.budget_min != null && casting.budget_min > 0 && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-[12px] text-slate-400">Min Budget</span>
+                            <span className="text-[13px] font-semibold text-slate-700">
+                              ₹{casting.budget_min.toLocaleString('en-IN')}
+                            </span>
+                          </div>
                         )}
-                      </Box>
-                    </Box>
-                  ))}
-                </Stack>
-              )}
-            </Box>
-          </SectionCard>
-        </Box>
-
-        {/* BUDGET */}
-        {hasBudget && (
-          <Box>
-            <SectionLabel>Budget</SectionLabel>
-            <SectionCard>
-              <Box sx={{ p: 2 }}>
-                {casting.budget_min != null && casting.budget_min > 0 && (
-                  <FieldRow
-                    label="Budget Min"
-                    value={`₹${casting.budget_min.toLocaleString('en-IN')}`}
-                  />
-                )}
-                {casting.budget_max != null && casting.budget_max > 0 && (
-                  <FieldRow
-                    label="Budget Max"
-                    value={`₹${casting.budget_max.toLocaleString('en-IN')}`}
-                  />
-                )}
-                {casting.budget_min != null &&
-                  casting.budget_max != null &&
-                  casting.budget_min > 0 &&
-                  casting.budget_max > 0 && (
-                    <Box sx={{ mt: 0.5, px: 0.5 }}>
-                      <Typography
-                        variant="caption"
-                        sx={{ color: 'grey.500', fontSize: '0.7rem' }}
-                      >
-                        {`₹${casting.budget_min.toLocaleString('en-IN')} – ₹${casting.budget_max.toLocaleString('en-IN')}`}
-                      </Typography>
-                    </Box>
+                        {casting.budget_max != null && casting.budget_max > 0 && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-[12px] text-slate-400">Max Budget</span>
+                            <span className="text-[13px] font-semibold text-slate-700">
+                              ₹{casting.budget_max.toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </SectionCard>
                   )}
-              </Box>
-            </SectionCard>
-          </Box>
-        )}
 
-        {/* CUSTOM FIELDS */}
-        {customFieldEntries.length > 0 && (
-          <Box>
-            <SectionLabel>Custom Fields</SectionLabel>
-            <SectionCard>
-              <Box sx={{ p: 2 }}>
-                {customFieldEntries.map(([key, value]) => (
-                  <FieldRow
-                    key={key}
-                    label={key.replace(/_/g, ' ')}
-                    value={String(value)}
-                  />
-                ))}
-              </Box>
-            </SectionCard>
-          </Box>
-        )}
-      </DialogContent>
-    </Dialog>
+                  {/* CUSTOM FIELDS */}
+                  {customFieldEntries.length > 0 && (
+                    <SectionCard>
+                      <SectionHeader icon={Tag} label="Custom Fields" />
+                      <div className="pb-3 pt-1">
+                        {customFieldEntries.map(([key, value]) => (
+                          <FieldRow
+                            key={key}
+                            label={key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            value={String(value)}
+                          />
+                        ))}
+                      </div>
+                    </SectionCard>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   )
 }
