@@ -16,7 +16,7 @@ interface OverlayManagerValue {
   isAnyOverlayOpen: boolean
   openOverlay: (id: string, close: () => void) => void
   closeOverlay: (id: string) => void
-  /** Close the most recently opened overlay. Returns true if an overlay was closed. */
+  /** Close the most recently opened overlay. Used by the popstate handler only. */
   closeTopOverlay: () => boolean
   overlayCount: number
 }
@@ -24,42 +24,40 @@ interface OverlayManagerValue {
 const OverlayContext = createContext<OverlayManagerValue | null>(null)
 
 export function OverlayProvider({ children }: { children: React.ReactNode }) {
-  // Stack of open overlays (top = most recent)
+  // Stack of open overlays (index 0 = oldest, last = most recent / top)
   const [stack, setStack] = useState<OverlayEntry[]>([])
   // Guard against rapid back-press storms
   const debounceRef = useRef(false)
-  // Prevent popstate from double-triggering
-  const isPopRef = useRef(false)
+  // Guard against re-entrant popstate when we call replaceState ourselves
+  const skipRef = useRef(false)
 
   const overlayCount = stack.length
   const isAnyOverlayOpen = overlayCount > 0
 
-  // Open an overlay — push one history entry per distinct open action
+  // ─── Open ─────────────────────────────────────────────────────────────────
   const openOverlay = useCallback((id: string, close: () => void) => {
     setStack(prev => {
-      // Already registered — skip
       if (prev.some(e => e.id === id)) return prev
-      return [...prev, { id, close }]
-    })
-  }, [])
-
-  // Close a specific overlay by id
-  const closeOverlay = useCallback((id: string) => {
-    setStack(prev => {
-      const next = prev.filter(e => e.id !== id)
-      // If this was the last overlay, pop the history entry to stay in sync
-      if (prev.length > 0 && next.length === 0) {
-        // Use replaceState to avoid adding a new back entry just for closing
-        window.history.replaceState(
-          { __overlayCount: next.length, __overlay: true },
-          ''
-        )
+      const next = [...prev, { id, close }]
+      // Push one history entry when the FIRST overlay opens.
+      // All subsequent overlays share this entry — one back-press per overlay,
+      // and the browser navigates only when the stack is finally empty.
+      if (prev.length === 0) {
+        window.history.pushState({ __overlay: true }, '')
       }
       return next
     })
   }, [])
 
-  // Close the topmost overlay — used by popstate handler
+  // ─── Close (user-initiated: X button, Cancel, overlay's own close) ─────
+  // Just removes the entry from the stack. No history manipulation here.
+  // The next back-press hits the entry we pushed on first open, and the
+  // popstate handler closes the remaining overlay(s) via replaceState.
+  const closeOverlay = useCallback((id: string) => {
+    setStack(prev => prev.filter(e => e.id !== id))
+  }, [])
+
+  // ─── Close top (called only by the popstate interceptor) ─────────────────
   const closeTopOverlay = useCallback((): boolean => {
     let closed = false
     setStack(prev => {
@@ -67,24 +65,16 @@ export function OverlayProvider({ children }: { children: React.ReactNode }) {
       const [top, ...rest] = [...prev].reverse()
       top.close()
       closed = true
-      const next = rest.reverse()
-      // Keep replaceState in sync so history.length doesn't grow
-      window.history.replaceState(
-        { __overlayCount: next.length, __overlay: true },
-        ''
-      )
-      return next
+      return rest.reverse()
     })
     return closed
   }, [])
 
-  // ─── Core popstate interceptor ─────────────────────────────────────────────
+  // ─── Global popstate interceptor ──────────────────────────────────────────
   useEffect(() => {
-    const handlePopState = (_evt: PopStateEvent) => {
-      if (isPopRef.current) {
-        isPopRef.current = false
-        return
-      }
+    const handlePopState = () => {
+      // Skip if we triggered this ourselves via replaceState
+      if (skipRef.current) return
 
       // Debounce rapid back presses
       if (debounceRef.current) return
@@ -92,49 +82,27 @@ export function OverlayProvider({ children }: { children: React.ReactNode }) {
       setTimeout(() => { debounceRef.current = false }, 300)
 
       setStack(prev => {
-        // Overlay(s) are open — close the topmost one instead of navigating
         if (prev.length > 0) {
-          isPopRef.current = true // prevent re-entrant closeTopOverlay
+          // Overlays are open — close the top one and keep the history entry
+          // alive via replaceState so the browser doesn't consume a slot.
+          // The user needs one back-press per overlay before real navigation.
           const [top, ...rest] = [...prev].reverse()
           top.close()
           const next = rest.reverse()
 
-          // Re-push state so the browser history entry is consistent with overlayCount
-          window.history.replaceState(
-            { __overlayCount: next.length, __overlay: true },
-            ''
-          )
-          // Push a new entry for the now-top overlay (or none if empty)
-          if (next.length > 0) {
-            window.history.pushState(
-              { __overlayCount: next.length, __overlay: true },
-              ''
-            )
-          }
+          skipRef.current = true
+          window.history.replaceState({ __overlay: true }, '')
+          setTimeout(() => { skipRef.current = false }, 0)
           return next
         }
-
-        // No overlays open — allow the browser's default back navigation
+        // Stack is empty — allow the browser's default navigation.
         return prev
       })
     }
 
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
-  }, []) // stable — no deps needed
-
-  // ─── Initial state guard ───────────────────────────────────────────────────
-  // If someone lands on a page with an overlay already open from direct URL
-  // access (e.g. /castings?new=true or /castings?id=123), ensure a history
-  // entry exists so the first back press correctly closes the overlay.
-  useEffect(() => {
-    if (overlayCount > 0 && window.history.state?.__overlay !== true) {
-      window.history.replaceState(
-        { __overlayCount: overlayCount, __overlay: true },
-        ''
-      )
-    }
-  }, [overlayCount])
+  }, []) // stable — no reactive deps
 
   const value: OverlayManagerValue = {
     isAnyOverlayOpen,
@@ -154,7 +122,7 @@ export function OverlayProvider({ children }: { children: React.ReactNode }) {
 /**
  * Hook for overlay-aware components.
  *
- * Usage in a component that controls an overlay (modal / drawer / sheet):
+ * Usage:
  *
  *   const { openOverlay, closeOverlay } = useOverlay()
  *

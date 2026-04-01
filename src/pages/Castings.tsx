@@ -44,6 +44,10 @@ export function Castings() {
   const [modalOpen, setModalOpen] = useState(false)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [activeFilters, setActiveFilters] = useState<{ [key: string]: string[] }>({})
+  // Track when the casting modal was explicitly closed by the user.
+  // Used to prevent the detail-modal → casting-modal reopen flow from overriding
+  // a deliberate close (Cancel / Save).
+  const modalClosedRef = useRef(false)
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
     key: 'created_at',
     direction: 'desc',
@@ -88,8 +92,10 @@ export function Castings() {
   // Register CastingModal with overlay manager
   useEffect(() => {
     if (modalOpen) {
+      modalClosedRef.current = false // clear explicit-close flag on open
       openOverlay('casting-modal', () => setModalOpen(false))
     } else {
+      modalClosedRef.current = true // mark as explicitly closed
       closeOverlay('casting-modal')
     }
   }, [modalOpen, openOverlay, closeOverlay])
@@ -100,6 +106,13 @@ export function Castings() {
       openOverlay('casting-detail-modal', () => setDetailModalOpen(false))
     } else {
       closeOverlay('casting-detail-modal')
+      // Check the ref at the START of the effect body (before cleanup fires again).
+      // If the casting modal was explicitly closed while the detail was open,
+      // modalClosedRef.current = true → don't let detail-modal reopening re-open it.
+      const wasExplicitlyClosed = modalClosedRef.current
+      if (!wasExplicitlyClosed) {
+        setModalOpen(true)
+      }
     }
   }, [detailModalOpen, openOverlay, closeOverlay])
 
@@ -308,6 +321,8 @@ export function Castings() {
           setSelectedCasting(null)
         }}
         onEdit={() => {
+          // Reset explicit-close flag so the detail-modal effect reopens the casting modal
+          modalClosedRef.current = false
           setDetailModalOpen(false)
           setModalOpen(true)
         }}
