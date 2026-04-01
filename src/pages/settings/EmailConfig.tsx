@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Loader2, Send } from 'lucide-react'
 import { api } from '@/lib/api'
+import { cn } from '@/lib/utils'
 
 export function EmailConfig() {
   const [form, setForm] = useState({
@@ -12,17 +13,33 @@ export function EmailConfig() {
     from_address: '',
     from_name: '',
   })
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
-  const [testResult, setTestResult] = useState<'success' | 'error' | null>(null)
+  const [feedback, setFeedback] = useState<{msg: string; type: 'success'|'error'} | null>(null)
+
+  useEffect(() => {
+    api.get('/settings/email-config')
+      .then((data: any) => setForm(data))
+      .catch(() => { /* use defaults */ })
+      .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    if (!feedback) return
+    const t = setTimeout(() => setFeedback(null), 3000)
+    return () => clearTimeout(t)
+  }, [feedback])
 
   const handleSave = async () => {
+    const snapshot = { ...form }
     setSaving(true)
     try {
       await api.put('/settings/email-config', form)
-      alert('Email settings saved!')
-    } catch (err) {
-      console.error('Failed to save:', err)
+      setFeedback({ msg: 'Email settings saved!', type: 'success' })
+    } catch {
+      setForm(snapshot)
+      setFeedback({ msg: 'Failed to save email settings', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -30,16 +47,22 @@ export function EmailConfig() {
 
   const handleTest = async () => {
     setTesting(true)
-    setTestResult(null)
     try {
       await api.post('/settings/email-config/test', form)
-      setTestResult('success')
-    } catch (err) {
-      console.error('Test failed:', err)
-      setTestResult('error')
+      setFeedback({ msg: 'Test email sent! (or SMTP not configured)', type: 'success' })
+    } catch {
+      setFeedback({ msg: 'Test failed — check your SMTP settings', type: 'error' })
     } finally {
       setTesting(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+      </div>
+    )
   }
 
   return (
@@ -49,6 +72,14 @@ export function EmailConfig() {
           <h2 className="text-xl font-semibold text-slate-900">Email Configuration</h2>
           <p className="text-sm text-slate-500">Configure SMTP settings for outgoing emails</p>
         </div>
+        {feedback && (
+          <div className={cn(
+            'px-4 py-2 rounded-xl text-sm font-medium',
+            feedback.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+          )}>
+            {feedback.msg}
+          </div>
+        )}
       </div>
 
       <motion.div
@@ -116,11 +147,7 @@ export function EmailConfig() {
           </div>
         </div>
 
-        {testResult && (
-          <div className={`p-3 rounded-xl ${testResult === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-            {testResult === 'success' ? 'Test email sent successfully!' : 'Failed to send test email.'}
-          </div>
-        )}
+
 
         <div className="flex justify-end gap-3 pt-2">
           <button

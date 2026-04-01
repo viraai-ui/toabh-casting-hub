@@ -23,6 +23,7 @@ const groups = [
 export function CustomFields() {
   const [fields, setFields] = useState<CustomField[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [activeGroup, setActiveGroup] = useState('project_info')
   const [editingField, setEditingField] = useState<CustomField | null>(null)
   const [isCreating, setIsCreating] = useState(false)
@@ -35,12 +36,23 @@ export function CustomFields() {
     required: false,
   })
 
+  const normalizeTab = (tab: string | undefined): string => {
+    if (!tab) return 'custom'
+    const t = tab.toLowerCase()
+    if (t.includes('contact')) return 'contact_info'
+    if (t.includes('project')) return 'project_info'
+    if (t.includes('financial')) return 'financials'
+    return 'custom'
+  }
+
   const fetchFields = async () => {
     try {
       const data = await api.get('/settings/custom-fields')
       setFields(data)
+      setError(null)
     } catch (err) {
       console.error('Failed to fetch:', err)
+      setError('Failed to load custom fields')
     } finally {
       setLoading(false)
     }
@@ -52,24 +64,34 @@ export function CustomFields() {
 
   const groupedFields = fields.filter((f) => {
     if (activeGroup === 'all') return true
-    const groupKey = f.tab?.toLowerCase().replace(/ /g, '_') || f.group?.toLowerCase().replace(/ /g, '_')
-    return groupKey === activeGroup || f.tab === activeGroup || f.group === activeGroup
+    return normalizeTab(f.tab) === activeGroup
   })
 
   const handleSave = async () => {
     setSaving(true)
     try {
+      // Map form field names to API field names
+      const apiField = {
+        name: form.name,
+        type: form.field_type,
+        tab: form.group === 'contact_info' ? 'Contact Info' :
+             form.group === 'project_info' ? 'Project Info' :
+             form.group === 'financials' ? 'Financials' :
+             form.group,
+        options: form.options,
+        required: form.required,
+      }
       if (editingField) {
-        const updated = fields.map((f) => 
-          f.id === editingField.id ? { ...f, ...form } : f
+        const updated = fields.map((f) =>
+          f.id === editingField.id ? { ...f, ...apiField } : f
         )
-        await api.put('/settings/custom-fields', updated)
+        await api.put('/settings/custom-fields', { fields: updated })
         setFields(updated)
       } else {
-        const maxId = Math.max(...fields.map((f) => f.id), 0)
-        const created = { ...form, id: maxId + 1, required: false }
-        await api.post('/settings/custom-fields', [...fields, created])
-        setFields([...fields, created])
+        const maxId = Math.max(...fields.map((f) => Number(f.id) || 0), 0)
+        const created = { ...apiField, id: String(maxId + 1) }
+        await api.post('/settings/custom-fields', { fields: [...fields, created] })
+        setFields([...fields, created as unknown as CustomField])
       }
       resetForm()
     } catch (err) {
@@ -79,11 +101,12 @@ export function CustomFields() {
     }
   }
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string | number) => {
     if (!confirm('Delete this field?')) return
     try {
-      await api.put('/settings/custom-fields', fields.filter((f) => f.id !== id))
-      setFields((prev) => prev.filter((f) => f.id !== id))
+      const updated = fields.filter((f) => f.id !== id)
+      await api.put('/settings/custom-fields', { fields: updated })
+      setFields(updated)
     } catch (err) {
       console.error('Failed to delete:', err)
     }
@@ -97,10 +120,12 @@ export function CustomFields() {
 
   const startEdit = (field: CustomField) => {
     setEditingField(field)
+    // Normalize tab (API) to group (form)
+    const groupKey = normalizeTab(field.tab) as 'custom' | 'contact_info' | 'project_info' | 'financials'
     setForm({
       name: field.name,
-      field_type: field.field_type,
-      group: field.group,
+      field_type: (field as any).type || field.field_type,
+      group: groupKey,
       options: field.options || '',
       required: field.required,
     })
@@ -110,6 +135,15 @@ export function CustomFields() {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <p className="text-red-500 mb-2">{error}</p>
+        <button onClick={fetchFields} className="btn-primary">Retry</button>
       </div>
     )
   }

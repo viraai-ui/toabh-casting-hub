@@ -225,6 +225,16 @@ function TeamMemberModal({
     active: true,
   })
   const [saving, setSaving] = useState(false)
+  const [roles, setRoles] = useState<string[]>(['Admin', 'Booker', 'Viewer'])
+
+  useEffect(() => {
+    api.get('/settings/roles')
+      .then((data: any) => {
+        const roleNames = data.roles?.map((r: any) => r.name) || ['Admin', 'Booker', 'Viewer']
+        setRoles(roleNames)
+      })
+      .catch(() => setRoles(['Admin', 'Booker', 'Viewer']))
+  }, [])
 
   useEffect(() => {
     if (member) {
@@ -314,13 +324,16 @@ function TeamMemberModal({
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Role</label>
-                <input
-                  type="text"
+                <select
                   value={form.role}
                   onChange={(e) => setForm({ ...form, role: e.target.value })}
-                  placeholder="e.g. Photographer, Videographer"
                   className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                />
+                >
+                  <option value="">Select role</option>
+                  {roles.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Avatar URL</label>
