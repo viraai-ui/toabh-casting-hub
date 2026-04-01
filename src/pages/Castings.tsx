@@ -11,7 +11,7 @@ import {
   Phone,
   MessageCircle,
   Calendar,
-  DollarSign,
+
   Loader2,
   ChevronDown,
   ChevronUp,
@@ -283,6 +283,7 @@ export function Castings() {
       ) : castingViewMode === 'grid' ? (
         <GridView
           castings={filteredCastings}
+          pipeline={pipeline}
           onCastingClick={(c) => {
             setSelectedCasting(c)
             setModalOpen(true)
@@ -438,100 +439,126 @@ function ListView({
 
 function GridView({
   castings,
+  pipeline,
   onCastingClick,
 }: {
   castings: Casting[]
+  pipeline: PipelineStage[]
   onCastingClick: (c: Casting) => void
 }) {
+  const [updatingId, setUpdatingId] = useState<number | null>(null)
+  const [flashingId, setFlashingId] = useState<number | null>(null)
+
+  const handlePipelineStageChange = async (castingId: number, newStageName: string) => {
+    setUpdatingId(castingId)
+    try {
+      await api.put(`/castings/${castingId}/status`, { status: newStageName })
+      setFlashingId(castingId)
+      setTimeout(() => setFlashingId(null), 1000)
+    } catch (err) {
+      console.error('Failed to update pipeline stage:', err)
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {castings.map((casting) => {
-        // Parse assigned team members for avatars
-        const assignedNames = casting.assigned_names ? casting.assigned_names.split(',') : []
-        const displayNames = assignedNames.slice(0, 3)
-        const overflowCount = assignedNames.length > 3 ? assignedNames.length - 3 : 0
-        
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
+      {castings.map((c) => {
+        const currentStage = pipeline.find((s) => s.name === c.status)
+        const stageColor = currentStage?.color || '#64748b'
+
         return (
-          <motion.div
-            key={casting.id}
-            whileHover={{ scale: 1.02 }}
-            onClick={() => onCastingClick(casting)}
-            className="card p-4 cursor-pointer hover:shadow-lg transition-all"
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-sm font-medium">
-                {getInitials(casting.client_name)}
-              </div>
-              <div className="flex items-center gap-2">
-                {/* Team avatars */}
-                {displayNames.length > 0 && (
-                  <div className="flex -space-x-2">
-                    {displayNames.map((name, i) => (
-                      <div
-                        key={i}
-                        className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-[8px] font-medium border-2 border-white"
-                        title={name}
-                      >
-                        {getInitials(name)}
-                      </div>
-                    ))}
-                    {overflowCount > 0 && (
-                      <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 text-[8px] font-medium border-2 border-white">
-                        +{overflowCount}
-                      </div>
-                    )}
-                  </div>
-                )}
-                <span className={cn(
-                  'px-2 py-0.5 rounded-full text-[10px] font-medium',
-                  statusColors[casting.status] || 'bg-slate-100 text-slate-600'
-                )}>
-                  {casting.status}
-                </span>
-              </div>
-            </div>
-            <h3 className="font-semibold text-slate-900 mb-1 truncate">
-              {casting.project_name || 'Untitled'}
-            </h3>
-            <p className="text-sm text-slate-500 mb-3">{casting.client_name}</p>
-            <div className="space-y-2">
-              {casting.shoot_date_start && (
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <Calendar className="w-3 h-3" />
-                  {formatDate(casting.shoot_date_start)}
-                </div>
-              )}
-              {(casting.budget_min || casting.budget_max) && (
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <DollarSign className="w-3 h-3" />
-                  {formatCurrency(casting.budget_min)}
-                  {casting.budget_min && casting.budget_max && ' - '}
-                  {formatCurrency(casting.budget_max)}
-                </div>
-              )}
-            </div>
-            {/* WhatsApp/Call buttons */}
-            {casting.client_contact && (
-              <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100">
-                <a
-                  href={`tel:${casting.client_contact.startsWith('+') ? casting.client_contact : '+91' + casting.client_contact}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
-                >
-                  <Phone className="w-3.5 h-3.5" />
-                </a>
-                <a
-                  href={`https://wa.me/${casting.client_contact.replace('+', '')}?text=Regarding ${casting.project_name || 'your casting'}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
-                >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                </a>
-              </div>
+          <div
+            key={c.id}
+            className={cn(
+              'flex flex-col h-full rounded-xl border p-4 transition-all cursor-pointer',
+              flashingId === c.id
+                ? 'border-green-400 ring-2 ring-green-100'
+                : 'border-gray-200 hover:border-gray-300'
             )}
-          </motion.div>
+            onClick={() => onCastingClick(c)}
+          >
+            {/* Top bar: status dropdown + action buttons */}
+            <div className="flex items-center gap-2 mb-3">
+              <select
+                value={c.status || ''}
+                onChange={(e) => {
+                  e.stopPropagation()
+                  handlePipelineStageChange(c.id, e.target.value)
+                }}
+                disabled={updatingId === c.id}
+                onClick={(e) => e.stopPropagation()}
+                className="px-2 py-1 rounded text-xs font-medium border-0 cursor-pointer"
+                style={{
+                  backgroundColor: stageColor + '20',
+                  color: stageColor,
+                }}
+              >
+                {pipeline.map((stage) => (
+                  <option key={stage.id} value={stage.name}>
+                    {stage.name}
+                  </option>
+                ))}
+              </select>
+              <div className="flex-1" />
+              <div className="flex gap-1 shrink-0">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    window.open('tel:' + (c.client_contact || ''))
+                  }}
+                  className="p-1.5 rounded-full hover:bg-gray-100 text-sm"
+                  title="Call"
+                >
+                  <Phone className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    window.open('https://wa.me/' + (c.client_contact || '').replace(/\D/g, ''))
+                  }}
+                  className="p-1.5 rounded-full hover:bg-gray-100 text-sm"
+                  title="WhatsApp"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1">
+              <h3 className="font-bold text-base text-slate-900 mb-1 line-clamp-2">
+                {c.project_name || 'Untitled'}
+              </h3>
+              <p className="text-[13px] text-slate-600 truncate">{c.client_name}</p>
+              {c.client_contact && (
+                <p className="text-[13px] text-slate-500 truncate">{c.client_contact}</p>
+              )}
+              {c.client_email && (
+                <p className="text-[13px] text-slate-400 truncate">{c.client_email}</p>
+              )}
+              {c.shoot_date_start && (
+                <p className="text-[13px] text-slate-500 mt-1 flex items-center gap-1">
+                  <Calendar className="w-3 h-3 shrink-0" />
+                  {formatDate(c.shoot_date_start)}
+                  {c.shoot_date_end && c.shoot_date_end !== c.shoot_date_start
+                    ? ` – ${formatDate(c.shoot_date_end)}`
+                    : ''}
+                </p>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="mt-auto pt-2 flex items-center justify-between text-xs text-slate-400 border-t border-slate-100">
+              <span className="truncate">{c.source || 'Direct'}</span>
+              {c.assigned_names && (
+                <div className="flex items-center gap-1 truncate">
+                  <span className="truncate">{c.assigned_names.split(',')[0]}</span>
+                </div>
+              )}
+            </div>
+          </div>
         )
       })}
     </div>

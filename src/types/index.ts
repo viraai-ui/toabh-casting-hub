@@ -4,6 +4,8 @@ export interface Casting {
   client_name: string
   client_company: string
   client_contact: string
+  client_email?: string
+  pipeline_stage?: string
   status: string
   source: string
   shoot_date_start: string
