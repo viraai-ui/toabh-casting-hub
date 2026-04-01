@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { Menu, Search, Bell, User, Settings, LogOut, ChevronDown } from 'lucide-react'
+import { Search, Bell, User, Settings, LogOut, ChevronDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAppStore } from '@/hooks/useStore'
 
@@ -18,11 +18,13 @@ const pageTitles: { [key: string]: string } = {
 export function Header() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { setSearchOpen, toggleSidebar } = useAppStore()
+  const { setSearchOpen } = useAppStore()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
 
-  const pageTitle = pageTitles[location.pathname] || 
-    Object.entries(pageTitles).find(([path]) => location.pathname.startsWith(path) && path !== '/dashboard')?.[1] ||
+  const pageTitle = pageTitles[location.pathname] ||
+    Object.entries(pageTitles).find(([path]) =>
+      location.pathname.startsWith(path) && path !== '/dashboard'
+    )?.[1] ||
     'Casting Hub'
 
   const handleLogout = () => {
@@ -33,16 +35,8 @@ export function Header() {
   return (
     <header className="fixed top-0 left-0 right-0 z-30 h-16 glass border-b border-white/20">
       <div className="flex items-center justify-between h-full px-4 lg:px-6">
-        {/* Left side */}
-        <div className="flex items-center gap-4">
-          <button
-            onClick={toggleSidebar}
-            className="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors"
-          >
-            <Menu className="w-5 h-5 text-slate-600" />
-          </button>
-          <h1 className="text-lg font-semibold text-slate-900">{pageTitle}</h1>
-        </div>
+        {/* Left — title only, no hamburger */}
+        <h1 className="text-lg font-semibold text-slate-900 pl-0">{pageTitle}</h1>
 
         {/* Right side */}
         <div className="flex items-center gap-2">
@@ -55,7 +49,7 @@ export function Header() {
               Ctrl+K
             </span>
           </button>
-          
+
           <button className="p-2 rounded-lg hover:bg-slate-100 transition-colors relative">
             <Bell className="w-5 h-5 text-slate-600" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full" />

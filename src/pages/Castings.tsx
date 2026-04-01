@@ -31,7 +31,7 @@ import MenuItem from '@mui/material/MenuItem'
 import CircularProgress from '@mui/material/CircularProgress'
 
 export function Castings() {
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
   const { castingViewMode, setCastingViewMode } = useAppStore()
   const [castings, setCastings] = useState<Casting[]>([])
   const [pipeline, setPipeline] = useState<PipelineStage[]>([])
@@ -72,14 +72,16 @@ export function Castings() {
     fetchPipeline()
   }, [fetchCastings, fetchPipeline])
 
-  // Check for new casting param
+  // Check for new casting param — open modal when ?new=true is present.
+  // Deps: [searchParams] so it re-fires if param changes (e.g. FAB navigation from within Castings).
+  // Guard: only fires when modal is closed (avoids re-setting state if modal already open).
   useEffect(() => {
-    if (searchParams.get('new') === 'true') {
+    if (searchParams.get('new') === 'true' && !modalOpen) {
       setSelectedCasting(null)
       setModalOpen(true)
-      setSearchParams({})
     }
-  }, [searchParams, setSearchParams])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, modalOpen])
 
   // Filter and sort castings
   const filteredCastings = castings
