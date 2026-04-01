@@ -1,0 +1,1 @@
+[{"id": "cf001", "name": "Test Field", "type": "text", "tab": "Custom", "options": [], "required": false}, {"id": "cf002", "name": "Test Field", "type": "text", "tab": "Custom", "options": [], "required": false}, {"id": "cf003", "name": "Final Test", "type": "dropdown", "tab": "Custom", "options": ["Option1", "Option2"], "required": false}]
