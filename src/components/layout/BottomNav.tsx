@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -15,6 +15,7 @@ import {
   LogOut,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useOverlay } from '@/hooks/useOverlayManager'
 
 // Main bottom nav: Home, Castings, + (FAB), Clients, More
 const mainItems = [
@@ -37,6 +38,16 @@ export function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
   const [moreOpen, setMoreOpen] = useState(false)
+  const { openOverlay, closeOverlay } = useOverlay()
+
+  // Register/unregister More sheet with overlay manager
+  useEffect(() => {
+    if (moreOpen) {
+      openOverlay('bottom-nav-more-sheet', () => setMoreOpen(false))
+    } else {
+      closeOverlay('bottom-nav-more-sheet')
+    }
+  }, [moreOpen, openOverlay, closeOverlay])
 
   // Guard against rapid double-taps on the FAB
   const fabNavigating = useRef(false)

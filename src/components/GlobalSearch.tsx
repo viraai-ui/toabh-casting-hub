@@ -5,11 +5,13 @@ import { Search, Briefcase, Users, UserCircle, X, Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/hooks/useStore'
+import { useOverlay } from '@/hooks/useOverlayManager'
 import type { SearchResult } from '@/types'
 
 export function GlobalSearch() {
   const navigate = useNavigate()
   const { setSearchOpen } = useAppStore()
+  const { openOverlay, closeOverlay } = useOverlay()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult | null>(null)
   const [loading, setLoading] = useState(false)
@@ -49,6 +51,14 @@ export function GlobalSearch() {
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
+
+  // Register with global overlay manager
+  useEffect(() => {
+    // Component only mounts when searchOpen=true (conditionally rendered in AppLayout)
+    openOverlay('global-search', () => setSearchOpen(false))
+    return () => closeOverlay('global-search')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // intentionally run once on mount/unmount
 
   // Debounced search
   const search = useCallback((q: string) => {

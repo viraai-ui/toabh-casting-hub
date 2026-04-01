@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Plus, Pencil, Trash2, Loader2, Eye } from 'lucide-react'
 import { api } from '@/lib/api'
+import { useOverlay } from '@/hooks/useOverlayManager'
 
 interface EmailTemplate {
   id?: number
@@ -20,6 +21,7 @@ const VARIABLES = [
 ]
 
 export function EmailTemplates() {
+  const { openOverlay, closeOverlay } = useOverlay()
   const [templates, setTemplates] = useState<EmailTemplate[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -54,6 +56,15 @@ export function EmailTemplates() {
   useEffect(() => {
     fetchTemplates()
   }, [])
+
+  // Register email preview modal with overlay manager
+  useEffect(() => {
+    if (showPreview) {
+      openOverlay('email-templates-preview', () => setShowPreview(false))
+    } else {
+      closeOverlay('email-templates-preview')
+    }
+  }, [showPreview, openOverlay, closeOverlay])
 
   const handleSave = async () => {
     setSaving(true)

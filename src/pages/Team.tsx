@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Pencil, Trash2, Loader2, Mail, Phone, X, Camera, User } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
+import { useOverlay } from '@/hooks/useOverlayManager'
 import type { TeamMember, Casting } from '@/types'
 import Dialog from '@mui/material/Dialog'
 import DialogContent from '@mui/material/DialogContent'
@@ -10,6 +11,7 @@ import IconButton from '@mui/material/IconButton'
 import Button from '@mui/material/Button'
 
 export function Team() {
+  const { openOverlay, closeOverlay } = useOverlay()
   const [team, setTeam] = useState<TeamMember[]>([])
   const [castings, setCastings] = useState<Casting[]>([])
   const [loading, setLoading] = useState(true)
@@ -43,6 +45,24 @@ export function Team() {
     fetchTeam()
     fetchCastings()
   }, [fetchTeam, fetchCastings])
+
+  // Register Add/Edit Team Member modal with overlay manager
+  useEffect(() => {
+    if (modalOpen) {
+      openOverlay('team-member-modal', () => setModalOpen(false))
+    } else {
+      closeOverlay('team-member-modal')
+    }
+  }, [modalOpen, openOverlay, closeOverlay])
+
+  // Register View Member dialog with overlay manager
+  useEffect(() => {
+    if (viewMember) {
+      openOverlay('team-member-view', () => setViewMember(null))
+    } else {
+      closeOverlay('team-member-view')
+    }
+  }, [viewMember, openOverlay, closeOverlay])
 
   const getMemberAssignments = (memberId: string | number) => {
     return castings.filter((c) => {

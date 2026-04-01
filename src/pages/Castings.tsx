@@ -19,6 +19,7 @@ import {
 import { api } from '@/lib/api'
 import { cn, formatDate, formatCurrency, getInitials } from '@/lib/utils'
 import { useAppStore } from '@/hooks/useStore'
+import { useOverlay } from '@/hooks/useOverlayManager'
 import { toast } from 'sonner'
 import { CastingModal } from '@/components/CastingModal'
 import { CastingDetailModal } from '@/components/CastingDetailModal'
@@ -33,6 +34,7 @@ import CircularProgress from '@mui/material/CircularProgress'
 export function Castings() {
   const [searchParams] = useSearchParams()
   const { castingViewMode, setCastingViewMode } = useAppStore()
+  const { openOverlay, closeOverlay } = useOverlay()
   const [castings, setCastings] = useState<Casting[]>([])
   const [pipeline, setPipeline] = useState<PipelineStage[]>([])
   const [loading, setLoading] = useState(true)
@@ -82,6 +84,33 @@ export function Castings() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, modalOpen])
+
+  // Register CastingModal with overlay manager
+  useEffect(() => {
+    if (modalOpen) {
+      openOverlay('casting-modal', () => setModalOpen(false))
+    } else {
+      closeOverlay('casting-modal')
+    }
+  }, [modalOpen, openOverlay, closeOverlay])
+
+  // Register CastingDetailModal with overlay manager
+  useEffect(() => {
+    if (detailModalOpen) {
+      openOverlay('casting-detail-modal', () => setDetailModalOpen(false))
+    } else {
+      closeOverlay('casting-detail-modal')
+    }
+  }, [detailModalOpen, openOverlay, closeOverlay])
+
+  // Register AdvancedFilters panel with overlay manager
+  useEffect(() => {
+    if (filtersOpen) {
+      openOverlay('casting-filters', () => setFiltersOpen(false))
+    } else {
+      closeOverlay('casting-filters')
+    }
+  }, [filtersOpen, openOverlay, closeOverlay])
 
   // Filter and sort castings
   const filteredCastings = castings

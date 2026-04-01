@@ -3,9 +3,11 @@ import { motion } from 'framer-motion'
 import { Plus, Pencil, Trash2, Loader2, Mail } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
+import { useOverlay } from '@/hooks/useOverlayManager'
 import type { TeamMember } from '@/types'
 
 export function TeamManagement() {
+  const { openOverlay, closeOverlay } = useOverlay()
   const [team, setTeam] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
@@ -28,6 +30,15 @@ export function TeamManagement() {
   useEffect(() => {
     fetchTeam()
   }, [])
+
+  // Register invite/add member modal with overlay manager
+  useEffect(() => {
+    if (modalOpen) {
+      openOverlay('team-management-modal', () => setModalOpen(false))
+    } else {
+      closeOverlay('team-management-modal')
+    }
+  }, [modalOpen, openOverlay, closeOverlay])
 
   const handleDelete = async (member: TeamMember) => {
     if (!confirm(`Delete ${member.name}?`)) return

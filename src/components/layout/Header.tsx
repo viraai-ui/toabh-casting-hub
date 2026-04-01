@@ -1,8 +1,9 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, Bell, User, Settings, LogOut, ChevronDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAppStore } from '@/hooks/useStore'
+import { useOverlay } from '@/hooks/useOverlayManager'
 
 const pageTitles: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
@@ -19,7 +20,17 @@ export function Header() {
   const location = useLocation()
   const navigate = useNavigate()
   const { setSearchOpen } = useAppStore()
+  const { openOverlay, closeOverlay } = useOverlay()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+
+  // Register/unregister user menu dropdown with overlay manager
+  useEffect(() => {
+    if (userMenuOpen) {
+      openOverlay('header-user-menu', () => setUserMenuOpen(false))
+    } else {
+      closeOverlay('header-user-menu')
+    }
+  }, [userMenuOpen, openOverlay, closeOverlay])
 
   const pageTitle = pageTitles[location.pathname] ||
     Object.entries(pageTitles).find(([path]) =>

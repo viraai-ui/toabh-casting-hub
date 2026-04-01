@@ -3,9 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Loader2, Phone, Mail } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, formatDate, getInitials } from '@/lib/utils'
+import { useOverlay } from '@/hooks/useOverlayManager'
 import type { Client, Casting } from '@/types'
 
 export function Clients() {
+  const { openOverlay, closeOverlay } = useOverlay()
   const [clients, setClients] = useState<Client[]>([])
   const [castings, setCastings] = useState<Casting[]>([])
   const [loading, setLoading] = useState(true)
@@ -40,6 +42,15 @@ export function Clients() {
     fetchClients()
     fetchCastings()
   }, [])
+
+  // Register Add/Edit Client modal with overlay manager
+  useEffect(() => {
+    if (modalOpen) {
+      openOverlay('client-modal', () => setModalOpen(false))
+    } else {
+      closeOverlay('client-modal')
+    }
+  }, [modalOpen, openOverlay, closeOverlay])
 
   const filteredClients = clients.filter((client) =>
     client.name.toLowerCase().includes(searchQuery.toLowerCase())

@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import { CastingModal } from '@/components/CastingModal'
+import { useOverlay } from '@/hooks/useOverlayManager'
 import type { Casting, PipelineStage } from '@/types'
 import {
   startOfMonth,
@@ -20,6 +21,7 @@ import {
 } from 'date-fns'
 
 export function Calendar() {
+  const { openOverlay, closeOverlay } = useOverlay()
   const [castings, setCastings] = useState<Casting[]>([])
   const [pipeline, setPipeline] = useState<PipelineStage[]>([])
   const [loading, setLoading] = useState(true)
@@ -49,6 +51,15 @@ export function Calendar() {
   useEffect(() => {
     fetchData()
   }, [])
+
+  // Register CastingModal with overlay manager
+  useEffect(() => {
+    if (modalOpen) {
+      openOverlay('casting-calendar-modal', () => setModalOpen(false))
+    } else {
+      closeOverlay('casting-calendar-modal')
+    }
+  }, [modalOpen, openOverlay, closeOverlay])
 
   const getCastingColor = (status: string) => {
     const stage = pipeline.find((p) => p.name === status)
