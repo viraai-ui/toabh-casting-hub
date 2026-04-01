@@ -14,7 +14,7 @@ import {
   RefreshCw,
   MessageSquare,
 } from 'lucide-react'
-import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { api } from '@/lib/api'
 import { cn, formatCurrency, formatRelativeTime, getInitials } from '@/lib/utils'
 import { useAppStore } from '@/hooks/useStore'
@@ -122,26 +122,84 @@ export function Dashboard() {
 
       {/* Charts Row */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Pipeline Chart */}
+        {/* Pipeline Chart — custom CSS bars, fully responsive */}
         <div className="card p-5">
           <h3 className="font-semibold text-slate-900 mb-4">Pipeline Overview</h3>
-          <div className="h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={pipelineData}>
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: 'rgba(255,255,255,0.95)',
-                    border: '1px solid rgba(0,0,0,0.1)',
-                    borderRadius: 12,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                  }}
-                />
-                <Bar dataKey="count" fill="#f59e0b" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {pipelineData.length === 0 ? (
+            <div className="flex items-center justify-center h-[160px] text-slate-400 text-sm">
+              No pipeline data available
+            </div>
+          ) : (
+            <div className="overflow-x-auto pb-1 -mx-1 px-1">
+              {/* Min-width ensures bars compress nicely on narrow screens; horizontal
+                  scroll only kicks in when stages genuinely exceed viewport width. */}
+              <div
+                className="flex flex-col gap-3"
+                style={{ minWidth: 'max-content' }}
+              >
+                {pipelineData.map((stage, idx) => {
+                  const maxCount = Math.max(...pipelineData.map((s) => s.count), 1)
+                  const pct = (stage.count / maxCount) * 100
+                  // Cycle through a set of stage-appropriate colors
+                  const colors = [
+                    { bar: 'bg-amber-400', text: 'text-amber-600' },
+                    { bar: 'bg-blue-400', text: 'text-blue-600' },
+                    { bar: 'bg-green-400', text: 'text-green-600' },
+                    { bar: 'bg-purple-400', text: 'text-purple-600' },
+                    { bar: 'bg-rose-400', text: 'text-rose-600' },
+                    { bar: 'bg-cyan-400', text: 'text-cyan-600' },
+                    { bar: 'bg-orange-400', text: 'text-orange-600' },
+                  ]
+                  const color = colors[idx % colors.length]
+
+                  return (
+                    <div key={stage.name} className="flex items-center gap-3 min-w-0">
+                      {/* Stage name — left column, fixed width */}
+                      <div
+                        className="shrink-0 text-right"
+                        style={{ width: '120px' }}
+                      >
+                        <span
+                          className={cn(
+                            'text-xs font-medium block leading-tight truncate',
+                            color.text
+                          )}
+                          title={stage.name}
+                        >
+                          {stage.name}
+                        </span>
+                      </div>
+
+                      {/* Bar track + fill */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 bg-slate-100 rounded-full h-5 overflow-hidden">
+                            <div
+                              className={cn(
+                                'h-full rounded-full flex items-center justify-end pr-2 transition-all duration-500',
+                                color.bar
+                              )}
+                              style={{ width: `${Math.max(pct, 6)}%` }}
+                            >
+                              {pct > 20 && (
+                                <span className="text-[10px] font-bold text-white leading-none">
+                                  {stage.count}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {/* Count badge — always visible */}
+                          <span className="text-xs font-semibold text-slate-700 w-5 text-left shrink-0">
+                            {stage.count}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Trend Chart */}
