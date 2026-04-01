@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: casting-hub
+    env: python
+    buildCommand: npm install && npm run build
+    startCommand: cd backend && pip install -r requirements.txt && python app.py
+    healthCheckPath: /api/health
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHON_VERSION
+        value: "3.11"
