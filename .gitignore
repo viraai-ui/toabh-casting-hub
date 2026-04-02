@@ -38,3 +38,4 @@ coverage
 .env.test.local
 .env.production.local
 .vercel
+.vercel_python_packages
