@@ -1,6 +1,7 @@
 import os
 import sqlite3
 import json
+import shutil
 import smtplib
 from datetime import datetime
 from email.mime.text import MIMEText
@@ -12,11 +13,40 @@ import threading
 
 load_dotenv()
 
+BASE_DIR = os.path.dirname(__file__)
+REPO_ROOT = os.path.dirname(BASE_DIR)
+READ_ONLY_DB_PATH = os.path.join(BASE_DIR, 'castings.db')
+READ_ONLY_SETTINGS_DIR = os.path.join(BASE_DIR, 'settings')
+DEFAULT_RUNTIME_ROOT = os.path.join('/tmp', 'toabh-casting-hub') if os.environ.get('VERCEL') else BASE_DIR
+RUNTIME_ROOT = os.environ.get('APP_RUNTIME_ROOT', DEFAULT_RUNTIME_ROOT)
+SETTINGS_DIR = os.path.join(RUNTIME_ROOT, 'settings')
+UPLOADS_DIR = os.path.join(RUNTIME_ROOT, 'uploads')
+DATABASE_PATH = os.path.join(RUNTIME_ROOT, 'castings.db')
+
+
+def ensure_runtime_storage():
+    os.makedirs(RUNTIME_ROOT, exist_ok=True)
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
+    os.makedirs(UPLOADS_DIR, exist_ok=True)
+
+    if os.path.exists(READ_ONLY_SETTINGS_DIR):
+        for name in os.listdir(READ_ONLY_SETTINGS_DIR):
+            src = os.path.join(READ_ONLY_SETTINGS_DIR, name)
+            dst = os.path.join(SETTINGS_DIR, name)
+            if os.path.isfile(src) and not os.path.exists(dst):
+                shutil.copy2(src, dst)
+
+    if os.path.exists(READ_ONLY_DB_PATH) and not os.path.exists(DATABASE_PATH):
+        shutil.copy2(READ_ONLY_DB_PATH, DATABASE_PATH)
+
+
+ensure_runtime_storage()
+
 app = Flask(__name__, static_folder=None)
-app.config['DATABASE'] = os.path.join(os.path.dirname(__file__), 'castings.db')
+app.config['DATABASE'] = DATABASE_PATH
 
 # Path to frontend dist (now inside the same repo as this backend)
-FRONTEND_DIST = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dist')
+FRONTEND_DIST = os.path.join(REPO_ROOT, 'dist')
 
 # Database helpers
 def get_db():
@@ -272,9 +302,9 @@ def add_comment():
 
 @app.route('/api/settings/roles', methods=['GET'])
 def get_roles():
-    os.makedirs('settings', exist_ok=True)
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
     try:
-        with open('settings/roles.json') as f:
+        with open(os.path.join(SETTINGS_DIR, 'roles.json')) as f:
             return jsonify(json.load(f))
     except:
         # Default roles
@@ -305,8 +335,8 @@ def get_roles():
 @app.route('/api/settings/roles', methods=['PUT'])
 def update_roles():
     data = request.json
-    os.makedirs('settings', exist_ok=True)
-    with open('settings/roles.json', 'w') as f:
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
+    with open(os.path.join(SETTINGS_DIR, 'roles.json'), 'w') as f:
         json.dump(data, f)
     return jsonify(data)
 
@@ -683,7 +713,7 @@ def upload_team_avatar(member_id):
         return jsonify({'error': f'File type not allowed. Use: {", ".join(allowed)}'}), 400
 
     # Save to uploads directory
-    upload_dir = os.path.join(os.path.dirname(__file__), 'uploads', 'avatars')
+    upload_dir = os.path.join(UPLOADS_DIR, 'avatars')
     os.makedirs(upload_dir, exist_ok=True)
 
     # Use a safe filename: avatar_{member_id}.{ext}
@@ -701,7 +731,7 @@ def upload_team_avatar(member_id):
 @app.route('/api/team/<int:member_id>/avatar')
 def serve_team_avatar(member_id):
     """Serve the uploaded avatar image."""
-    upload_dir = os.path.join(os.path.dirname(__file__), 'uploads', 'avatars')
+    upload_dir = os.path.join(UPLOADS_DIR, 'avatars')
     for ext in ['png', 'jpg', 'jpeg', 'gif', 'webp']:
         filepath = os.path.join(upload_dir, f'avatar_{member_id}.{ext}')
         if os.path.exists(filepath):
@@ -1021,9 +1051,9 @@ def delete_source_item(item_id):
 # Custom fields
 @app.route('/api/settings/custom-fields', methods=['GET'])
 def get_custom_fields():
-    os.makedirs('settings', exist_ok=True)
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
     try:
-        with open('settings/custom_fields.json') as f:
+        with open(os.path.join(SETTINGS_DIR, 'custom_fields.json')) as f:
             return jsonify(json.load(f))
     except:
         return jsonify([
@@ -1035,8 +1065,8 @@ def get_custom_fields():
 @app.route('/api/settings/custom-fields', methods=['PUT'])
 def update_custom_fields():
     data = request.json
-    os.makedirs('settings', exist_ok=True)
-    with open('settings/custom_fields.json', 'w') as f:
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
+    with open(os.path.join(SETTINGS_DIR, 'custom_fields.json'), 'w') as f:
         json.dump(data['fields'], f)
     return jsonify(data['fields'])
 
@@ -1055,9 +1085,9 @@ def create_custom_field():
     if field_type == 'dropdown' and not options:
         return jsonify({'error': 'Dropdown fields need at least one option'}), 400
     # Load existing fields
-    os.makedirs('settings', exist_ok=True)
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
     try:
-        with open('settings/custom_fields.json') as f:
+        with open(os.path.join(SETTINGS_DIR, 'custom_fields.json')) as f:
             fields = json.load(f)
     except:
         fields = []
@@ -1074,16 +1104,16 @@ def create_custom_field():
         'required': required
     }
     fields.append(new_field)
-    with open('settings/custom_fields.json', 'w') as f:
+    with open(os.path.join(SETTINGS_DIR, 'custom_fields.json'), 'w') as f:
         json.dump(fields, f)
     return jsonify(new_field), 201
 
 # Dashboard modules toggle
 @app.route('/api/settings/dashboard-modules', methods=['GET'])
 def get_dashboard_modules():
-    os.makedirs('settings', exist_ok=True)
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
     try:
-        with open('settings/dashboard_modules.json') as f:
+        with open(os.path.join(SETTINGS_DIR, 'dashboard_modules.json')) as f:
             return jsonify(json.load(f))
     except:
         return jsonify({'kanban':True,'calendar':True,'activityFeed':True,'quickActions':True,'charts':True})
@@ -1091,18 +1121,18 @@ def get_dashboard_modules():
 @app.route('/api/settings/dashboard-modules', methods=['PUT'])
 def update_dashboard_modules():
     data = request.json
-    os.makedirs('settings', exist_ok=True)
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
     # Store the full object (includes default_view + module flags)
-    with open('settings/dashboard_modules.json', 'w') as f:
+    with open(os.path.join(SETTINGS_DIR, 'dashboard_modules.json'), 'w') as f:
         json.dump(data, f)
     return jsonify(data)
 
 # Email config (store SMTP settings - basic)
 @app.route('/api/settings/email-config', methods=['GET'])
 def get_email_config():
-    os.makedirs('settings', exist_ok=True)
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
     try:
-        with open('settings/email_config.json') as f:
+        with open(os.path.join(SETTINGS_DIR, 'email_config.json')) as f:
             return jsonify(json.load(f))
     except:
         return jsonify({'from_email':'noreply@toabh.com','from_name':'TOABH Casting','smtp_host':'','smtp_port':587})
@@ -1110,8 +1140,8 @@ def get_email_config():
 @app.route('/api/settings/email-config', methods=['PUT'])
 def update_email_config():
     data = request.json
-    os.makedirs('settings', exist_ok=True)
-    with open('settings/email_config.json', 'w') as f:
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
+    with open(os.path.join(SETTINGS_DIR, 'email_config.json'), 'w') as f:
         json.dump(data, f)
     return jsonify({'message':'Email config saved'})
 
@@ -1140,9 +1170,9 @@ def test_email_config():
 # Email templates
 @app.route('/api/settings/email-templates', methods=['GET'])
 def get_email_templates():
-    os.makedirs('settings', exist_ok=True)
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
     try:
-        with open('settings/email_templates.json') as f:
+        with open(os.path.join(SETTINGS_DIR, 'email_templates.json')) as f:
             templates = json.load(f)
     except:
         templates = [
@@ -1155,8 +1185,8 @@ def get_email_templates():
 @app.route('/api/settings/email-templates', methods=['PUT'])
 def update_email_templates():
     data = request.json
-    os.makedirs('settings', exist_ok=True)
-    with open('settings/email_templates.json', 'w') as f:
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
+    with open(os.path.join(SETTINGS_DIR, 'email_templates.json'), 'w') as f:
         json.dump(data['templates'], f)
     return jsonify({'message':'Templates saved'})
 
@@ -1170,9 +1200,9 @@ def create_email_template():
     body = (data.get('body') or '').strip()
     if not name or not subject:
         return jsonify({'error': 'Name and subject are required'}), 400
-    os.makedirs('settings', exist_ok=True)
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
     try:
-        with open('settings/email_templates.json') as f:
+        with open(os.path.join(SETTINGS_DIR, 'email_templates.json')) as f:
             templates = json.load(f)
     except:
         templates = []
@@ -1180,7 +1210,7 @@ def create_email_template():
     new_id = (max(existing_ids) + 1) if existing_ids else 1
     new_template = {'id': new_id, 'name': name, 'subject': subject, 'body': body}
     templates.append(new_template)
-    with open('settings/email_templates.json', 'w') as f:
+    with open(os.path.join(SETTINGS_DIR, 'email_templates.json'), 'w') as f:
         json.dump(templates, f)
     return jsonify(new_template), 201
 
@@ -1194,9 +1224,9 @@ def update_single_email_template(template_id):
     body = (data.get('body') or '').strip()
     if not name or not subject:
         return jsonify({'error': 'Name and subject are required'}), 400
-    os.makedirs('settings', exist_ok=True)
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
     try:
-        with open('settings/email_templates.json') as f:
+        with open(os.path.join(SETTINGS_DIR, 'email_templates.json')) as f:
             templates = json.load(f)
     except:
         templates = []
@@ -1206,20 +1236,20 @@ def update_single_email_template(template_id):
             t['subject'] = subject
             t['body'] = body
             break
-    with open('settings/email_templates.json', 'w') as f:
+    with open(os.path.join(SETTINGS_DIR, 'email_templates.json'), 'w') as f:
         json.dump(templates, f)
     return jsonify({'id': template_id, 'name': name, 'subject': subject, 'body': body})
 
 @app.route('/api/settings/email-templates/<int:template_id>', methods=['DELETE'])
 def delete_email_template(template_id):
-    os.makedirs('settings', exist_ok=True)
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
     try:
-        with open('settings/email_templates.json') as f:
+        with open(os.path.join(SETTINGS_DIR, 'email_templates.json')) as f:
             templates = json.load(f)
     except:
         templates = []
     templates = [t for t in templates if t.get('id') != template_id]
-    with open('settings/email_templates.json', 'w') as f:
+    with open(os.path.join(SETTINGS_DIR, 'email_templates.json'), 'w') as f:
         json.dump(templates, f)
     return jsonify({'success': True})
 
