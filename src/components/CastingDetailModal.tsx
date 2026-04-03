@@ -3,6 +3,7 @@ import { X, Edit2, Phone, MessageCircle, MapPin, User, Tag } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { getInitials } from '@/lib/utils'
 import type { Casting } from '@/types'
+import { CastingCommunicationPanel } from '@/components/casting/CastingCommunicationPanel'
 
 interface TeamMemberInfo {
   id: number
@@ -69,7 +70,11 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
 
   useEffect(() => {
     if (open) {
-      setTimeout(() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), 50)
+      setTimeout(() => {
+        if (typeof scrollRef.current?.scrollTo === 'function') {
+          scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+        }
+      }, 50)
     }
   }, [open, casting?.id])
 
@@ -92,18 +97,16 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
     )
   }
 
-  // Parse custom fields
   let parsedCustomFields: Record<string, string> = {}
   if (casting.custom_fields) {
     try {
       parsedCustomFields = JSON.parse(casting.custom_fields)
-    } catch { /* ignore */ }
+    } catch {}
   }
   const customFieldEntries = Object.entries(parsedCustomFields).filter(
     ([, v]) => v !== '' && v != null
   )
 
-  // Parse assigned_to
   const assignedTo: TeamMemberInfo[] = Array.isArray(casting.assigned_to)
     ? casting.assigned_to.map((m: any) => ({
         id: typeof m.id === 'string' ? parseInt(m.id) : (m.id ?? 0),
@@ -116,7 +119,6 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
     (casting.budget_min != null && casting.budget_min > 0) ||
     (casting.budget_max != null && casting.budget_max > 0)
 
-  // Phone links
   const phoneRaw = casting.client_contact || ''
   const phoneDigits = phoneRaw.replace(/\D/g, '')
   const phoneLink = phoneRaw.startsWith('+') ? `tel:${phoneRaw}` : phoneDigits ? `tel:+91${phoneDigits}` : null
@@ -124,11 +126,9 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
     ? `https://wa.me/${phoneDigits}?text=Regarding ${encodeURIComponent(casting.project_name || 'your casting')}`
     : null
 
-  // Status badge
   const statusKey = casting.status?.toUpperCase() ?? 'NEW'
   const statusColors = STATUS_COLORS[statusKey] ?? STATUS_COLORS.NEW
 
-  // Format date
   const fmtDate = (d: string | null | undefined) => {
     if (!d) return null
     try {
@@ -144,7 +144,6 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -154,7 +153,6 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
             className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px]"
           />
 
-          {/* Panel */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -166,7 +164,6 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
               className="bg-white/95 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col pointer-events-auto overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
-              {/* Header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100/80 shrink-0">
                 <button
                   onClick={onClose}
@@ -183,11 +180,8 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                 </button>
               </div>
 
-              {/* Scrollable content */}
               <div ref={scrollRef} className="flex-1 overflow-y-auto">
                 <div className="p-5 flex flex-col gap-4">
-
-                  {/* Title + Status */}
                   <div className="flex items-start justify-between gap-3">
                     <h2 className="text-[17px] font-bold text-slate-800 leading-snug">
                       {pb(casting.project_name) ?? <span className="text-slate-400 italic font-normal">Untitled Casting</span>}
@@ -199,13 +193,9 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                     )}
                   </div>
 
-                  {/* CLIENT */}
                   <SectionCard>
                     <SectionHeader icon={User} label="Client" />
-                    <FieldRow
-                      label="Name"
-                      value={pb(casting.client_name) ?? '—'}
-                    />
+                    <FieldRow label="Name" value={pb(casting.client_name) ?? '—'} />
                     {casting.client_contact && (
                       <FieldRow
                         label="Phone"
@@ -249,22 +239,21 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                         }
                       />
                     )}
-                    <FieldRow
-                      label="Company"
-                      value={pb(casting.client_company) ?? '—'}
-                    />
+                    <FieldRow label="Company" value={pb(casting.client_company) ?? '—'} />
                   </SectionCard>
 
-                  {/* DETAILS */}
                   <SectionCard>
-                    <SectionHeader icon={Tag} label="Details" />
+                    <SectionHeader icon={Tag} label="Project" />
+                    <FieldRow label="Source" value={pb(casting.source) ?? '—'} />
+                    <FieldRow label="Medium" value={pb(casting.medium) ?? '—'} />
+                    <FieldRow label="Type" value={pb(casting.project_type) ?? '—'} />
                     <FieldRow
-                      label="Description"
-                      value={casting.requirements ? (
-                        <span className="whitespace-pre-wrap text-[13px] text-slate-600 leading-relaxed">
-                          {casting.requirements}
-                        </span>
-                      ) : null}
+                      label="Dates"
+                      value={
+                        [fmtDate(casting.shoot_date_start), fmtDate(casting.shoot_date_end)]
+                          .filter(Boolean)
+                          .join(' → ') || '—'
+                      }
                     />
                     <FieldRow
                       label="Location"
@@ -275,94 +264,66 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(casting.location)}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] text-amber-600 hover:text-amber-700 font-medium"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all"
                           >
                             <MapPin size={10} />
-                            View on Maps
+                            Open Maps
                           </a>
                         ) : undefined
                       }
                     />
-                    <FieldRow
-                      label="Start Date"
-                      value={fmtDate(casting.shoot_date_start) ?? '—'}
-                    />
-                    <FieldRow
-                      label="End Date"
-                      value={fmtDate(casting.shoot_date_end) ?? '—'}
-                    />
-                    <FieldRow
-                      label="Lead Source"
-                      value={pb(casting.source) ?? '—'}
-                    />
+                    {hasBudget && (
+                      <FieldRow
+                        label="Budget"
+                        value={`₹${casting.budget_min?.toLocaleString() || '0'} – ₹${casting.budget_max?.toLocaleString() || '0'}`}
+                      />
+                    )}
+                    <FieldRow label="Priority" value={pb(casting.priority) ?? '—'} />
                   </SectionCard>
 
-                  {/* TEAM */}
                   <SectionCard>
                     <SectionHeader icon={User} label="Team" />
-                    {assignedTo.length === 0 ? (
-                      <EmptyState message="No team members assigned" />
-                    ) : (
-                      <div className="px-4 pb-3 pt-1 flex flex-col gap-2">
-                        {assignedTo.map((member) => (
-                          <div key={member.id} className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-[11px] font-bold shrink-0 shadow-sm">
+                    {assignedTo.length > 0 ? (
+                      <div className="px-4 pb-4 flex flex-wrap gap-2">
+                        {assignedTo.map(member => (
+                          <div
+                            key={member.id}
+                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100"
+                          >
+                            <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-[11px] font-semibold flex items-center justify-center">
                               {getInitials(member.name)}
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[13px] font-semibold text-slate-800 leading-tight truncate">
-                                {member.name}
-                              </p>
-                              {member.role && (
-                                <p className="text-[11px] text-slate-400 leading-tight">{member.role}</p>
-                              )}
+                            <div className="min-w-0">
+                              <p className="text-[12px] font-medium text-slate-700 truncate">{member.name}</p>
+                              {member.role && <p className="text-[11px] text-slate-400 truncate">{member.role}</p>}
                             </div>
                           </div>
                         ))}
                       </div>
+                    ) : (
+                      <EmptyState message="No team members assigned." />
                     )}
                   </SectionCard>
 
-                  {/* BUDGET */}
-                  {hasBudget && (
+                  {casting.requirements && (
                     <SectionCard>
-                      <SectionHeader icon={Tag} label="Budget" />
-                      <div className="px-4 pb-4 pt-1 flex flex-col gap-2">
-                        {casting.budget_min != null && casting.budget_min > 0 && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-[12px] text-slate-400">Min Budget</span>
-                            <span className="text-[13px] font-semibold text-slate-700">
-                              ₹{casting.budget_min.toLocaleString('en-IN')}
-                            </span>
-                          </div>
-                        )}
-                        {casting.budget_max != null && casting.budget_max > 0 && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-[12px] text-slate-400">Max Budget</span>
-                            <span className="text-[13px] font-semibold text-slate-700">
-                              ₹{casting.budget_max.toLocaleString('en-IN')}
-                            </span>
-                          </div>
-                        )}
+                      <SectionHeader icon={Tag} label="Requirements" />
+                      <div className="px-4 pb-4 text-[13px] text-slate-700 whitespace-pre-wrap leading-relaxed">
+                        {casting.requirements}
                       </div>
                     </SectionCard>
                   )}
 
-                  {/* CUSTOM FIELDS */}
                   {customFieldEntries.length > 0 && (
                     <SectionCard>
                       <SectionHeader icon={Tag} label="Custom Fields" />
-                      <div className="pb-3 pt-1">
-                        {customFieldEntries.map(([key, value]) => (
-                          <FieldRow
-                            key={key}
-                            label={key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                            value={String(value)}
-                          />
-                        ))}
-                      </div>
+                      {customFieldEntries.map(([key, value]) => (
+                        <FieldRow key={key} label={key} value={value} />
+                      ))}
                     </SectionCard>
                   )}
+
+                  <CastingCommunicationPanel casting={casting} />
                 </div>
               </div>
             </div>
