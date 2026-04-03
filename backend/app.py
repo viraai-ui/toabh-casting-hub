@@ -3,9 +3,11 @@ import sqlite3
 import json
 import shutil
 import smtplib
+import mimetypes
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from uuid import uuid4
 from flask import Flask, request, jsonify, g, send_from_directory, send_file
 from werkzeug.serving import make_server
 from dotenv import load_dotenv
@@ -44,15 +46,65 @@ ensure_runtime_storage()
 
 app = Flask(__name__, static_folder=None)
 app.config['DATABASE'] = DATABASE_PATH
+app.config['UPLOADS_DIR'] = UPLOADS_DIR
 
 # Path to frontend dist (now inside the same repo as this backend)
 FRONTEND_DIST = os.path.join(REPO_ROOT, 'dist')
+
+ALLOWED_ATTACHMENT_EXTENSIONS = {
+    'pdf',
+    'png', 'jpg', 'jpeg', 'gif', 'webp',
+    'mp4', 'mov', 'avi', 'm4v', 'webm',
+    'doc', 'docx', 'txt', 'rtf',
+    'ppt', 'pptx', 'xls', 'xlsx'
+}
+ALLOWED_ATTACHMENT_MIME_PREFIXES = (
+    'image/',
+    'video/',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.',
+    'application/vnd.ms-',
+    'text/plain',
+    'text/rtf',
+)
+
+
+def _ensure_uploads_dir(*parts):
+    path = os.path.join(app.config['UPLOADS_DIR'], *parts)
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def _attachment_storage_dir(casting_id):
+    return _ensure_uploads_dir('castings', str(casting_id))
+
+
+def _attachment_public_url(attachment_id):
+    return f'/api/attachments/{attachment_id}'
+
+
+def _is_allowed_attachment(file_storage):
+    filename = file_storage.filename or ''
+    ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+    if ext not in ALLOWED_ATTACHMENT_EXTENSIONS:
+        return False, ext, f'File type not allowed. Use: {", ".join(sorted(ALLOWED_ATTACHMENT_EXTENSIONS))}'
+
+    mime_type = (file_storage.mimetype or '').lower()
+    if mime_type and not (
+        mime_type.startswith(ALLOWED_ATTACHMENT_MIME_PREFIXES)
+        or mime_type in {'application/rtf', 'application/octet-stream'}
+    ):
+        return False, ext, 'File mime type not allowed'
+
+    return True, ext, None
 
 # Database helpers
 def get_db():
     if 'db' not in g:
         g.db = sqlite3.connect(app.config['DATABASE'])
         g.db.row_factory = sqlite3.Row
+        g.db.execute('PRAGMA foreign_keys = ON')
     return g.db
 
 @app.teardown_appcontext
@@ -129,6 +181,18 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+
+        CREATE TABLE IF NOT EXISTS casting_attachments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            casting_id INTEGER NOT NULL,
+            original_filename TEXT NOT NULL,
+            stored_filename TEXT NOT NULL,
+            mime_type TEXT,
+            file_size INTEGER DEFAULT 0,
+            file_ext TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (casting_id) REFERENCES castings(id) ON DELETE CASCADE
+        );
     ''')
 
     # Add custom_fields column if it doesn't exist (for existing databases)
@@ -136,6 +200,25 @@ def init_db():
         db.execute('ALTER TABLE castings ADD COLUMN custom_fields TEXT DEFAULT "{}"')
     except:
         pass
+
+    try:
+        db.execute('ALTER TABLE activities ADD COLUMN actor_name TEXT')
+    except:
+        pass
+
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS casting_attachments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            casting_id INTEGER NOT NULL,
+            original_filename TEXT NOT NULL,
+            stored_filename TEXT NOT NULL,
+            mime_type TEXT,
+            file_size INTEGER DEFAULT 0,
+            file_ext TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (casting_id) REFERENCES castings(id) ON DELETE CASCADE
+        )
+    ''')
 
     # Add missing columns to team_members for existing databases
     for col_def in [
@@ -267,7 +350,7 @@ def get_comments(casting_id):
     db = get_db()
     rows = db.execute('''
         SELECT a.id, a.casting_id, a.details as text, a.timestamp as created_at,
-               COALESCE(tm.name, 'Admin') as user_name
+               COALESCE(tm.name, a.actor_name, 'Admin') as user_name
         FROM activities a
         LEFT JOIN team_members tm ON a.team_member_id = tm.id
         WHERE a.casting_id = ? AND a.action = 'NOTE'
@@ -283,11 +366,12 @@ def add_comment():
     casting_id = data.get('casting_id')
     text = data.get('text', '')
     user_name = data.get('user_name', 'Admin')
+    team_member_id = data.get('team_member_id')
 
     cursor = db.execute('''
-        INSERT INTO activities (casting_id, action, details)
-        VALUES (?, 'NOTE', ?)
-    ''', (casting_id, text))
+        INSERT INTO activities (casting_id, team_member_id, actor_name, action, details)
+        VALUES (?, ?, ?, 'NOTE', ?)
+    ''', (casting_id, team_member_id, user_name, text))
     db.commit()
 
     return jsonify({
@@ -508,6 +592,19 @@ def single_casting(casting_id):
         return jsonify({'message': 'Updated'})
 
     elif request.method == 'DELETE':
+        attachments = db.execute(
+            'SELECT stored_filename FROM casting_attachments WHERE casting_id = ?',
+            (casting_id,)
+        ).fetchall()
+        for attachment in attachments:
+            filepath = os.path.join(_attachment_storage_dir(casting_id), attachment['stored_filename'])
+            if os.path.exists(filepath):
+                try:
+                    os.remove(filepath)
+                except:
+                    pass
+
+        db.execute('DELETE FROM casting_attachments WHERE casting_id = ?', (casting_id,))
         db.execute('DELETE FROM castings WHERE id = ?', (casting_id,))
         db.commit()
         return jsonify({'message': 'Deleted'})
@@ -561,7 +658,7 @@ def assign_casting(casting_id):
 def get_activities(casting_id):
     db = get_db()
     rows = db.execute('''
-        SELECT a.*, tm.name as team_member_name
+        SELECT a.*, COALESCE(tm.name, a.actor_name) as team_member_name
         FROM activities a
         LEFT JOIN team_members tm ON a.team_member_id = tm.id
         WHERE a.casting_id = ?
@@ -576,12 +673,115 @@ def add_note(casting_id):
     data = request.json
 
     db.execute('''
-        INSERT INTO activities (casting_id, team_member_id, action, details)
-        VALUES (?, ?, 'NOTE', ?)
-    ''', (casting_id, data.get('team_member_id'), data.get('note')))
+        INSERT INTO activities (casting_id, team_member_id, actor_name, action, details)
+        VALUES (?, ?, ?, 'NOTE', ?)
+    ''', (casting_id, data.get('team_member_id'), data.get('user_name', 'Admin'), data.get('note')))
 
     db.commit()
     return jsonify({'message': 'Note added'})
+
+@app.route('/api/castings/<int:casting_id>/attachments', methods=['GET'])
+def list_casting_attachments(casting_id):
+    db = get_db()
+    casting = db.execute('SELECT id FROM castings WHERE id = ?', (casting_id,)).fetchone()
+    if not casting:
+        return jsonify({'error': 'Not found'}), 404
+
+    rows = db.execute('''
+        SELECT id, casting_id, original_filename, stored_filename, mime_type,
+               file_size, file_ext, created_at
+        FROM casting_attachments
+        WHERE casting_id = ?
+        ORDER BY created_at DESC, id DESC
+    ''', (casting_id,)).fetchall()
+
+    attachments = []
+    for row in rows:
+        item = dict(row)
+        item['url'] = _attachment_public_url(item['id'])
+        attachments.append(item)
+
+    return jsonify({'attachments': attachments})
+
+@app.route('/api/castings/<int:casting_id>/attachments', methods=['POST'])
+def upload_casting_attachment(casting_id):
+    db = get_db()
+    casting = db.execute('SELECT id FROM castings WHERE id = ?', (casting_id,)).fetchone()
+    if not casting:
+        return jsonify({'error': 'Not found'}), 404
+
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+
+    file = request.files['file']
+    if not file.filename:
+        return jsonify({'error': 'No file selected'}), 400
+
+    allowed, ext, error = _is_allowed_attachment(file)
+    if not allowed:
+        return jsonify({'error': error}), 400
+
+    upload_dir = _attachment_storage_dir(casting_id)
+    existing_count = db.execute(
+        'SELECT COUNT(*) as cnt FROM casting_attachments WHERE casting_id = ?',
+        (casting_id,)
+    ).fetchone()['cnt']
+    created_stamp = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
+    stored_filename = f'attachment_{casting_id}_{created_stamp}_{existing_count + 1}_{uuid4().hex[:8]}.{ext}'
+    filepath = os.path.join(upload_dir, stored_filename)
+    file.save(filepath)
+
+    file_size = os.path.getsize(filepath) if os.path.exists(filepath) else 0
+    mime_type = file.mimetype or mimetypes.guess_type(file.filename)[0] or 'application/octet-stream'
+
+    cursor = db.execute('''
+        INSERT INTO casting_attachments (
+            casting_id, original_filename, stored_filename, mime_type, file_size, file_ext
+        ) VALUES (?, ?, ?, ?, ?, ?)
+    ''', (
+        casting_id,
+        file.filename,
+        stored_filename,
+        mime_type,
+        file_size,
+        ext,
+    ))
+    db.execute('''
+        INSERT INTO activities (casting_id, actor_name, action, details)
+        VALUES (?, ?, 'ATTACHMENT_ADDED', ?)
+    ''', (casting_id, request.form.get('user_name', 'Team'), f'Uploaded attachment: {file.filename}'))
+    db.commit()
+
+    attachment = db.execute('''
+        SELECT id, casting_id, original_filename, stored_filename, mime_type,
+               file_size, file_ext, created_at
+        FROM casting_attachments
+        WHERE id = ?
+    ''', (cursor.lastrowid,)).fetchone()
+
+    result = dict(attachment)
+    result['url'] = _attachment_public_url(result['id'])
+    return jsonify(result), 201
+
+@app.route('/api/attachments/<int:attachment_id>', methods=['GET'])
+def serve_casting_attachment(attachment_id):
+    db = get_db()
+    attachment = db.execute('''
+        SELECT id, casting_id, original_filename, stored_filename
+        FROM casting_attachments
+        WHERE id = ?
+    ''', (attachment_id,)).fetchone()
+    if not attachment:
+        return jsonify({'error': 'Not found'}), 404
+
+    filepath = os.path.join(
+        _attachment_storage_dir(attachment['casting_id']),
+        attachment['stored_filename']
+    )
+    if not os.path.exists(filepath):
+        return jsonify({'error': 'File not found'}), 404
+
+    return send_file(filepath, download_name=attachment['original_filename'])
 
 # ==================== TEAM ROUTES ====================
 
