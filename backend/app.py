@@ -325,7 +325,7 @@ def list_activities():
 
     query = '''
         SELECT a.id, a.casting_id, a.action, a.details as description,
-               COALESCE(tm.name, a.details) as user_name, a.timestamp as created_at
+               COALESCE(tm.name, a.actor_name, a.details) as user_name, a.timestamp as created_at
         FROM activities a
         LEFT JOIN team_members tm ON a.team_member_id = tm.id
     '''
@@ -1034,7 +1034,7 @@ def dashboard():
     # Recent activity
     recent = db.execute('''
         SELECT a.id, a.casting_id, a.action, a.details as description,
-               COALESCE(tm.name, a.details) as user_name, a.timestamp as created_at
+               COALESCE(tm.name, a.actor_name, a.details) as user_name, a.timestamp as created_at
         FROM activities a
         LEFT JOIN team_members tm ON a.team_member_id = tm.id
         ORDER BY a.timestamp DESC

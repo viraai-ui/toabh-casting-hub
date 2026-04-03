@@ -107,6 +107,18 @@ def main():
             for item in activities
         ), activities
 
+        dashboard_activities_response = client.get('/api/activities', query_string={'casting_id': casting_id})
+        assert dashboard_activities_response.status_code == 200, dashboard_activities_response.get_data(as_text=True)
+        dashboard_activities = dashboard_activities_response.get_json()['activities']
+        assert any(
+            item.get('description') == '@Rhea call sheet shared with the client.' and item.get('user_name') == 'Team'
+            for item in dashboard_activities
+        ), dashboard_activities
+        assert any(
+            item.get('description') == 'Uploaded attachment: lookbook.pdf' and item.get('user_name') == 'Team'
+            for item in dashboard_activities
+        ), dashboard_activities
+
         print('phase3 backend smoke passed')
 
 
