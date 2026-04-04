@@ -1,7 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Loader2 } from 'lucide-react'
+import {
+  Loader2,
+  Workflow,
+  Radio,
+  Rows3,
+  ShieldCheck,
+  Users,
+  Mail,
+  LayoutDashboard,
+} from 'lucide-react'
 import { PipelineStages } from './settings/PipelineStages'
 import { LeadSources } from './settings/LeadSources'
 import { CustomFields } from './settings/CustomFields'
@@ -12,14 +21,14 @@ import { EmailTemplates } from './settings/EmailTemplates'
 import { cn } from '@/lib/utils'
 
 const tabs = [
-  { id: 'pipeline', label: 'Pipeline' },
-  { id: 'sources', label: 'Sources' },
-  { id: 'custom-fields', label: 'Fields' },
-  { id: 'roles', label: 'Roles' },
-  { id: 'team', label: 'Team' },
-  { id: 'email', label: 'Email' },
-  { id: 'dashboard', label: 'Dashboard' },
-]
+  { id: 'pipeline', label: 'Pipeline', icon: Workflow },
+  { id: 'sources', label: 'Sources', icon: Radio },
+  { id: 'custom-fields', label: 'Fields', icon: Rows3 },
+  { id: 'roles', label: 'Roles', icon: ShieldCheck },
+  { id: 'team', label: 'Team', icon: Users },
+  { id: 'email', label: 'Email', icon: Mail },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+] as const
 
 export function Settings() {
   const navigate = useNavigate()
@@ -57,68 +66,90 @@ export function Settings() {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Desktop sidebar — hidden on mobile */}
-      <div className="hidden lg:block w-56 flex-shrink-0">
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-2 sticky top-24">
-          <nav className="space-y-0.5">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'w-full text-left px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150',
-                  activeTab === tab.id
-                    ? 'bg-amber-50 text-amber-600'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
+    <div className="mx-auto w-full max-w-[1440px]">
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[272px_minmax(0,1fr)] lg:gap-8 lg:items-start">
+        <div className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
+          <aside className="rounded-[28px] border border-slate-200/80 bg-white px-3 py-3 shadow-sm">
+            <div className="px-3 pb-3 pt-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Settings</p>
+              <p className="mt-1 text-sm text-slate-500">Manage your workspace setup and defaults.</p>
+            </div>
 
-      {/* Mobile top tab bar — horizontal scroll with equal-width snap */}
-      <div className="lg:hidden flex-shrink-0 mb-4">
-        {/* Scrollable tab strip with snap */}
-        <div className="overflow-x-auto scrollbar-hide [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar:hidden]">
-          <div className="flex gap-1.5 px-1 pb-1 w-max min-w-full">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold capitalize transition-all duration-150 whitespace-nowrap shrink-0',
-                  activeTab === tab.id
-                    ? 'bg-amber-500 text-white shadow-sm'
-                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
+            <nav className="space-y-1.5">
+              {tabs.map((tab) => {
+                const Icon = tab.icon
+                const active = activeTab === tab.id
+
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      'flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium transition-all duration-150',
+                      active
+                        ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200 shadow-sm'
+                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'flex h-9 w-9 items-center justify-center rounded-xl transition-colors',
+                        active ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span>{tab.label}</span>
+                  </button>
+                )
+              })}
+            </nav>
+          </aside>
+        </div>
+
+        <div className="lg:hidden flex-shrink-0">
+          <div className="overflow-x-auto scrollbar-hide [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar:hidden]">
+            <div className="flex gap-1.5 px-1 pb-1 w-max min-w-full">
+              {tabs.map((tab) => {
+                const Icon = tab.icon
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold capitalize transition-all duration-150 whitespace-nowrap shrink-0',
+                      activeTab === tab.id
+                        ? 'bg-amber-500 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {tab.label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 min-h-0">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.15, ease: 'easeOut' }}
-        >
-          {activeTab === 'pipeline' && <PipelineStages />}
-          {activeTab === 'sources' && <LeadSources />}
-          {activeTab === 'custom-fields' && <CustomFields />}
-          {activeTab === 'roles' && <RolesPermissions />}
-          {activeTab === 'team' && <TeamManagement />}
-          {activeTab === 'email' && <EmailTemplates />}
-          {activeTab === 'dashboard' && <DashboardSettings />}
-        </motion.div>
+        <div className="min-w-0 lg:pt-0">
+          <div className="w-full max-w-[1040px]">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+            >
+              {activeTab === 'pipeline' && <PipelineStages />}
+              {activeTab === 'sources' && <LeadSources />}
+              {activeTab === 'custom-fields' && <CustomFields />}
+              {activeTab === 'roles' && <RolesPermissions />}
+              {activeTab === 'team' && <TeamManagement />}
+              {activeTab === 'email' && <EmailTemplates />}
+              {activeTab === 'dashboard' && <DashboardSettings />}
+            </motion.div>
+          </div>
+        </div>
       </div>
     </div>
   )
