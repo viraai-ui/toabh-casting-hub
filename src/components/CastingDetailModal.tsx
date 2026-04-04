@@ -3,6 +3,7 @@ import { X, Edit2, Phone, MessageCircle, MapPin, User, Tag } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { getInitials } from '@/lib/utils'
 import type { Casting } from '@/types'
+import { CastingCommunicationPanel } from './casting/CastingCommunicationPanel'
 
 interface TeamMemberInfo {
   id: number
@@ -163,7 +164,7 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
             className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
             <div
-              className="bg-white/95 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col pointer-events-auto overflow-hidden"
+              className="bg-white/95 backdrop-blur-xl rounded-2xl border border-white/20 shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col pointer-events-auto overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}
@@ -185,7 +186,7 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
 
               {/* Scrollable content */}
               <div ref={scrollRef} className="flex-1 overflow-y-auto">
-                <div className="p-5 flex flex-col gap-4">
+                <div className="mx-auto w-full max-w-5xl p-5 flex flex-col gap-4">
 
                   {/* Title + Status */}
                   <div className="flex items-start justify-between gap-3">
@@ -363,6 +364,8 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                       </div>
                     </SectionCard>
                   )}
+
+                  <CastingCommunicationPanel casting={casting} />
                 </div>
               </div>
             </div>

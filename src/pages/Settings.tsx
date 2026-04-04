@@ -17,7 +17,7 @@ import { CustomFields } from './settings/CustomFields'
 import { RolesPermissions } from './settings/RolesPermissions'
 import { TeamManagement } from './settings/TeamManagement'
 import { DashboardSettings } from './settings/DashboardSettings'
-import { EmailTemplates } from './settings/EmailTemplates'
+import { EmailAutomationHub } from './settings/EmailAutomationHub'
 import { cn } from '@/lib/utils'
 
 const tabs = [
@@ -145,7 +145,7 @@ export function Settings() {
               {activeTab === 'custom-fields' && <CustomFields />}
               {activeTab === 'roles' && <RolesPermissions />}
               {activeTab === 'team' && <TeamManagement />}
-              {activeTab === 'email' && <EmailTemplates />}
+              {activeTab === 'email' && <EmailAutomationHub />}
               {activeTab === 'dashboard' && <DashboardSettings />}
             </motion.div>
           </div>

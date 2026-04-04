@@ -4,15 +4,26 @@ import { Loader2, Send } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
+interface EmailConfigState {
+  smtp_host: string
+  smtp_port: string
+  smtp_username: string
+  smtp_password: string
+  from_address: string
+  from_name: string
+}
+
+const EMPTY_FORM: EmailConfigState = {
+  smtp_host: '',
+  smtp_port: '587',
+  smtp_username: '',
+  smtp_password: '',
+  from_address: '',
+  from_name: '',
+}
+
 export function EmailConfig() {
-  const [form, setForm] = useState({
-    smtp_host: '',
-    smtp_port: '',
-    smtp_username: '',
-    smtp_password: '',
-    from_address: '',
-    from_name: '',
-  })
+  const [form, setForm] = useState<EmailConfigState>(EMPTY_FORM)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
@@ -20,8 +31,17 @@ export function EmailConfig() {
 
   useEffect(() => {
     api.get('/settings/email-config')
-      .then((data: any) => setForm(data))
-      .catch(() => { /* use defaults */ })
+      .then((data: any) => {
+        setForm({
+          smtp_host: data?.smtp_host ?? '',
+          smtp_port: String(data?.smtp_port ?? '587'),
+          smtp_username: data?.smtp_username ?? '',
+          smtp_password: data?.smtp_password ?? '',
+          from_address: data?.from_address ?? data?.from_email ?? '',
+          from_name: data?.from_name ?? '',
+        })
+      })
+      .catch(() => setForm(EMPTY_FORM))
       .finally(() => setLoading(false))
   }, [])
 
@@ -32,13 +52,14 @@ export function EmailConfig() {
   }, [feedback])
 
   const handleSave = async () => {
-    const snapshot = { ...form }
     setSaving(true)
     try {
-      await api.put('/settings/email-config', form)
+      await api.put('/settings/email-config', {
+        ...form,
+        from_email: form.from_address,
+      })
       setFeedback({ msg: 'Email settings saved!', type: 'success' })
     } catch {
-      setForm(snapshot)
       setFeedback({ msg: 'Failed to save email settings', type: 'error' })
     } finally {
       setSaving(false)
@@ -54,14 +75,15 @@ export function EmailConfig() {
         smtp_username: form.smtp_username,
         smtp_password: form.smtp_password,
         from_address: form.from_address,
-      })
+        from_email: form.from_address,
+      }) as { success?: boolean; message?: string }
       setFeedback({
-        msg: res.data?.message || 'Test email sent!',
-        type: res.data?.success ? 'success' : 'error'
+        msg: res?.message || 'Connection tested!',
+        type: res?.success ? 'success' : 'error'
       })
     } catch (err: any) {
       setFeedback({
-        msg: err?.response?.data?.message || 'Test failed — check your SMTP settings',
+        msg: err?.message || 'Test failed — check your SMTP settings',
         type: 'error'
       })
     } finally {
@@ -78,11 +100,11 @@ export function EmailConfig() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-5">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900">Email Configuration</h2>
-          <p className="text-sm text-slate-500">Configure SMTP settings for outgoing emails</p>
+          <h2 className="text-xl font-semibold text-slate-900">SMTP + email delivery</h2>
+          <p className="text-sm text-slate-500">Configure the mailbox used for Phase 3 alerts and future automations.</p>
         </div>
         {feedback && (
           <div className={cn(
@@ -99,7 +121,7 @@ export function EmailConfig() {
         animate={{ opacity: 1, y: 0 }}
         className="card p-6 space-y-4"
       >
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">SMTP Host</label>
             <input
@@ -159,7 +181,9 @@ export function EmailConfig() {
           </div>
         </div>
 
-
+        <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+          This powers future workflow alerts for mentions, attachments, status changes, and assignment handoffs.
+        </div>
 
         <div className="flex justify-end gap-3 pt-2">
           <button

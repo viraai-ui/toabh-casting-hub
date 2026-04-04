@@ -4,6 +4,7 @@ import json
 import shutil
 import smtplib
 import mimetypes
+import re
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -338,34 +339,118 @@ def list_activities():
     query += ' ORDER BY a.timestamp DESC'
 
     rows = db.execute(query, params).fetchall()
-    return jsonify({'activities': [dict(row) for row in rows]})
+    return jsonify({'activities': [_activity_row_to_dict(row) for row in rows]})
+
+def _extract_mentions(text):
+    if not text:
+        return []
+    return list(dict.fromkeys(re.findall(r'@([A-Za-z0-9_.-]+)', text)))
+
+
+def _parse_note_details(raw_details, fallback_user='Admin'):
+    if not raw_details:
+        return {
+            'text': '',
+            'user_name': fallback_user,
+            'parent_id': None,
+            'mentions': [],
+        }
+
+    if isinstance(raw_details, str):
+        try:
+            payload = json.loads(raw_details)
+            if isinstance(payload, dict) and 'text' in payload:
+                text = payload.get('text') or ''
+                user_name = payload.get('user_name') or fallback_user
+                parent_id = payload.get('parent_id')
+                mentions = payload.get('mentions') or _extract_mentions(text)
+                return {
+                    'text': text,
+                    'user_name': user_name,
+                    'parent_id': parent_id,
+                    'mentions': mentions if isinstance(mentions, list) else _extract_mentions(text),
+                }
+        except Exception:
+            pass
+
+    text = raw_details if isinstance(raw_details, str) else str(raw_details)
+    return {
+        'text': text,
+        'user_name': fallback_user,
+        'parent_id': None,
+        'mentions': _extract_mentions(text),
+    }
+
+
+def _serialize_note_details(text, user_name, parent_id=None, mentions=None):
+    payload = {
+        'text': text,
+        'user_name': user_name or 'Admin',
+        'parent_id': parent_id,
+        'mentions': mentions if isinstance(mentions, list) else _extract_mentions(text),
+    }
+    return json.dumps(payload)
+
+
+def _activity_row_to_dict(row):
+    item = dict(row)
+    if item.get('action') == 'NOTE':
+        parsed = _parse_note_details(item.get('details'), item.get('user_name') or item.get('team_member_name') or 'Admin')
+        item['details'] = parsed['text']
+        item['description'] = parsed['text']
+        item['user_name'] = parsed['user_name']
+        item['parent_id'] = parsed['parent_id']
+        item['mentions'] = parsed['mentions']
+    return item
+
 
 @app.route('/api/comments/<int:casting_id>', methods=['GET'])
 def get_comments(casting_id):
     db = get_db()
     rows = db.execute('''
-        SELECT a.id, a.casting_id, a.details as text, a.timestamp as created_at,
-               COALESCE(tm.name, 'Admin') as user_name
+        SELECT a.id, a.casting_id, a.details, a.timestamp as created_at,
+               COALESCE(tm.name, 'Admin') as default_user_name
         FROM activities a
         LEFT JOIN team_members tm ON a.team_member_id = tm.id
         WHERE a.casting_id = ? AND a.action = 'NOTE'
-        ORDER BY a.timestamp DESC
+        ORDER BY a.timestamp ASC
     ''', (casting_id,)).fetchall()
-    return jsonify([dict(row) for row in rows])
+
+    comments = []
+    for row in rows:
+        parsed = _parse_note_details(row['details'], row['default_user_name'])
+        comments.append({
+            'id': row['id'],
+            'casting_id': row['casting_id'],
+            'text': parsed['text'],
+            'user_name': parsed['user_name'],
+            'parent_id': parsed['parent_id'],
+            'mentions': parsed['mentions'],
+            'created_at': row['created_at'],
+        })
+
+    return jsonify(comments)
 
 @app.route('/api/comments', methods=['POST'])
 def add_comment():
     db = get_db()
-    data = request.json
+    data = request.json or {}
 
     casting_id = data.get('casting_id')
-    text = data.get('text', '')
-    user_name = data.get('user_name', 'Admin')
+    text = (data.get('text') or '').strip()
+    user_name = (data.get('user_name') or 'Admin').strip() or 'Admin'
+    parent_id = data.get('parent_id')
+    mentions = data.get('mentions')
+
+    if not casting_id or not text:
+        return jsonify({'error': 'casting_id and text are required'}), 400
+
+    serialized = _serialize_note_details(text, user_name, parent_id, mentions)
 
     cursor = db.execute('''
         INSERT INTO activities (casting_id, action, details)
         VALUES (?, 'NOTE', ?)
-    ''', (casting_id, text))
+    ''', (casting_id, serialized))
     db.commit()
 
     return jsonify({
@@ -373,6 +458,8 @@ def add_comment():
         'casting_id': casting_id,
         'text': text,
         'user_name': user_name,
+        'parent_id': parent_id,
+        'mentions': mentions if isinstance(mentions, list) else _extract_mentions(text),
         'created_at': datetime.now().isoformat()
     }), 201
 
@@ -668,7 +755,7 @@ def get_activities(casting_id):
         ORDER BY a.timestamp DESC
     ''', (casting_id,)).fetchall()
 
-    return jsonify([dict(row) for row in rows])
+    return jsonify([_activity_row_to_dict(row) for row in rows])
 
 @app.route('/api/castings/<int:casting_id>/notes', methods=['POST'])
 def add_note(casting_id):
@@ -1328,6 +1415,57 @@ def update_dashboard_modules():
     with open(os.path.join(SETTINGS_DIR, 'dashboard_modules.json'), 'w') as f:
         json.dump(data, f)
     return jsonify(data)
+
+# Workflow automation settings (Phase 5 ready foundation)
+@app.route('/api/settings/automation-rules', methods=['GET'])
+def get_automation_rules():
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
+    default_rules = {
+        'rules': [
+            {
+                'id': 'note_mention',
+                'label': 'Note mentions',
+                'description': 'Prepare alerts when a teammate is mentioned in an internal note.',
+                'channels': ['in_app', 'email'],
+                'enabled': True,
+            },
+            {
+                'id': 'attachment_uploaded',
+                'label': 'Attachment uploaded',
+                'description': 'Queue notifications when a new brief, deck, or document is added.',
+                'channels': ['in_app'],
+                'enabled': True,
+            },
+            {
+                'id': 'status_changed',
+                'label': 'Status changed',
+                'description': 'Keep the team informed when a casting moves across the pipeline.',
+                'channels': ['in_app', 'email'],
+                'enabled': True,
+            },
+            {
+                'id': 'assignment_changed',
+                'label': 'Assignment changed',
+                'description': 'Trigger future handoff alerts when owners are updated.',
+                'channels': ['in_app', 'email'],
+                'enabled': True,
+            },
+        ]
+    }
+    try:
+        with open(os.path.join(SETTINGS_DIR, 'automation_rules.json')) as f:
+            return jsonify(json.load(f))
+    except:
+        return jsonify(default_rules)
+
+@app.route('/api/settings/automation-rules', methods=['PUT'])
+def update_automation_rules():
+    data = request.json or {}
+    payload = {'rules': data.get('rules', [])}
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
+    with open(os.path.join(SETTINGS_DIR, 'automation_rules.json'), 'w') as f:
+        json.dump(payload, f)
+    return jsonify({'message': 'Automation rules saved', 'rules': payload['rules']})
 
 # Email config (store SMTP settings - basic)
 @app.route('/api/settings/email-config', methods=['GET'])
