@@ -24,6 +24,12 @@ import { toast } from 'sonner'
 import { CastingModal } from '@/components/CastingModal'
 import { CastingDetailModal } from '@/components/CastingDetailModal'
 import { AdvancedFilters } from '@/components/AdvancedFilters'
+import {
+  countActiveCastingFilters,
+  matchesCastingFilters,
+  normalizeCastingFilters,
+  type CastingFilters,
+} from '@/features/castings/filterPresets'
 import type { Casting, PipelineStage } from '@/types'
 import { KanbanBoard } from '@/components/kanban'
 import FormControl from '@mui/material/FormControl'
@@ -37,7 +43,7 @@ const HIDDEN_STATUSES = ['WON', 'LOST'] as const
 export function Castings() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { castingViewMode, setCastingViewMode } = useAppStore()
+  const { castingViewMode, setCastingViewMode, currentUser } = useAppStore()
   const { openOverlay, closeOverlay } = useOverlay()
   const [castings, setCastings] = useState<Casting[]>([])
   const [pipeline, setPipeline] = useState<PipelineStage[]>([])
@@ -47,7 +53,7 @@ export function Castings() {
   const [selectedCasting, setSelectedCasting] = useState<Casting | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
-  const [activeFilters, setActiveFilters] = useState<{ [key: string]: string[] }>({})
+  const [activeFilters, setActiveFilters] = useState<CastingFilters>({})
   // Track when the casting modal was explicitly closed by the user.
   // Used to prevent the detail-modal → casting-modal reopen flow from overriding
   // a deliberate close (Cancel / Save).
@@ -131,6 +137,8 @@ export function Castings() {
     }
   }, [filtersOpen, openOverlay, closeOverlay])
 
+  const appliedFilters = normalizeCastingFilters(activeFilters)
+
   // Filter and sort castings
   const filteredCastings = castings
     .filter((c) => {
@@ -143,21 +151,8 @@ export function Castings() {
           return false
         }
       }
-      if (activeFilters.status?.length && !activeFilters.status.includes(c.status)) {
-        return false
-      }
-      if (activeFilters.source?.length && !activeFilters.source.includes(c.source)) {
-        return false
-      }
-      // Team member filter
-      if (activeFilters.team_member?.length) {
-        const castingIds = (c.assigned_ids || '').toString().split(',').map(s => s.trim())
-        const hasMatchingMember = activeFilters.team_member.some(memberId =>
-          castingIds.includes(memberId)
-        )
-        if (!hasMatchingMember) return false
-      }
-      return true
+
+      return matchesCastingFilters(c, appliedFilters)
     })
     .sort((a, b) => {
       const aVal = a[sortConfig.key as keyof Casting] ?? ''
@@ -171,7 +166,7 @@ export function Castings() {
     (c) => !HIDDEN_STATUSES.includes(c.status as typeof HIDDEN_STATUSES[number])
   )
 
-  const activeFilterCount = Object.values(activeFilters).flat().length
+  const activeFilterCount = countActiveCastingFilters(appliedFilters)
 
   const handleSort = (key: string) => {
     setSortConfig((prev) =>
@@ -262,8 +257,10 @@ export function Castings() {
           >
             <AdvancedFilters
               pipeline={pipeline}
-              filters={activeFilters}
-              onFiltersChange={setActiveFilters}
+              currentUserName={currentUser?.name || 'Toaney Bhatia'}
+              filters={appliedFilters}
+              onApply={setActiveFilters}
+              onReset={() => setActiveFilters({})}
             />
           </motion.div>
         )}

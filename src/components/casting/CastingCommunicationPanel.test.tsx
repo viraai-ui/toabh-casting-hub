@@ -150,6 +150,8 @@ describe('CastingCommunicationPanel', () => {
         casting_id: 42,
         text: '@Rhea call sheet shared with the client.',
         user_name: 'Team',
+        mentions: ['Rhea'],
+        parent_id: null,
       })
     })
 

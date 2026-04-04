@@ -54,6 +54,6 @@ describe('CastingDetailModal', () => {
       />
     )
 
-    expect(await screen.findByText(/casting updates and client contact/i)).toBeInTheDocument()
+    expect(await screen.findByText(/internal chat, activity, and attachments/i)).toBeInTheDocument()
   })
 })
