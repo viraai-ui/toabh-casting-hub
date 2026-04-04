@@ -51,7 +51,11 @@ export function ActivityLog() {
       params.append('limit', '20')
 
       const data = await api.get(`/activities?${params.toString()}`)
-      const safeData = Array.isArray(data) ? data : []
+      const safeData = Array.isArray(data)
+        ? data
+        : data && typeof data === 'object' && Array.isArray((data as { activities?: Activity[] }).activities)
+          ? (data as { activities: Activity[] }).activities
+          : []
       if (reset) {
         setActivities(safeData)
         setPage(1)

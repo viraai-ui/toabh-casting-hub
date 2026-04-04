@@ -68,6 +68,20 @@ export interface Comment {
   user_name: string
   text?: string
   content?: string
+  parent_id?: number | null
+  mentions?: string[]
+  created_at: string
+}
+
+export interface CastingAttachment {
+  id: number
+  casting_id: number
+  original_filename: string
+  stored_filename?: string
+  mime_type?: string
+  file_size?: number
+  file_ext?: string
+  url: string
   created_at: string
 }
 
