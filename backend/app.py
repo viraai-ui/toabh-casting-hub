@@ -1513,7 +1513,6 @@ def search():
             COALESCE(c.client_company, '') as client_company,
             COALESCE(c.client_contact, '') as client_contact,
             COALESCE(c.status, '') as status,
-            COALESCE(c.pipeline_stage, '') as pipeline_stage,
             COALESCE(c.created_at, '') as created_at,
             COALESCE(c.updated_at, '') as updated_at
         FROM castings c
