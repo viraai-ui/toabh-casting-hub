@@ -1,4 +1,14 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+  type Dispatch,
+  type DragEvent,
+  type MouseEvent,
+  type SetStateAction,
+} from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -11,10 +21,11 @@ import {
   Phone,
   MessageCircle,
   Calendar,
-
-  Loader2,
+  Settings2,
+  Paperclip,
   ChevronDown,
   ChevronUp,
+  Loader2,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, formatDate, formatCurrency, getInitials } from '@/lib/utils'
@@ -39,6 +50,117 @@ import CircularProgress from '@mui/material/CircularProgress'
 
 // Statuses hidden from Grid/List views but still shown in Kanban
 const HIDDEN_STATUSES = ['WON', 'LOST'] as const
+
+const LIST_VIEW_COLUMN_CONFIG_KEY = 'castings-list-columns'
+
+interface StoredListViewPreferences {
+  order: string[]
+  visibility: Record<string, boolean>
+}
+
+interface ListViewColumn {
+  key: string
+  label: string
+  sortKey: string
+  defaultVisible: boolean
+  mobileHidden?: boolean
+  desktopHidden?: boolean
+}
+
+const LIST_VIEW_COLUMNS: ListViewColumn[] = [
+  { key: 'client', label: 'Client', sortKey: 'client_name', defaultVisible: true },
+  { key: 'project', label: 'Project', sortKey: 'project_name', defaultVisible: true },
+  { key: 'status', label: 'Status', sortKey: 'status', defaultVisible: true },
+  { key: 'shootDate', label: 'Date', sortKey: 'shoot_date_start', defaultVisible: true },
+  { key: 'budget', label: 'Budget', sortKey: 'budget_max', defaultVisible: true },
+  { key: 'source', label: 'Lead Source', sortKey: 'source_detail', defaultVisible: true },
+  { key: 'team', label: 'Team Members', sortKey: 'assigned_names', defaultVisible: true, mobileHidden: true },
+  { key: 'attachments', label: 'Attachments', sortKey: 'attachments_count', defaultVisible: true, mobileHidden: true },
+  { key: 'location', label: 'Location', sortKey: 'location', defaultVisible: true, mobileHidden: true },
+]
+
+function getDefaultColumnVisibility() {
+  return LIST_VIEW_COLUMNS.reduce((acc, column) => {
+    acc[column.key] = column.defaultVisible
+    return acc
+  }, {} as Record<string, boolean>)
+}
+
+function getDefaultColumnOrder() {
+  return LIST_VIEW_COLUMNS.map((column) => column.key)
+}
+
+function normalizeColumnOrder(order?: unknown) {
+  const defaults = getDefaultColumnOrder()
+  const incoming = Array.isArray(order) ? order.filter((key): key is string => typeof key === 'string') : []
+  const known = incoming.filter((key) => defaults.includes(key))
+  const missing = defaults.filter((key) => !known.includes(key))
+  return [...known, ...missing]
+}
+
+function getStoredListViewPreferences(): StoredListViewPreferences {
+  const defaults = {
+    order: getDefaultColumnOrder(),
+    visibility: getDefaultColumnVisibility(),
+  }
+
+  if (typeof window === 'undefined') return defaults
+
+  const saved = localStorage.getItem(LIST_VIEW_COLUMN_CONFIG_KEY)
+  if (!saved) return defaults
+
+  try {
+    const parsed = JSON.parse(saved) as Partial<StoredListViewPreferences> | Record<string, boolean>
+
+    if (parsed && 'visibility' in parsed) {
+      return {
+        order: normalizeColumnOrder(parsed.order),
+        visibility: {
+          ...defaults.visibility,
+          ...Object.fromEntries(
+            Object.entries(parsed.visibility || {}).filter(
+              ([key, value]) => typeof defaults.visibility[key] === 'boolean' && typeof value === 'boolean',
+            ),
+          ),
+        },
+      }
+    }
+
+    return {
+      order: defaults.order,
+      visibility: {
+        ...defaults.visibility,
+        ...Object.fromEntries(
+          Object.entries(parsed || {}).filter(
+            ([key, value]) => typeof defaults.visibility[key] === 'boolean' && typeof value === 'boolean',
+          ),
+        ),
+      },
+    }
+  } catch {
+    return defaults
+  }
+}
+
+function parseAssignedNames(value?: string | null) {
+  if (!value) return [] as string[]
+  return value
+    .split(',')
+    .map((name) => name.trim())
+    .filter(Boolean)
+}
+
+function formatSourceLabel(casting: Casting) {
+  if (casting.source && casting.source.trim()) {
+    const detail = (casting as { source_detail?: string | null }).source_detail
+    if (detail?.trim()) {
+      return `${casting.source.trim()} · ${detail.trim()}`
+    }
+    return casting.source.trim()
+  }
+
+  return '-'
+}
 
 export function Castings() {
   const navigate = useNavigate()
@@ -140,6 +262,45 @@ export function Castings() {
   const appliedFilters = normalizeCastingFilters(activeFilters)
 
   // Filter and sort castings
+  const getSortableValue = (casting: Casting, key: string): number | string => {
+    switch (key) {
+      case 'shootDate':
+      case 'shoot_date_start': {
+        const value = casting.shoot_date_start || casting.shoot_date_end || ''
+        if (!value) return ''
+        return new Date(value).getTime()
+      }
+      case 'created_at': {
+        if (!casting.created_at) return ''
+        return new Date(casting.created_at).getTime()
+      }
+      case 'budget_min':
+      case 'budget_max':
+      case 'budget':
+        return casting.budget_max ?? casting.budget_min ?? 0
+      case 'attachments_count': {
+        const value = (casting as { attachments_count?: number | null }).attachments_count
+        return typeof value === 'number' ? value : 0
+      }
+      case 'assigned_names':
+        return parseAssignedNames((casting as { assigned_names?: string | null }).assigned_names).length
+      case 'source_detail':
+        return formatSourceLabel(casting)
+      case 'project_name':
+      case 'client_name':
+      case 'location':
+      case 'source':
+      case 'status':
+      case 'contact':
+      case 'team':
+        return (casting as unknown as { [key: string]: string | undefined })[key] || casting.client_name || ''
+      default: {
+        const value = (casting as unknown as { [key: string]: unknown })[key]
+        return typeof value === 'number' || typeof value === 'string' ? value : String(value ?? '')
+      }
+    }
+  }
+
   const filteredCastings = castings
     .filter((c) => {
       if (searchQuery) {
@@ -155,9 +316,16 @@ export function Castings() {
       return matchesCastingFilters(c, appliedFilters)
     })
     .sort((a, b) => {
-      const aVal = a[sortConfig.key as keyof Casting] ?? ''
-      const bVal = b[sortConfig.key as keyof Casting] ?? ''
-      const cmp = String(aVal).localeCompare(String(bVal))
+      const aVal = getSortableValue(a, sortConfig.key)
+      const bVal = getSortableValue(b, sortConfig.key)
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal
+      }
+
+      const aText = String(aVal)
+      const bText = String(bVal)
+      const cmp = aText.localeCompare(bText, undefined, { sensitivity: 'base', numeric: true })
       return sortConfig.direction === 'asc' ? cmp : -cmp
     })
 
@@ -348,15 +516,174 @@ function ListView({
 }: {
   castings: Casting[]
   pipeline: PipelineStage[]
-  setCastings: React.Dispatch<React.SetStateAction<Casting[]>>
+  setCastings: Dispatch<SetStateAction<Casting[]>>
   sortConfig: { key: string; direction: 'asc' | 'desc' }
   onSort: (key: string) => void
   onCastingClick: (c: Casting) => void
 }) {
   const [updatingId, setUpdatingId] = useState<number | null>(null)
   const [flashingId, setFlashingId] = useState<number | null>(null)
+  const [loadingAttachmentId, setLoadingAttachmentId] = useState<number | null>(null)
+  const [showColumnSettings, setShowColumnSettings] = useState(false)
+  const [draggedColumnKey, setDraggedColumnKey] = useState<string | null>(null)
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(
+    () => getStoredListViewPreferences().visibility,
+  )
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => getStoredListViewPreferences().order)
+  const settingsRef = useRef<HTMLDivElement | null>(null)
+
+  const persistColumnPreferences = useCallback(
+    (nextVisibility: Record<string, boolean>, nextOrder: string[]) => {
+      if (typeof window === 'undefined') return
+      localStorage.setItem(
+        LIST_VIEW_COLUMN_CONFIG_KEY,
+        JSON.stringify({
+          visibility: nextVisibility,
+          order: normalizeColumnOrder(nextOrder),
+        }),
+      )
+    },
+    [],
+  )
+
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!settingsRef.current?.contains(event.target as Node)) {
+        setShowColumnSettings(false)
+      }
+    }
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowColumnSettings(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleEscape)
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [])
+
   // Track in-flight request versions to handle rapid changes
   const versionRef = useRef<Map<number, number>>(new Map())
+
+  const orderedColumns = useMemo(() => {
+    return normalizeColumnOrder(columnOrder)
+      .map((columnKey) => LIST_VIEW_COLUMNS.find((column) => column.key === columnKey))
+      .filter(Boolean) as ListViewColumn[]
+  }, [columnOrder])
+
+  const visibleColumns = useMemo(
+    () => orderedColumns.filter((column) => columnVisibility[column.key]),
+    [columnVisibility, orderedColumns],
+  )
+
+  const mobileVisibleColumns = useMemo(
+    () => visibleColumns.filter((column) => !column.mobileHidden),
+    [visibleColumns],
+  )
+
+  const settingsAnchorColumnKey = visibleColumns.some((column) => column.key === 'client')
+    ? 'client'
+    : visibleColumns[0]?.key
+
+  const columnDensityClass =
+    visibleColumns.length >= 8 ? 'text-[12.5px]' : visibleColumns.length >= 6 ? 'text-[13px]' : 'text-sm'
+
+  const tableMinWidth = useMemo(() => {
+    const widthMap: Record<string, number> = {
+      client: 220,
+      project: 230,
+      status: 190,
+      shootDate: 140,
+      budget: 130,
+      source: 150,
+      team: 130,
+      attachments: 110,
+      location: 160,
+    }
+
+    return visibleColumns.reduce((total, column) => total + (widthMap[column.key] || 140), 0) + 108
+  }, [visibleColumns])
+
+  const updateColumnVisibility = (columnKey: string, value: boolean) => {
+    const targetColumn = orderedColumns.find((column) => column.key === columnKey)
+
+    if (!value && visibleColumns.length <= 1) {
+      toast.info('Keep at least one column visible')
+      return
+    }
+
+    if (!value && targetColumn && !targetColumn.mobileHidden && mobileVisibleColumns.length <= 1) {
+      toast.info('Keep at least one mobile column visible')
+      return
+    }
+
+    setColumnVisibility((prev) => {
+      const next = {
+        ...prev,
+        [columnKey]: value,
+      }
+      persistColumnPreferences(next, columnOrder)
+      return next
+    })
+  }
+
+  const moveColumn = (draggedKey: string, targetKey: string) => {
+    if (draggedKey === targetKey) return
+
+    setColumnOrder((prev) => {
+      const current = normalizeColumnOrder(prev)
+      const draggedIndex = current.indexOf(draggedKey)
+      const targetIndex = current.indexOf(targetKey)
+      if (draggedIndex === -1 || targetIndex === -1) return current
+
+      const nextOrder = [...current]
+      const [movedColumn] = nextOrder.splice(draggedIndex, 1)
+      nextOrder.splice(targetIndex, 0, movedColumn)
+      persistColumnPreferences(columnVisibility, nextOrder)
+      return nextOrder
+    })
+  }
+
+  const nudgeColumn = (columnKey: string, direction: 'up' | 'down') => {
+    const currentIndex = orderedColumns.findIndex((column) => column.key === columnKey)
+    if (currentIndex === -1) return
+
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+    const targetColumn = orderedColumns[targetIndex]
+    if (!targetColumn) return
+
+    moveColumn(columnKey, targetColumn.key)
+  }
+
+  const resetColumnPreferences = () => {
+    const defaultsVisibility = getDefaultColumnVisibility()
+    const defaultsOrder = getDefaultColumnOrder()
+    setColumnVisibility(defaultsVisibility)
+    setColumnOrder(defaultsOrder)
+    persistColumnPreferences(defaultsVisibility, defaultsOrder)
+    setShowColumnSettings(false)
+  }
+
+  const handleColumnDragStart = (event: DragEvent<HTMLButtonElement>, columnKey: string) => {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', columnKey)
+    setDraggedColumnKey(columnKey)
+  }
+
+  const handleColumnDrop = (event: DragEvent<HTMLButtonElement>, targetKey: string) => {
+    event.preventDefault()
+    const sourceKey = event.dataTransfer.getData('text/plain') || draggedColumnKey
+    if (sourceKey) {
+      moveColumn(sourceKey, targetKey)
+    }
+    setDraggedColumnKey(null)
+  }
 
   const handleStatusChange = async (castingId: number, newStatus: string) => {
     const casting = castings.find((c) => c.id === castingId)
@@ -368,27 +695,24 @@ function ListView({
 
     const oldStatus = casting.status
 
-    // Optimistic update
     setCastings((prev) =>
-      prev.map((c) => (c.id === castingId ? { ...c, status: newStatus } : c))
+      prev.map((c) => (c.id === castingId ? { ...c, status: newStatus } : c)),
     )
     setUpdatingId(castingId)
     setFlashingId(castingId)
     setTimeout(() => {
-      if (flashingId === castingId) setFlashingId(null)
+      setFlashingId((prev) => (prev === castingId ? null : prev))
     }, 1000)
 
     try {
       await api.put(`/castings/${castingId}/status`, { status: newStatus })
-      // Only clear updating if no newer request has superseded this one
       if (versionRef.current.get(castingId) === thisVersion) {
         setUpdatingId(null)
       }
     } catch {
-      // Rollback only if this is still the latest request for this row
       if (versionRef.current.get(castingId) === thisVersion) {
         setCastings((prev) =>
-          prev.map((c) => (c.id === castingId ? { ...c, status: oldStatus } : c))
+          prev.map((c) => (c.id === castingId ? { ...c, status: oldStatus } : c)),
         )
         setUpdatingId(null)
         toast.error('Failed to update status')
@@ -396,36 +720,198 @@ function ListView({
     }
   }
 
+  const handleOpenAttachments = async (casting: Casting, e: MouseEvent<HTMLElement>) => {
+    e.stopPropagation()
+    const attachmentsCount = casting.attachments_count || 0
+    const latestAttachmentUrl = casting.latest_attachment_url
+
+    if (!attachmentsCount && !latestAttachmentUrl) {
+      toast.info('No attachments uploaded for this casting yet')
+      return
+    }
+
+    if (latestAttachmentUrl) {
+      window.open(latestAttachmentUrl, '_blank', 'noopener,noreferrer')
+      return
+    }
+
+    setLoadingAttachmentId(casting.id)
+    try {
+      const response = (await api.get(`/castings/${casting.id}/attachments`)) as {
+        attachments?: Array<{ url?: string }>
+      }
+      const fallbackAttachmentUrl = response?.attachments?.[0]?.url
+      if (!fallbackAttachmentUrl) {
+        toast.info('No downloadable attachment found for this casting')
+        return
+      }
+      window.open(fallbackAttachmentUrl, '_blank', 'noopener,noreferrer')
+    } catch {
+      toast.error('Failed to open attachments')
+    } finally {
+      setLoadingAttachmentId((prev) => (prev === casting.id ? null : prev))
+    }
+  }
+
+  const teamNamesForCasting = (casting: Casting) => {
+    const assignedTo = casting.assigned_to as Array<string | { id?: number; name?: string }> | undefined
+    if (Array.isArray(assignedTo)) {
+      const names = assignedTo
+        .map((entry) => (typeof entry === 'string' ? entry : entry?.name || ''))
+        .filter(Boolean)
+      if (names.length > 0) return names
+    }
+
+    return parseAssignedNames(casting.assigned_names)
+  }
+
+  const getColumnClass = (column: ListViewColumn) => {
+    if (column.desktopHidden) return 'hidden'
+    if (column.mobileHidden) return 'hidden lg:table-cell'
+    return ''
+  }
+
+  const renderColumnHeader = (column: ListViewColumn) => {
+    const isSorted = sortConfig.key === column.sortKey
+
+    return (
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span className="truncate">{column.label}</span>
+        {isSorted &&
+          (sortConfig.direction === 'asc' ? (
+            <ChevronUp className="h-3 w-3 shrink-0" />
+          ) : (
+            <ChevronDown className="h-3 w-3 shrink-0" />
+          ))}
+        {column.key === settingsAnchorColumnKey && (
+          <div ref={settingsRef} className="relative ml-1">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation()
+                setShowColumnSettings((prev) => !prev)
+              }}
+              className={cn(
+                'inline-flex h-6 w-6 items-center justify-center rounded-md border border-transparent text-slate-400 transition hover:border-slate-200 hover:bg-slate-100 hover:text-slate-700',
+                showColumnSettings && 'border-slate-200 bg-slate-100 text-slate-700',
+              )}
+              aria-label="Customize columns"
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+            </button>
+
+            {showColumnSettings && (
+              <div className="absolute left-0 top-full z-30 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl">
+                <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-2">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">Customize columns</p>
+                    <p className="text-xs text-slate-500">Toggle visibility and drag to reorder.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      resetColumnPreferences()
+                    }}
+                    className="text-xs font-semibold text-amber-600 hover:text-amber-700"
+                  >
+                    Reset
+                  </button>
+                </div>
+
+                <div className="mt-3 space-y-2">
+                  {orderedColumns.map((orderedColumn) => {
+                    const visibleCount = orderedColumns.filter((item) => columnVisibility[item.key]).length
+                    const isLocked = visibleCount <= 1 && columnVisibility[orderedColumn.key]
+
+                    return (
+                      <button
+                        key={orderedColumn.key}
+                        type="button"
+                        draggable
+                        onDragStart={(event) => handleColumnDragStart(event, orderedColumn.key)}
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={(event) => handleColumnDrop(event, orderedColumn.key)}
+                        onDragEnd={() => setDraggedColumnKey(null)}
+                        onClick={(event) => event.stopPropagation()}
+                        className={cn(
+                          'flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition',
+                          draggedColumnKey === orderedColumn.key && 'border-amber-300 bg-amber-50',
+                        )}
+                      >
+                        <span className="text-slate-400">⋮⋮</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-slate-800">{orderedColumn.label}</p>
+                          <p className="text-[11px] text-slate-500">Drag or tap arrows to reorder</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              nudgeColumn(orderedColumn.key, 'up')
+                            }}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                            disabled={orderedColumns[0]?.key === orderedColumn.key}
+                            aria-label={`Move ${orderedColumn.label} up`}
+                          >
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              nudgeColumn(orderedColumn.key, 'down')
+                            }}
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                            disabled={orderedColumns[orderedColumns.length - 1]?.key === orderedColumn.key}
+                            aria-label={`Move ${orderedColumn.label} down`}
+                          >
+                            ↓
+                          </button>
+                          <label className="inline-flex items-center" onClick={(event) => event.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={Boolean(columnVisibility[orderedColumn.key])}
+                              disabled={isLocked}
+                              onChange={(event) =>
+                                updateColumnVisibility(orderedColumn.key, event.target.checked)
+                              }
+                              className="h-4 w-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500"
+                            />
+                          </label>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="card overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className={cn('w-full table-auto', columnDensityClass)} style={{ minWidth: `${tableMinWidth}px` }}>
           <thead>
-            <tr className="border-b border-slate-100">
-              {[
-                { key: 'client_name', label: 'Client' },
-                { key: 'project_name', label: 'Project' },
-                { key: 'status', label: 'Status' },
-                { key: 'shoot_date_start', label: 'Date' },
-                { key: 'budget_max', label: 'Budget' },
-              ].map(({ key, label }) => (
+            <tr className="border-b border-slate-100 bg-slate-50/70">
+              {visibleColumns.map((column) => (
                 <th
-                  key={key}
-                  onClick={() => onSort(key)}
-                  className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wide cursor-pointer hover:bg-slate-50"
+                  key={column.key}
+                  onClick={() => onSort(column.sortKey)}
+                  className={cn(
+                    'px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 transition hover:bg-slate-100/80',
+                    getColumnClass(column),
+                  )}
                 >
-                  <div className="flex items-center gap-1">
-                    {label}
-                    {sortConfig.key === key &&
-                      (sortConfig.direction === 'asc' ? (
-                        <ChevronUp className="w-3 h-3" />
-                      ) : (
-                        <ChevronDown className="w-3 h-3" />
-                      ))}
-                  </div>
+                  {renderColumnHeader(column)}
                 </th>
               ))}
-              <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wide">
+              <th className="sticky right-0 z-20 bg-slate-50/95 px-3 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 shadow-[-12px_0_18px_-16px_rgba(15,23,42,0.35)] backdrop-blur">
                 Actions
               </th>
             </tr>
@@ -436,187 +922,322 @@ function ListView({
               const stageColor = currentStage?.color || '#64748b'
               const isUpdating = updatingId === casting.id
               const isFlashing = flashingId === casting.id
+              const sourceValue = formatSourceLabel(casting)
+              const teamMembers = teamNamesForCasting(casting)
+              const attachmentsCount = casting.attachments_count || 0
+              const isAttachmentLoading = loadingAttachmentId === casting.id
+              const phone = casting.client_contact?.trim()
+              const normalizedPhone = phone ? phone.replace(/\D/g, '') : ''
 
               return (
                 <tr
                   key={casting.id}
                   className={cn(
-                    'border-b border-slate-50 transition-all',
-                    isFlashing
-                      ? 'bg-green-50 ring-1 ring-green-200'
-                      : 'hover:bg-slate-50 cursor-pointer',
-                    isUpdating && 'opacity-60 pointer-events-none'
+                    'border-b border-slate-100 transition-all',
+                    isFlashing ? 'bg-green-50 ring-1 ring-green-200' : 'hover:bg-slate-50/80',
+                    isUpdating && 'pointer-events-none opacity-60',
                   )}
                 >
-                  {/* Clickable cells — status cell stops propagation */}
-                  <td
-                    className="px-4 py-3"
-                    onClick={() => !isUpdating && onCastingClick(casting)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-xs font-medium">
-                        {getInitials(casting.client_name)}
-                      </div>
-                      <div>
-                        <p className="font-medium text-slate-900">{casting.client_name}</p>
-                        <p className="text-xs text-slate-500">{casting.client_company}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td
-                    className="px-4 py-3"
-                    onClick={() => !isUpdating && onCastingClick(casting)}
-                  >
-                    <p className="font-medium text-slate-900">{casting.project_name || '-'}</p>
-                    <p className="text-xs text-slate-500">{casting.location || '-'}</p>
-                  </td>
+                  {visibleColumns.map((column) => {
+                    const tdClass = cn('px-3 py-3 align-middle', getColumnClass(column))
 
-                  {/* Status cell — MUI Select, no row click */}
-                  <td
-                    className="px-4 py-3 min-w-[160px]"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <FormControl size="small" fullWidth error={!currentStage}>
-                      <Select
-                        value={casting.status || ''}
-                        onChange={(e) =>
-                          handleStatusChange(casting.id, String(e.target.value))
-                        }
-                        disabled={isUpdating}
-                        displayEmpty
-                        IconComponent={
-                          isUpdating
-                            ? () => (
-                                <CircularProgress
-                                  size={14}
-                                  sx={{ mx: 1, color: 'text.secondary' }}
-                                />
-                              )
-                            : undefined
-                        }
-                        sx={{
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          borderRadius: '9999px',
-                          border: '1px solid',
-                          borderColor: 'divider',
-                          '& .MuiSelect-select': {
-                            py: '4px',
-                            pl: '10px',
-                            pr: '32px',
-                            color: stageColor,
-                            backgroundColor: `${stageColor}14`,
-                            borderRadius: '9999px',
-                            '&:focus': {
-                              borderRadius: '9999px',
-                              backgroundColor: `${stageColor}22`,
-                            },
-                          },
-                          '& .MuiOutlinedInput-notchedOutline': {
-                            border: 'none',
-                          },
-                          '& .MuiSelect-icon': {
-                            color: stageColor,
-                            right: 8,
-                          },
-                          '&:hover .MuiSelect-select': {
-                            backgroundColor: `${stageColor}22`,
-                          },
-                          transition: 'all 0.15s ease',
-                          cursor: isUpdating ? 'wait' : 'pointer',
-                        }}
-                        MenuProps={{
-                          PaperProps: {
-                            sx: {
-                              borderRadius: '12px',
-                              mt: '4px',
-                              boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
-                              maxHeight: 280,
-                            },
-                          },
-                          MenuListProps: {
-                            sx: { py: '4px' },
-                          },
-                        }}
-                      >
-                        {pipeline.map((stage) => (
-                          <MenuItem
-                            key={stage.id}
-                            value={stage.name}
-                            sx={{
-                              fontSize: '0.8rem',
-                              fontWeight: casting.status === stage.name ? 600 : 400,
-                              color: stage.color,
-                              gap: 1,
-                              mx: '8px',
-                              my: '2px',
-                              borderRadius: '8px',
-                              '&::before': {
-                                content: '""',
-                                display: 'block',
-                                width: 8,
-                                height: 8,
-                                borderRadius: '50%',
-                                backgroundColor: stage.color,
-                              },
-                              '&:hover': {
-                                backgroundColor: `${stage.color}18`,
-                              },
-                              '&.Mui-selected': {
-                                backgroundColor: `${stage.color}14`,
+                    if (column.key === 'client') {
+                      return (
+                        <td
+                          key={`${casting.id}-client`}
+                          className={cn(tdClass, 'min-w-[220px] max-w-[240px]')}
+                          onClick={() => !isUpdating && onCastingClick(casting)}
+                        >
+                          <div className="flex min-w-0 items-center gap-2.5">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-[11px] font-semibold text-white shadow-sm">
+                              {getInitials(casting.client_name)}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-slate-900">{casting.client_name || '-'}</p>
+                              <p className="truncate text-[11px] text-slate-500">{casting.client_company || 'Independent client'}</p>
+                            </div>
+                          </div>
+                        </td>
+                      )
+                    }
+
+                    if (column.key === 'project') {
+                      return (
+                        <td
+                          key={`${casting.id}-project`}
+                          className={cn(tdClass, 'min-w-[230px] max-w-[260px]')}
+                          onClick={() => !isUpdating && onCastingClick(casting)}
+                        >
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex items-start gap-2">
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate font-semibold text-slate-900">{casting.project_name || '-'}</p>
+                              </div>
+                              {attachmentsCount > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={(event) => handleOpenAttachments(casting, event)}
+                                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-600"
+                                  title={`Open ${attachmentsCount} attachment${attachmentsCount > 1 ? 's' : ''}`}
+                                >
+                                  {isAttachmentLoading ? <CircularProgress size={12} /> : <Paperclip className="h-3.5 w-3.5" />}
+                                </button>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+                              {casting.location && !columnVisibility.location && (
+                                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">{casting.location}</span>
+                              )}
+                              {casting.source && !columnVisibility.source && (
+                                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">
+                                  {casting.source_detail ? `${casting.source} · ${casting.source_detail}` : casting.source}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      )
+                    }
+
+                    if (column.key === 'status') {
+                      return (
+                        <td
+                          key={`${casting.id}-status`}
+                          className={cn(tdClass, 'min-w-[185px]')}
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <FormControl size="small" fullWidth error={!currentStage}>
+                            <Select
+                              value={casting.status || ''}
+                              onChange={(event) => handleStatusChange(casting.id, String(event.target.value))}
+                              disabled={isUpdating}
+                              displayEmpty
+                              IconComponent={
+                                isUpdating
+                                  ? () => (
+                                      <CircularProgress size={14} sx={{ mx: 1, color: 'text.secondary' }} />
+                                    )
+                                  : undefined
+                              }
+                              sx={{
+                                fontSize: visibleColumns.length >= 8 ? '0.72rem' : '0.75rem',
                                 fontWeight: 600,
-                                '&:hover': {
-                                  backgroundColor: `${stage.color}22`,
+                                borderRadius: '9999px',
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                '& .MuiSelect-select': {
+                                  py: '4px',
+                                  pl: '10px',
+                                  pr: '32px',
+                                  color: stageColor,
+                                  backgroundColor: `${stageColor}14`,
+                                  borderRadius: '9999px',
+                                  '&:focus': {
+                                    borderRadius: '9999px',
+                                    backgroundColor: `${stageColor}22`,
+                                  },
                                 },
-                              },
-                            }}
-                          >
-                            {stage.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </td>
+                                '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                                '& .MuiSelect-icon': { color: stageColor, right: 8 },
+                                '&:hover .MuiSelect-select': { backgroundColor: `${stageColor}22` },
+                                transition: 'all 0.15s ease',
+                                cursor: isUpdating ? 'wait' : 'pointer',
+                              }}
+                              MenuProps={{
+                                PaperProps: {
+                                  sx: {
+                                    borderRadius: '12px',
+                                    mt: '4px',
+                                    boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+                                    maxHeight: 280,
+                                  },
+                                },
+                                MenuListProps: { sx: { py: '4px' } },
+                              }}
+                            >
+                              {pipeline.map((stage) => (
+                                <MenuItem
+                                  key={stage.id}
+                                  value={stage.name}
+                                  sx={{
+                                    fontSize: '0.8rem',
+                                    fontWeight: casting.status === stage.name ? 600 : 400,
+                                    color: stage.color,
+                                    gap: 1,
+                                    mx: '8px',
+                                    my: '2px',
+                                    borderRadius: '8px',
+                                    '&::before': {
+                                      content: '""',
+                                      display: 'block',
+                                      width: 8,
+                                      height: 8,
+                                      borderRadius: '50%',
+                                      backgroundColor: stage.color,
+                                    },
+                                    '&:hover': { backgroundColor: `${stage.color}18` },
+                                    '&.Mui-selected': {
+                                      backgroundColor: `${stage.color}14`,
+                                      fontWeight: 600,
+                                      '&:hover': { backgroundColor: `${stage.color}22` },
+                                    },
+                                  }}
+                                >
+                                  {stage.name}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </td>
+                      )
+                    }
 
-                  <td
-                    className="px-4 py-3 text-sm text-slate-600"
-                    onClick={() => !isUpdating && onCastingClick(casting)}
-                  >
-                    {formatDate(casting.shoot_date_start) || '-'}
-                  </td>
-                  <td
-                    className="px-4 py-3"
-                    onClick={() => !isUpdating && onCastingClick(casting)}
-                  >
-                    {casting.budget_min || casting.budget_max ? (
-                      <span className="text-sm font-medium text-slate-900">
-                        {formatCurrency(casting.budget_min)}
-                        {casting.budget_min && casting.budget_max && ' - '}
-                        {formatCurrency(casting.budget_max)}
-                      </span>
-                    ) : (
-                      <span className="text-slate-400">-</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-2">
-                      {casting.client_contact && (
+                    if (column.key === 'shootDate') {
+                      return (
+                        <td
+                          key={`${casting.id}-shootDate`}
+                          className={cn(tdClass, 'min-w-[140px]')}
+                          onClick={() => !isUpdating && onCastingClick(casting)}
+                        >
+                          <p className="text-slate-700">{formatDate(casting.shoot_date_start) || '-'}</p>
+                          {casting.shoot_date_end && casting.shoot_date_end !== casting.shoot_date_start && (
+                            <p className="truncate text-[11px] text-slate-400">to {formatDate(casting.shoot_date_end)}</p>
+                          )}
+                        </td>
+                      )
+                    }
+
+                    if (column.key === 'budget') {
+                      return (
+                        <td
+                          key={`${casting.id}-budget`}
+                          className={cn(tdClass, 'min-w-[130px]')}
+                          onClick={() => !isUpdating && onCastingClick(casting)}
+                        >
+                          {casting.budget_min || casting.budget_max ? (
+                            <span className="font-semibold text-slate-900">
+                              {formatCurrency(casting.budget_min)}
+                              {casting.budget_min && casting.budget_max && ' - '}
+                              {formatCurrency(casting.budget_max)}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
+                        </td>
+                      )
+                    }
+
+                    if (column.key === 'source') {
+                      return (
+                        <td
+                          key={`${casting.id}-source`}
+                          className={cn(tdClass, 'min-w-[150px] max-w-[180px]')}
+                          onClick={() => !isUpdating && onCastingClick(casting)}
+                        >
+                          <span
+                            className="inline-flex max-w-full items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700"
+                            title={sourceValue}
+                          >
+                            <span className="truncate">{sourceValue}</span>
+                          </span>
+                        </td>
+                      )
+                    }
+
+                    if (column.key === 'team') {
+                      return (
+                        <td
+                          key={`${casting.id}-team`}
+                          className={cn(tdClass, 'min-w-[130px] max-w-[160px]')}
+                          onClick={() => !isUpdating && onCastingClick(casting)}
+                        >
+                          {teamMembers.length === 0 ? (
+                            <span className="text-[11px] text-slate-400">Unassigned</span>
+                          ) : (
+                            <div className="flex items-center -space-x-2">
+                              {teamMembers.slice(0, 3).map((memberName, index) => (
+                                <span
+                                  key={`${casting.id}-${memberName}-${index}`}
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-slate-200 text-[10px] font-semibold text-slate-700 shadow-sm"
+                                  title={memberName}
+                                >
+                                  {getInitials(memberName)}
+                                </span>
+                              ))}
+                              {teamMembers.length > 3 && (
+                                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-slate-100 text-[10px] font-semibold text-slate-500 shadow-sm">
+                                  +{teamMembers.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      )
+                    }
+
+                    if (column.key === 'attachments') {
+                      return (
+                        <td
+                          key={`${casting.id}-attachments`}
+                          className={cn(tdClass, 'min-w-[110px]')}
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            onClick={(event) => handleOpenAttachments(casting, event)}
+                            disabled={isAttachmentLoading || !attachmentsCount}
+                            className={cn(
+                              'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition',
+                              attachmentsCount > 0
+                                ? 'border-amber-200 bg-amber-50 text-amber-700 hover:border-amber-300 hover:bg-amber-100'
+                                : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400',
+                            )}
+                          >
+                            {isAttachmentLoading ? <CircularProgress size={12} /> : <Paperclip className="h-3.5 w-3.5" />}
+                            <span>{attachmentsCount || 0}</span>
+                          </button>
+                        </td>
+                      )
+                    }
+
+                    if (column.key === 'location') {
+                      return (
+                        <td
+                          key={`${casting.id}-location`}
+                          className={cn(tdClass, 'min-w-[160px] max-w-[180px]')}
+                          onClick={() => !isUpdating && onCastingClick(casting)}
+                        >
+                          <span className="inline-flex max-w-full items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-700">
+                            <span className="truncate">{casting.location || '-'}</span>
+                          </span>
+                        </td>
+                      )
+                    }
+
+                    return null
+                  })}
+
+                  <td className="sticky right-0 z-10 bg-white px-3 py-3 shadow-[-12px_0_18px_-16px_rgba(15,23,42,0.35)]">
+                    <div className="flex items-center justify-end gap-1.5">
+                      {normalizedPhone && (
                         <>
                           <a
-                            href={`tel:+91${casting.client_contact}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                            href={`tel:${normalizedPhone}`}
+                            onClick={(event) => event.stopPropagation()}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 transition hover:bg-blue-100 hover:text-blue-700"
+                            aria-label="Call client"
                           >
-                            <Phone className="w-4 h-4" />
+                            <Phone className="h-3.5 w-3.5" />
                           </a>
                           <a
-                            href={`https://wa.me/91${casting.client_contact}?text=Regarding ${casting.project_name || 'your casting'}`}
+                            href={`https://wa.me/${normalizedPhone}?text=${encodeURIComponent(`Regarding ${casting.project_name || 'your casting'}`)}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-green-600"
+                            onClick={(event) => event.stopPropagation()}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-green-50 text-green-600 transition hover:bg-green-100 hover:text-green-700"
+                            aria-label="Message on WhatsApp"
                           >
-                            <MessageCircle className="w-4 h-4" />
+                            <MessageCircle className="h-3.5 w-3.5" />
                           </a>
                         </>
                       )}
@@ -639,7 +1260,7 @@ function GridView({
   onCastingClick,
 }: {
   castings: Casting[]
-  setCastings: React.Dispatch<React.SetStateAction<Casting[]>>
+  setCastings: Dispatch<SetStateAction<Casting[]>>
   pipeline: PipelineStage[]
   onCastingClick: (c: Casting) => void
 }) {
@@ -708,7 +1329,7 @@ function GridView({
                     <a
                       href={'tel:' + c.client_contact}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                      className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors"
                       title="Call"
                     >
                       <Phone className="w-3.5 h-3.5" />
@@ -718,7 +1339,7 @@ function GridView({
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-green-50 text-slate-400 hover:text-green-600 transition-colors"
+                      className="w-8 h-8 flex items-center justify-center rounded-lg bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 transition-colors"
                       title="WhatsApp"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />

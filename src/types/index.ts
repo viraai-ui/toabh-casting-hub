@@ -5,6 +5,7 @@ export interface Casting {
   client_company: string
   client_contact: string
   client_email?: string
+  source_detail?: string | null
   pipeline_stage?: string
   status: string
   source: string
@@ -17,9 +18,11 @@ export interface Casting {
   priority: string
   budget_min: number | null
   budget_max: number | null
-  assigned_to: string[]
+  assigned_to: Array<string | number | { id?: number; name?: string; role?: string }>
   assigned_ids: string | number[]
   assigned_names: string | null
+  attachments_count?: number | null
+  latest_attachment_url?: string | null
   custom_fields: string
   created_at: string
   updated_at: string
@@ -130,8 +133,28 @@ export interface DashboardStats {
   sources: { source: string; count: number }[]
 }
 
+export interface SearchProjectResult {
+  id: number
+  project_name: string
+  client_name?: string
+  status?: string
+  updated_at?: string
+}
+
 export interface SearchResult {
+  projects: SearchProjectResult[]
   castings: Casting[]
   clients: Client[]
   team: TeamMember[]
+}
+
+export interface NotificationItem {
+  id: string
+  type: 'assignment' | 'comment' | 'status_change' | 'mention' | 'general'
+  title: string
+  message: string
+  created_at: string
+  casting_id?: number | null
+  client_id?: number | null
+  user_name?: string
 }
