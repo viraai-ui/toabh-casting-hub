@@ -11,6 +11,7 @@ from email.mime.multipart import MIMEMultipart
 from flask import Flask, request, jsonify, g, send_from_directory, send_file
 from werkzeug.serving import make_server
 from dotenv import load_dotenv
+from utils.assistant import query_casting_assistant
 import threading
 
 BASE_DIR = os.path.dirname(__file__)
@@ -1203,6 +1204,15 @@ def parse_message():
 
     parsed = parse_casting_message(raw_text)
     return jsonify(parsed)
+
+
+@app.route('/api/assistant/query', methods=['POST'])
+def assistant_query():
+    db = get_db()
+    data = request.get_json() or {}
+    query = data.get('query', '')
+    response = query_casting_assistant(db, query)
+    return jsonify(response)
 
 # ==================== SETTINGS ROUTES ====================
 

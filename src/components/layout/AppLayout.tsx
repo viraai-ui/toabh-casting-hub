@@ -6,6 +6,7 @@ import { GlobalSearch } from '@/components/GlobalSearch'
 import { OverlayProvider } from '@/hooks/useOverlayManager'
 import { useAppStore } from '@/hooks/useStore'
 import { cn } from '@/lib/utils'
+import { CastingAssistant } from '@/components/assistant/CastingAssistant'
 
 export function AppLayout() {
   const { searchOpen, sidebarCollapsed } = useAppStore()
@@ -31,6 +32,7 @@ export function AppLayout() {
 
         {/* Global Search Modal */}
         {searchOpen && <GlobalSearch />}
+        <CastingAssistant />
       </div>
     </OverlayProvider>
   )
