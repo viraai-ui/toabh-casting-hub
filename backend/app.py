@@ -1498,25 +1498,78 @@ def delete_user(user_id):
 @app.route('/api/search', methods=['GET'])
 def search():
     db = get_db()
-    q = request.args.get('q', '')
+    q = (request.args.get('q') or '').strip()
 
-    # Search castings
+    if not q:
+        return jsonify({'castings': [], 'clients': [], 'team': []})
+
+    like = f'%{q}%'
+
     casting_rows = db.execute('''
-        SELECT c.*, 'casting' as type FROM castings c
-        WHERE c.client_name LIKE ? OR c.project_name LIKE ? OR c.client_company LIKE ?
-        LIMIT 10
-    ''', (f'%{q}%', f'%{q}%', f'%{q}%')).fetchall()
+        SELECT
+            c.id,
+            COALESCE(c.project_name, '') as project_name,
+            COALESCE(c.client_name, '') as client_name,
+            COALESCE(c.client_company, '') as client_company,
+            COALESCE(c.client_contact, '') as client_contact,
+            COALESCE(c.status, '') as status,
+            COALESCE(c.pipeline_stage, '') as pipeline_stage,
+            COALESCE(c.created_at, '') as created_at,
+            COALESCE(c.updated_at, '') as updated_at
+        FROM castings c
+        WHERE
+            COALESCE(c.project_name, '') LIKE ?
+            OR COALESCE(c.client_name, '') LIKE ?
+            OR COALESCE(c.client_company, '') LIKE ?
+            OR COALESCE(c.client_contact, '') LIKE ?
+        ORDER BY c.updated_at DESC, c.created_at DESC
+        LIMIT 8
+    ''', (like, like, like, like)).fetchall()
 
-    # Search clients (unique client names)
     client_rows = db.execute('''
-        SELECT DISTINCT client_name as name, client_company, 'client' as type
-        FROM castings
-        WHERE client_name LIKE ? AND client_name IS NOT NULL AND client_name != ''
-        LIMIT 10
-    ''', (f'%{q}%',)).fetchall()
+        SELECT
+            cl.id,
+            COALESCE(cl.name, '') as name,
+            COALESCE(cl.company, '') as company,
+            COALESCE(cl.phone, '') as phone,
+            COALESCE(cl.email, '') as email,
+            COALESCE(cl.notes, '') as notes,
+            COALESCE(cl.created_at, '') as created_at,
+            COALESCE(cl.updated_at, '') as updated_at
+        FROM clients cl
+        WHERE
+            COALESCE(cl.name, '') LIKE ?
+            OR COALESCE(cl.company, '') LIKE ?
+            OR COALESCE(cl.phone, '') LIKE ?
+            OR COALESCE(cl.email, '') LIKE ?
+        ORDER BY cl.updated_at DESC, cl.created_at DESC
+        LIMIT 5
+    ''', (like, like, like, like)).fetchall()
 
-    results = [dict(r) for r in casting_rows] + [dict(r) for r in client_rows]
-    return jsonify(results)
+    team_rows = db.execute('''
+        SELECT
+            tm.id,
+            COALESCE(tm.name, '') as name,
+            COALESCE(tm.role, '') as role,
+            COALESCE(tm.email, '') as email,
+            COALESCE(tm.phone, '') as phone,
+            COALESCE(tm.avatar_url, '') as avatar_url,
+            COALESCE(tm.is_active, 1) as is_active
+        FROM team_members tm
+        WHERE
+            COALESCE(tm.name, '') LIKE ?
+            OR COALESCE(tm.role, '') LIKE ?
+            OR COALESCE(tm.email, '') LIKE ?
+            OR COALESCE(tm.phone, '') LIKE ?
+        ORDER BY tm.is_active DESC, tm.name ASC
+        LIMIT 4
+    ''', (like, like, like, like)).fetchall()
+
+    return jsonify({
+        'castings': [dict(r) for r in casting_rows],
+        'clients': [dict(r) for r in client_rows],
+        'team': [dict(r) for r in team_rows],
+    })
 
 # ==================== STATIC FILES (MUST BE LAST) ====================
 

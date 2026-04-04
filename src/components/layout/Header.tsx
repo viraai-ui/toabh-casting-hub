@@ -1,9 +1,11 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
-import { Search, Bell, User, Settings, LogOut, ChevronDown } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { Search, Bell, User, Settings, LogOut, ChevronDown, CheckCheck } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAppStore } from '@/hooks/useStore'
 import { useOverlay } from '@/hooks/useOverlayManager'
+import { api } from '@/lib/api'
+import type { Activity } from '@/types'
 
 const pageTitles: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
@@ -16,14 +18,76 @@ const pageTitles: { [key: string]: string } = {
   '/settings': 'Settings',
 }
 
+const NOTIFICATION_STORAGE_KEY = 'toabh_notification_reads'
+
+const safeText = (value: unknown, fallback = '') => {
+  if (typeof value !== 'string') return fallback
+  const trimmed = value.trim()
+  return trimmed || fallback
+}
+
+const formatRelativeTime = (value?: string) => {
+  if (!value) return 'Just now'
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Just now'
+
+  const diffMs = Date.now() - date.getTime()
+  const diffMinutes = Math.max(0, Math.floor(diffMs / 60000))
+
+  if (diffMinutes < 1) return 'Just now'
+  if (diffMinutes < 60) return `${diffMinutes}m ago`
+
+  const diffHours = Math.floor(diffMinutes / 60)
+  if (diffHours < 24) return `${diffHours}h ago`
+
+  const diffDays = Math.floor(diffHours / 24)
+  if (diffDays < 7) return `${diffDays}d ago`
+
+  return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+}
+
+const getNotificationTitle = (activity: Activity) => {
+  const description = safeText(activity.description)
+  if (description) return description
+
+  const action = safeText(activity.action).replaceAll('_', ' ').toLowerCase()
+  return action ? action.charAt(0).toUpperCase() + action.slice(1) : 'New activity'
+}
+
+const getNotificationMeta = (activity: Activity) => {
+  const parts = [safeText(activity.user_name), activity.casting_id ? `Casting #${activity.casting_id}` : '']
+    .filter(Boolean)
+  return parts.join(' • ') || 'Casting Hub'
+}
+
 export function Header() {
   const location = useLocation()
   const navigate = useNavigate()
   const { setSearchOpen } = useAppStore()
   const { openOverlay, closeOverlay } = useOverlay()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [notifications, setNotifications] = useState<Activity[]>([])
+  const [loadingNotifications, setLoadingNotifications] = useState(false)
+  const [readIds, setReadIds] = useState<number[]>([])
 
-  // Register/unregister user menu dropdown with overlay manager
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(NOTIFICATION_STORAGE_KEY)
+      if (!saved) return
+      const parsed = JSON.parse(saved)
+      setReadIds(Array.isArray(parsed) ? parsed.filter((id): id is number => typeof id === 'number') : [])
+    } catch {
+      setReadIds([])
+    }
+  }, [])
+
+  const persistReadIds = (ids: number[]) => {
+    setReadIds(ids)
+    localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(ids.slice(0, 100)))
+  }
+
   useEffect(() => {
     if (userMenuOpen) {
       openOverlay('header-user-menu', () => setUserMenuOpen(false))
@@ -31,6 +95,42 @@ export function Header() {
       closeOverlay('header-user-menu')
     }
   }, [userMenuOpen, openOverlay, closeOverlay])
+
+  useEffect(() => {
+    if (notificationsOpen) {
+      openOverlay('header-notifications', () => setNotificationsOpen(false))
+    } else {
+      closeOverlay('header-notifications')
+    }
+  }, [notificationsOpen, openOverlay, closeOverlay])
+
+  const fetchNotifications = async (showLoader = false) => {
+    if (showLoader) setLoadingNotifications(true)
+
+    try {
+      const data = await api.get('/activities')
+      const items = Array.isArray((data as { activities?: Activity[] })?.activities)
+        ? (data as { activities: Activity[] }).activities
+        : []
+      setNotifications(items.slice(0, 8))
+    } catch (err) {
+      console.error('Notifications error:', err)
+      setNotifications([])
+    } finally {
+      if (showLoader) setLoadingNotifications(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchNotifications(true)
+    const interval = window.setInterval(() => fetchNotifications(false), 45000)
+    return () => window.clearInterval(interval)
+  }, [])
+
+  const unreadCount = useMemo(
+    () => notifications.filter((item) => !readIds.includes(item.id)).length,
+    [notifications, readIds]
+  )
 
   const pageTitle = pageTitles[location.pathname] ||
     Object.entries(pageTitles).find(([path]) =>
@@ -43,13 +143,27 @@ export function Header() {
     navigate('/login')
   }
 
+  const markAllRead = () => {
+    persistReadIds(Array.from(new Set([...readIds, ...notifications.map((item) => item.id)])))
+  }
+
+  const openNotification = (activity: Activity) => {
+    persistReadIds(Array.from(new Set([...readIds, activity.id])))
+    setNotificationsOpen(false)
+
+    if (activity.casting_id) {
+      navigate(`/castings?id=${activity.casting_id}`)
+      return
+    }
+
+    navigate('/activity')
+  }
+
   return (
     <header className="fixed top-0 left-0 right-0 z-30 h-16 bg-white/95 backdrop-blur-sm border-b border-slate-100">
       <div className="flex items-center justify-between h-full px-4 lg:px-6">
-        {/* Left — title only, no hamburger */}
         <h1 className="text-lg font-semibold text-slate-900 pl-0">{pageTitle}</h1>
 
-        {/* Right side */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setSearchOpen(true)}
@@ -61,10 +175,88 @@ export function Header() {
             </span>
           </button>
 
-          <button className="p-2 rounded-lg hover:bg-slate-100 transition-colors relative">
-            <Bell className="w-5 h-5 text-slate-600" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setNotificationsOpen((open) => !open)}
+              className="p-2 rounded-lg hover:bg-slate-100 transition-colors relative"
+              aria-label="Notifications"
+            >
+              <Bell className="w-5 h-5 text-slate-600" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-semibold flex items-center justify-center shadow-sm">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+
+            <AnimatePresence>
+              {notificationsOpen && (
+                <>
+                  <div onClick={() => setNotificationsOpen(false)} className="fixed inset-0 z-40" />
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                    transition={{ duration: 0.15, ease: 'easeOut' }}
+                    className="absolute right-0 top-full z-50 mt-2 w-[min(24rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+                  >
+                    <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">Notifications</p>
+                        <p className="text-xs text-slate-500">Recent activity from Casting Hub</p>
+                      </div>
+                      <button
+                        onClick={markAllRead}
+                        className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1 text-[11px] font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                        disabled={notifications.length === 0 || unreadCount === 0}
+                      >
+                        <CheckCheck className="h-3.5 w-3.5" />
+                        Mark all read
+                      </button>
+                    </div>
+
+                    <div className="max-h-[24rem] overflow-y-auto p-2">
+                      {loadingNotifications ? (
+                        <div className="flex items-center justify-center py-10 text-slate-400">
+                          <Bell className="h-5 w-5 animate-pulse" />
+                        </div>
+                      ) : notifications.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-slate-50 px-6 py-10 text-center">
+                          <Bell className="h-5 w-5 text-slate-300" />
+                          <div>
+                            <p className="text-sm font-medium text-slate-800">No notifications yet</p>
+                            <p className="mt-1 text-xs text-slate-500">New activity will show up here automatically.</p>
+                          </div>
+                        </div>
+                      ) : (
+                        notifications.map((activity) => {
+                          const unread = !readIds.includes(activity.id)
+                          return (
+                            <button
+                              key={activity.id}
+                              onClick={() => openNotification(activity)}
+                              className="flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition-colors hover:bg-slate-50"
+                            >
+                              <div className="flex pt-1">
+                                <span className={`h-2.5 w-2.5 rounded-full ${unread ? 'bg-amber-500' : 'bg-slate-200'}`} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-start justify-between gap-3">
+                                  <p className="text-sm font-medium text-slate-900">{getNotificationTitle(activity)}</p>
+                                  <span className="shrink-0 text-[11px] text-slate-400">{formatRelativeTime(activity.created_at)}</span>
+                                </div>
+                                <p className="mt-1 text-xs text-slate-500">{getNotificationMeta(activity)}</p>
+                              </div>
+                            </button>
+                          )
+                        })
+                      )}
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
 
           <div className="relative">
             <button
@@ -84,12 +276,7 @@ export function Header() {
             <AnimatePresence>
               {userMenuOpen && (
                 <>
-                  {/* Click-outside backdrop — invisible, sits above page content */}
-                  <div
-                    onClick={() => setUserMenuOpen(false)}
-                    className="fixed inset-0 z-40"
-                  />
-                  {/* Dropdown panel — solid white, full elevation, no transparency */}
+                  <div onClick={() => setUserMenuOpen(false)} className="fixed inset-0 z-40" />
                   <motion.div
                     initial={{ opacity: 0, y: -6, scale: 0.97 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -97,7 +284,6 @@ export function Header() {
                     transition={{ duration: 0.15, ease: 'easeOut' }}
                     className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-slate-100 z-50 py-1.5"
                   >
-                    {/* User info header */}
                     <div className="px-4 py-3 border-b border-slate-100 mb-1">
                       <p className="text-sm font-semibold text-slate-900 leading-tight">Tushar</p>
                       <p className="text-[11px] text-slate-400 mt-0.5">t.tomar2912@gmail.com</p>
@@ -108,7 +294,7 @@ export function Header() {
                         navigate('/settings')
                         setUserMenuOpen(false)
                       }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 active:bg-slate-100 transition-colors text-sm font-medium rounded-lg mx-1.5 w-[calc(100%-12px)]"
+                      className="flex items-center gap-3 px-4 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 active:bg-slate-100 transition-colors text-sm font-medium rounded-lg mx-1.5 w-[calc(100%-12px)]"
                     >
                       <User className="w-4 h-4 text-slate-400" />
                       <span>Profile</span>
@@ -118,7 +304,7 @@ export function Header() {
                         navigate('/settings')
                         setUserMenuOpen(false)
                       }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 active:bg-slate-100 transition-colors text-sm font-medium rounded-lg mx-1.5 w-[calc(100%-12px)]"
+                      className="flex items-center gap-3 px-4 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 active:bg-slate-100 transition-colors text-sm font-medium rounded-lg mx-1.5 w-[calc(100%-12px)]"
                     >
                       <Settings className="w-4 h-4 text-slate-400" />
                       <span>Settings</span>
@@ -126,7 +312,7 @@ export function Header() {
                     <div className="my-1.5 mx-3 border-t border-slate-100" />
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-red-500 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors text-sm font-medium rounded-lg mx-1.5 w-[calc(100%-12px)]"
+                      className="flex items-center gap-3 px-4 py-2.5 text-red-500 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors text-sm font-medium rounded-lg mx-1.5 w-[calc(100%-12px)]"
                     >
                       <LogOut className="w-4 h-4" />
                       <span>Logout</span>
