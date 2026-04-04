@@ -17,15 +17,17 @@ import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/hooks/useStore'
 import { useOverlay } from '@/hooks/useOverlayManager'
-import type { SearchResult, Casting, Client, TeamMember } from '@/types'
+import type { SearchResult, SearchProjectResult, Casting, Client, TeamMember } from '@/types'
 
 const EMPTY_RESULTS: SearchResult = {
+  projects: [],
   castings: [],
   clients: [],
   team: [],
 }
 
 type SearchItem =
+  | { type: 'project'; data: SearchProjectResult }
   | { type: 'casting'; data: Casting }
   | { type: 'client'; data: Client }
   | { type: 'team'; data: TeamMember }
@@ -35,6 +37,7 @@ const safeText = (value: unknown) => (typeof value === 'string' ? value.trim() :
 const normaliseSearchResults = (payload: unknown): SearchResult => {
   const source = payload && typeof payload === 'object' ? payload as Partial<SearchResult> : {}
   return {
+    projects: Array.isArray(source.projects) ? source.projects : [],
     castings: Array.isArray(source.castings) ? source.castings : [],
     clients: Array.isArray(source.clients) ? source.clients : [],
     team: Array.isArray(source.team) ? source.team : [],
@@ -222,13 +225,13 @@ export function GlobalSearch() {
           exit={{ y: 12, opacity: 0, scale: 0.98 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
           onClick={(e) => e.stopPropagation()}
-          className="mx-auto w-full max-w-2xl overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_28px_80px_-28px_rgba(15,23,42,0.45)]"
+          className="mx-auto flex w-full max-w-2xl flex-col overflow-hidden rounded-[28px] border border-white/70 bg-white/98 shadow-[0_32px_90px_-30px_rgba(15,23,42,0.42)] ring-1 ring-slate-950/5"
         >
-          <div className="border-b border-slate-200/80 px-4 pb-4 pt-4 sm:px-5 sm:pb-5">
-            <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="border-b border-slate-200/60 px-5 pb-5 pt-5 sm:px-6 sm:pb-6 sm:pt-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-slate-900">Universal search</p>
-                <p className="text-xs text-slate-500">Search castings, clients, phone numbers, emails, and team.</p>
+                <p className="text-sm font-semibold tracking-tight text-slate-900">Universal search</p>
+                <p className="mt-1 text-xs text-slate-500">Search castings, clients, phone numbers, emails, and team.</p>
               </div>
               <button
                 onClick={closeSearch}
@@ -239,7 +242,7 @@ export function GlobalSearch() {
               </button>
             </div>
 
-            <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 shadow-sm">
+            <div className="flex items-center gap-3 rounded-[22px] border border-slate-200/80 bg-slate-50/80 px-4 py-3.5 shadow-[0_10px_30px_-24px_rgba(15,23,42,0.35)]">
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin text-amber-500" />
               ) : (
@@ -254,15 +257,12 @@ export function GlobalSearch() {
                 placeholder="Search project, client, phone, email..."
                 className="h-7 flex-1 bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400 sm:text-lg"
               />
-              <div className="hidden items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-400 sm:flex">
-                <kbd className="font-medium text-slate-500">⌘K</kbd>
-              </div>
             </div>
           </div>
 
-          <div className="max-h-[min(68vh,560px)] overflow-y-auto px-3 pb-3 pt-2 sm:px-4">
+          <div className="max-h-[min(68vh,560px)] overflow-y-auto px-5 pb-6 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
             {!query && recentSearches.length > 0 && (
-              <div className="rounded-2xl bg-slate-50/80 p-2">
+              <div className="rounded-[22px] border border-slate-100 bg-slate-50/70 p-2.5 shadow-[0_16px_35px_-30px_rgba(15,23,42,0.28)]">
                 {renderSectionHeader('Recent')}
                 <div className="space-y-1">
                   {recentSearches.map((item, index) => (
@@ -280,33 +280,33 @@ export function GlobalSearch() {
             )}
 
             {!query && recentSearches.length === 0 && (
-              <div className="flex min-h-[260px] flex-col items-center justify-center gap-3 rounded-[24px] border border-dashed border-slate-200 bg-slate-50/70 px-6 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm">
+              <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-[24px] border border-dashed border-slate-200/90 bg-slate-50/75 px-8 py-8 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.35)]">
                   <Sparkles className="h-5 w-5 text-amber-500" />
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">Search everything instantly</p>
-                  <p className="mt-1 text-sm text-slate-500">Find castings, clients, phone numbers, emails, and team members in one place.</p>
+                <div className="max-w-sm">
+                  <p className="text-base font-semibold tracking-tight text-slate-900">Search everything instantly</p>
+                  <p className="mt-1.5 text-sm leading-6 text-slate-500">Find castings, clients, phone numbers, emails, and team members in one place.</p>
                 </div>
               </div>
             )}
 
             {query && !loading && !hasResults && (
-              <div className="flex min-h-[240px] flex-col items-center justify-center gap-3 rounded-[24px] border border-dashed border-slate-200 bg-slate-50/70 px-6 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm">
+              <div className="flex min-h-[250px] flex-col items-center justify-center gap-4 rounded-[24px] border border-dashed border-slate-200/90 bg-slate-50/75 px-8 py-8 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.35)]">
                   <Search className="h-5 w-5 text-slate-400" />
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">No matches found</p>
-                  <p className="mt-1 text-sm text-slate-500">Try a project name, client, phone number, or email.</p>
+                <div className="max-w-sm">
+                  <p className="text-base font-semibold tracking-tight text-slate-900">No matches found</p>
+                  <p className="mt-1.5 text-sm leading-6 text-slate-500">Try a project name, client, phone number, or email.</p>
                 </div>
               </div>
             )}
 
             {hasResults && (
-              <div className="space-y-4 pb-1">
+              <div className="space-y-4">
                 {results.castings.length > 0 && (
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50/65 p-2">
+                  <div className="rounded-[22px] border border-slate-100 bg-slate-50/70 p-2.5 shadow-[0_16px_35px_-30px_rgba(15,23,42,0.28)]">
                     {renderSectionHeader('Castings')}
                     <div className="space-y-1">
                       {results.castings.slice(0, 6).map((casting) => {
@@ -336,7 +336,7 @@ export function GlobalSearch() {
                 )}
 
                 {results.clients.length > 0 && (
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50/65 p-2">
+                  <div className="rounded-[22px] border border-slate-100 bg-slate-50/70 p-2.5 shadow-[0_16px_35px_-30px_rgba(15,23,42,0.28)]">
                     {renderSectionHeader('Clients')}
                     <div className="space-y-1">
                       {results.clients.slice(0, 4).map((client) => {
@@ -379,7 +379,7 @@ export function GlobalSearch() {
                 )}
 
                 {results.team.length > 0 && (
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50/65 p-2">
+                  <div className="rounded-[22px] border border-slate-100 bg-slate-50/70 p-2.5 shadow-[0_16px_35px_-30px_rgba(15,23,42,0.28)]">
                     {renderSectionHeader('Team')}
                     <div className="space-y-1">
                       {results.team.slice(0, 3).map((member) => {
@@ -409,14 +409,6 @@ export function GlobalSearch() {
                 )}
               </div>
             )}
-          </div>
-
-          <div className="border-t border-slate-200/80 bg-slate-50/80 px-4 py-3 sm:px-5">
-            <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 sm:text-xs">
-              <span className="inline-flex items-center gap-1.5"><kbd className="rounded-md bg-white px-1.5 py-0.5 font-medium text-slate-600 shadow-sm">↑↓</kbd>Move</span>
-              <span className="inline-flex items-center gap-1.5"><kbd className="rounded-md bg-white px-1.5 py-0.5 font-medium text-slate-600 shadow-sm">Enter</kbd>Open</span>
-              <span className="inline-flex items-center gap-1.5"><kbd className="rounded-md bg-white px-1.5 py-0.5 font-medium text-slate-600 shadow-sm">Esc</kbd>Close</span>
-            </div>
           </div>
         </motion.div>
       </motion.div>
