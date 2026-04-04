@@ -17,10 +17,10 @@ import {
 import { cn } from '@/lib/utils'
 import { useOverlay } from '@/hooks/useOverlayManager'
 
-// Main bottom nav: Home, Castings, + (FAB), Clients, More
+// Main bottom nav: Home, Jobs, + (FAB), Clients, More
 const mainItems = [
   { icon: LayoutDashboard, label: 'Home', path: '/dashboard' },
-  { icon: Briefcase, label: 'Castings', path: '/castings' },
+  { icon: Briefcase, label: 'Jobs', path: '/castings' },
   { icon: Plus, label: '', path: '', isFab: true },
   { icon: Users, label: 'Clients', path: '/clients' },
   { icon: MoreHorizontal, label: 'More', path: '#' },
