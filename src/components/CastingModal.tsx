@@ -56,6 +56,39 @@ function attachmentIconForFile(file: File) {
   return FileText
 }
 
+function attachmentStatusMeta(status: PendingAttachment['status']) {
+  switch (status) {
+    case 'uploading':
+      return {
+        icon: Loader2,
+        iconClassName: 'animate-spin text-amber-500',
+        badgeClassName: 'border-amber-200 bg-amber-50 text-amber-700',
+        label: 'Uploading',
+      }
+    case 'uploaded':
+      return {
+        icon: Check,
+        iconClassName: 'text-emerald-600',
+        badgeClassName: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+        label: 'Uploaded',
+      }
+    case 'error':
+      return {
+        icon: AlertCircle,
+        iconClassName: 'text-red-500',
+        badgeClassName: 'border-red-200 bg-red-50 text-red-600',
+        label: 'Error',
+      }
+    default:
+      return {
+        icon: Paperclip,
+        iconClassName: 'text-slate-400',
+        badgeClassName: 'border-slate-200 bg-slate-50 text-slate-500',
+        label: 'Ready',
+      }
+  }
+}
+
 export function CastingModal({ open, onClose, casting, onSave }: CastingModalProps) {
   const [activeTab, setActiveTab] = useState<Tab>('Overview')
   const [loading, setLoading] = useState(false)
@@ -260,10 +293,39 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
     })
   }
 
-  const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelection = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
       enqueueFiles(e.target.files)
       e.target.value = ''
+    }
+  }
+
+  const openFilePicker = () => {
+    if (saving) return
+    fileInputRef.current?.click()
+  }
+
+  const handleDragState = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (saving) return
+    if (!isDragActive) setIsDragActive(true)
+  }
+
+  const handleDragLeave = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (event.currentTarget.contains(event.relatedTarget as Node | null)) return
+    setIsDragActive(false)
+  }
+
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    setIsDragActive(false)
+    if (saving) return
+    if (event.dataTransfer.files?.length) {
+      enqueueFiles(event.dataTransfer.files)
     }
   }
 
@@ -381,14 +443,16 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
         setDraftCastingId(castingId)
       }
 
-      if (castingId && queuedAttachments.length) {
+      const queuedAttachmentCount = queuedAttachments.length
+
+      if (castingId && queuedAttachmentCount) {
         await uploadQueuedAttachments(castingId)
       }
 
-      if (queuedAttachments.length) {
+      if (queuedAttachmentCount) {
         setUploadNotice({
           tone: 'success',
-          message: `Saved casting with ${queuedAttachments.length} attachment${queuedAttachments.length > 1 ? 's' : ''}.`,
+          message: `Saved casting with ${queuedAttachmentCount} attachment${queuedAttachmentCount > 1 ? 's' : ''}.`,
         })
       }
 
@@ -807,11 +871,149 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
                               </div>
                             )}
                           </div>
+                      </div>
+
+                      <div className="border-t border-slate-200 pt-3 sm:pt-4 mt-2">
+                        <div className="mb-2 sm:mb-3 flex items-center gap-2 text-[11px] sm:text-xs font-medium uppercase tracking-wide text-slate-400">
+                          <Paperclip className="h-3.5 w-3.5 text-slate-400" />
+                          <span>Attachments</span>
                         </div>
 
-                        {/* ======= DYNAMIC CUSTOM FIELDS ======= */}
-                        {customFields.length > 0 && (
-                          <div>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          multiple
+                          accept={ATTACHMENT_ACCEPT}
+                          onChange={handleFileSelection}
+                          className="sr-only"
+                        />
+
+                        <div
+                          role="button"
+                          tabIndex={saving ? -1 : 0}
+                          onClick={openFilePicker}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault()
+                              openFilePicker()
+                            }
+                          }}
+                          onDragEnter={handleDragState}
+                          onDragOver={handleDragState}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDrop}
+                          className={cn(
+                            'rounded-2xl border border-dashed bg-slate-50/80 px-3 py-4 sm:px-4 sm:py-5 transition-all',
+                            saving ? 'cursor-not-allowed opacity-70' : 'cursor-pointer',
+                            isDragActive
+                              ? 'border-amber-400 bg-amber-50/70 shadow-[0_0_0_3px_rgba(245,158,11,0.12)]'
+                              : 'border-slate-200 hover:border-amber-300 hover:bg-amber-50/40'
+                          )}
+                        >
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-start gap-3">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-100 bg-white text-amber-500 shadow-sm">
+                                <Upload className="h-4 w-4" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-slate-900">Drag and drop files here</p>
+                                <p className="mt-1 text-xs text-slate-500">
+                                  PDF, images, PPT, Excel, Word, ZIP and other reference files.
+                                </p>
+                                <p className="mt-1 text-[11px] text-slate-400">
+                                  Files are linked to this casting when you save.
+                                </p>
+                              </div>
+                            </div>
+                            <div className="sm:shrink-0">
+                              <span className="inline-flex min-h-11 items-center justify-center rounded-xl border border-amber-200 bg-white px-4 py-2 text-sm font-semibold text-amber-600 shadow-sm transition hover:border-amber-300 hover:bg-amber-50">
+                                Browse Files
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {uploadNotice && (
+                          <div
+                            className={cn(
+                              'mt-3 flex items-start gap-2 rounded-xl border px-3 py-2 text-xs sm:text-sm',
+                              uploadNotice.tone === 'success' && 'border-emerald-200 bg-emerald-50 text-emerald-700',
+                              uploadNotice.tone === 'error' && 'border-red-200 bg-red-50 text-red-600',
+                              uploadNotice.tone === 'info' && 'border-slate-200 bg-slate-50 text-slate-600'
+                            )}
+                          >
+                            {uploadNotice.tone === 'success' ? (
+                              <Check className="mt-0.5 h-4 w-4 shrink-0" />
+                            ) : uploadNotice.tone === 'error' ? (
+                              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                            ) : (
+                              <Paperclip className="mt-0.5 h-4 w-4 shrink-0" />
+                            )}
+                            <span>{uploadNotice.message}</span>
+                          </div>
+                        )}
+
+                        {queuedAttachments.length > 0 && (
+                          <div className="mt-3 space-y-2">
+                            {queuedAttachments.map((attachment) => {
+                              const AttachmentIcon = attachmentIconForFile(attachment.file)
+                              const statusMeta = attachmentStatusMeta(attachment.status)
+                              const StatusIcon = statusMeta.icon
+
+                              return (
+                                <div
+                                  key={attachment.id}
+                                  className={cn(
+                                    'flex items-start gap-3 rounded-xl border bg-white px-3 py-2.5 shadow-sm transition',
+                                    attachment.status === 'error'
+                                      ? 'border-red-200 bg-red-50/40'
+                                      : attachment.status === 'uploading'
+                                        ? 'border-amber-200 bg-amber-50/40'
+                                        : 'border-slate-200'
+                                  )}
+                                >
+                                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                                    <AttachmentIcon className="h-4 w-4" />
+                                  </div>
+
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <p className="truncate text-sm font-medium text-slate-800">{attachment.file.name}</p>
+                                      <span
+                                        className={cn(
+                                          'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium',
+                                          statusMeta.badgeClassName
+                                        )}
+                                      >
+                                        <StatusIcon className={cn('h-3 w-3', statusMeta.iconClassName)} />
+                                        {statusMeta.label}
+                                      </span>
+                                    </div>
+                                    <p className="mt-1 text-xs text-slate-500">{formatFileSize(attachment.file.size)}</p>
+                                    {attachment.error && (
+                                      <p className="mt-1 text-xs text-red-500">{attachment.error}</p>
+                                    )}
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => removeQueuedAttachment(attachment.id)}
+                                    disabled={attachment.status === 'uploading'}
+                                    className="inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                    aria-label={`Remove ${attachment.file.name}`}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ======= DYNAMIC CUSTOM FIELDS ======= */}
+                      {customFields.length > 0 && (
+<div>
                             <p className="text-[11px] sm:text-xs font-medium text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">
                               Additional Information
                             </p>
