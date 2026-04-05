@@ -6,6 +6,7 @@ import {
   Workflow,
   Radio,
   Rows3,
+  CheckSquare,
   ShieldCheck,
   Users,
   Mail,
@@ -22,6 +23,7 @@ import { DashboardSettings } from './settings/DashboardSettings'
 import { EmailAutomationHub } from './settings/EmailAutomationHub'
 import { NotificationsSettings } from './settings/NotificationsSettings'
 import { ClientTags } from './settings/ClientTags'
+import { TaskStages } from './settings/TaskStages'
 import { cn } from '@/lib/utils'
 
 const tabs = [
@@ -31,6 +33,7 @@ const tabs = [
   { id: 'client-tags', label: 'Client Tags', icon: Tags },
   { id: 'roles', label: 'Roles', icon: ShieldCheck },
   { id: 'team', label: 'Team', icon: Users },
+  { id: 'tasks', label: 'Tasks', icon: CheckSquare },
   { id: 'email', label: 'Email', icon: Mail },
   { id: 'notifications', label: 'Notifications', icon: BellRing },
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -152,6 +155,7 @@ export function Settings() {
               {activeTab === 'client-tags' && <ClientTags />}
               {activeTab === 'roles' && <RolesPermissions />}
               {activeTab === 'team' && <TeamManagement />}
+              {activeTab === 'tasks' && <TaskStages />}
               {activeTab === 'email' && <EmailAutomationHub />}
               {activeTab === 'notifications' && <NotificationsSettings />}
               {activeTab === 'dashboard' && <DashboardSettings />}

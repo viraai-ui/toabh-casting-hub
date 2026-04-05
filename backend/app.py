@@ -26,6 +26,51 @@ DATABASE_PATH = os.path.join(RUNTIME_ROOT, 'castings.db')
 
 load_dotenv(os.path.join(REPO_ROOT, '.env'))
 
+DEFAULT_TASK_STAGES = [
+    {'id': 1, 'name': 'Not Started', 'color': '#94a3b8', 'sort_order': 0},
+    {'id': 2, 'name': 'In Progress', 'color': '#f59e0b', 'sort_order': 1},
+    {'id': 3, 'name': 'Completed', 'color': '#22c55e', 'sort_order': 2},
+]
+TASK_PERMISSION_IDS = ['tasks_view', 'tasks_edit', 'tasks_comment', 'tasks_manage_stages']
+DEFAULT_ROLES_PAYLOAD = {
+    'roles': [
+        {
+            'id': 1,
+            'name': 'Admin',
+            'permissions': [
+                'castings_view', 'castings_edit', 'castings_delete',
+                'clients_view', 'clients_edit',
+                'team_view', 'team_manage',
+                'settings_access',
+                'reports_view', 'reports_export',
+                'tasks_view', 'tasks_edit', 'tasks_comment', 'tasks_manage_stages',
+            ],
+        },
+        {
+            'id': 2,
+            'name': 'Booker',
+            'permissions': [
+                'castings_view', 'castings_edit',
+                'clients_view', 'clients_edit',
+                'team_view',
+                'reports_view',
+                'tasks_view', 'tasks_edit', 'tasks_comment',
+            ],
+        },
+        {
+            'id': 3,
+            'name': 'Viewer',
+            'permissions': [
+                'castings_view',
+                'clients_view',
+                'team_view',
+                'reports_view',
+                'tasks_view', 'tasks_comment',
+            ],
+        },
+    ]
+}
+
 
 def ensure_runtime_storage():
     os.makedirs(RUNTIME_ROOT, exist_ok=True)
@@ -194,6 +239,47 @@ def init_db():
             created_at TEXT DEFAULT (datetime('now')),
             FOREIGN KEY (casting_id) REFERENCES castings(id) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT,
+            status TEXT DEFAULT 'Not Started',
+            due_date TEXT,
+            custom_fields TEXT DEFAULT '{}',
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS task_assignments (
+            task_id INTEGER,
+            team_member_id INTEGER,
+            PRIMARY KEY (task_id, team_member_id),
+            FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+            FOREIGN KEY (team_member_id) REFERENCES team_members(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS task_comments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id INTEGER NOT NULL,
+            user_name TEXT,
+            text TEXT,
+            parent_id INTEGER,
+            mentions TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS task_activities (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id INTEGER NOT NULL,
+            team_member_id INTEGER,
+            action TEXT,
+            details TEXT,
+            timestamp TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+            FOREIGN KEY (team_member_id) REFERENCES team_members(id) ON DELETE SET NULL
+        );
     ''')
 
     # Add custom_fields column if it doesn't exist (for existing databases)
@@ -243,6 +329,51 @@ def init_db():
             file_ext TEXT,
             created_at TEXT DEFAULT (datetime('now')),
             FOREIGN KEY (casting_id) REFERENCES castings(id) ON DELETE CASCADE
+        )
+    ''')
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT,
+            status TEXT DEFAULT 'Not Started',
+            due_date TEXT,
+            custom_fields TEXT DEFAULT '{}',
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        )
+    ''')
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS task_assignments (
+            task_id INTEGER,
+            team_member_id INTEGER,
+            PRIMARY KEY (task_id, team_member_id),
+            FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+            FOREIGN KEY (team_member_id) REFERENCES team_members(id) ON DELETE CASCADE
+        )
+    ''')
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS task_comments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id INTEGER NOT NULL,
+            user_name TEXT,
+            text TEXT,
+            parent_id INTEGER,
+            mentions TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+        )
+    ''')
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS task_activities (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id INTEGER NOT NULL,
+            team_member_id INTEGER,
+            action TEXT,
+            details TEXT,
+            timestamp TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+            FOREIGN KEY (team_member_id) REFERENCES team_members(id) ON DELETE SET NULL
         )
     ''')
 
@@ -359,6 +490,343 @@ def list_activities():
 
     rows = db.execute(query, params).fetchall()
     return jsonify({'activities': [_activity_row_to_dict(row) for row in rows]})
+
+
+def _load_task_stages():
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
+    default_stages = [
+        {'id': 1, 'name': 'Not Started', 'color': '#94a3b8', 'sort_order': 0},
+        {'id': 2, 'name': 'In Progress', 'color': '#f59e0b', 'sort_order': 1},
+        {'id': 3, 'name': 'Completed', 'color': '#22c55e', 'sort_order': 2},
+    ]
+    try:
+        with open(os.path.join(SETTINGS_DIR, 'task_stages.json')) as f:
+            stages = json.load(f)
+            return stages if isinstance(stages, list) and len(stages) > 0 else default_stages
+    except Exception:
+        return default_stages
+
+
+def _save_task_stages(stages):
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
+    with open(os.path.join(SETTINGS_DIR, 'task_stages.json'), 'w') as f:
+        json.dump(stages, f)
+
+
+def _load_notification_rules():
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
+    try:
+        with open(os.path.join(SETTINGS_DIR, 'automation_rules.json')) as f:
+            payload = json.load(f)
+            return payload.get('rules', []) if isinstance(payload, dict) else []
+    except Exception:
+        return []
+
+
+def _notification_channels(rule_id):
+    for rule in _load_notification_rules():
+        if rule.get('id') == rule_id and rule.get('enabled', True):
+            return rule.get('channels', []) or []
+    return []
+
+
+def _send_email_notification(recipient, subject, message):
+    if not recipient:
+        return
+    try:
+        with open(os.path.join(SETTINGS_DIR, 'email_config.json')) as f:
+            config = json.load(f)
+    except Exception:
+        return
+
+    host = config.get('smtp_host') or ''
+    username = config.get('smtp_username') or ''
+    password = config.get('smtp_password') or ''
+    from_email = config.get('from_email') or config.get('from_address') or username
+    from_name = config.get('from_name') or 'TOABH'
+    port = int(config.get('smtp_port') or 587)
+    if not host or not username or not password or not from_email:
+        return
+
+    msg = MIMEMultipart()
+    msg['From'] = f'{from_name} <{from_email}>'
+    msg['To'] = recipient
+    msg['Subject'] = subject
+    msg.attach(MIMEText(message, 'plain'))
+
+    server = smtplib.SMTP(host, port, timeout=10)
+    server.ehlo()
+    server.starttls()
+    server.login(username, password)
+    server.sendmail(from_email, [recipient], msg.as_string())
+    server.quit()
+
+
+def _serialize_task_row(db, row):
+    task = dict(row)
+    task['assigned_to'] = [dict(item) for item in db.execute(
+        '''
+        SELECT tm.id, tm.name, COALESCE(tm.role, '') as role, COALESCE(tm.email, '') as email, COALESCE(tm.avatar_url, '') as avatar_url
+        FROM task_assignments ta
+        INNER JOIN team_members tm ON tm.id = ta.team_member_id
+        WHERE ta.task_id = ?
+        ORDER BY tm.name COLLATE NOCASE ASC
+        ''',
+        (row['id'],)
+    ).fetchall()]
+    return task
+
+
+def _create_task_activity(db, task_id, action, details, team_member_id=None):
+    db.execute(
+        'INSERT INTO task_activities (task_id, team_member_id, action, details) VALUES (?, ?, ?, ?)',
+        (task_id, team_member_id, action, details),
+    )
+
+
+@app.route('/api/tasks', methods=['GET', 'POST'])
+def tasks():
+    db = get_db()
+
+    if request.method == 'POST':
+        data = request.get_json() or {}
+        title = (data.get('title') or '').strip()
+        if not title:
+            return jsonify({'error': 'Task title is required'}), 400
+
+        stages = {stage['name'] for stage in _load_task_stages()}
+        status = (data.get('status') or 'Not Started').strip()
+        if status not in stages:
+            status = 'Not Started'
+
+        description = (data.get('description') or '').strip()
+        due_date = (data.get('due_date') or '').strip() or None
+        custom_fields = json.dumps(data.get('custom_fields') or {})
+        assignee_ids = [int(item) for item in data.get('assignee_ids', []) if str(item).isdigit()]
+
+        cursor = db.execute(
+            'INSERT INTO tasks (title, description, status, due_date, custom_fields) VALUES (?, ?, ?, ?, ?)',
+            (title, description, status, due_date, custom_fields),
+        )
+        task_id = cursor.lastrowid
+
+        for member_id in assignee_ids:
+            db.execute('INSERT OR IGNORE INTO task_assignments (task_id, team_member_id) VALUES (?, ?)', (task_id, member_id))
+
+        _create_task_activity(db, task_id, 'CREATED', f'Task created: {title}')
+        if assignee_ids:
+            _create_task_activity(db, task_id, 'ASSIGNED', 'Task assigned')
+
+        assignment_channels = _notification_channels('assignment_changed')
+        if 'email' in assignment_channels and assignee_ids:
+            members = db.execute(
+                f"SELECT name, email FROM team_members WHERE id IN ({','.join('?' for _ in assignee_ids)})",
+                assignee_ids,
+            ).fetchall()
+            for member in members:
+                try:
+                    _send_email_notification(member['email'], f'New task assigned: {title}', f'Hi {member["name"]},\n\nA new task has been assigned to you: {title}.')
+                except Exception:
+                    pass
+
+        db.commit()
+        row = db.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
+        return jsonify(_serialize_task_row(db, row)), 201
+
+    query = 'SELECT DISTINCT t.* FROM tasks t LEFT JOIN task_assignments ta ON ta.task_id = t.id'
+    conditions = []
+    params = []
+
+    team_member_id = request.args.get('team_member_id')
+    if team_member_id:
+        conditions.append('ta.team_member_id = ?')
+        params.append(int(team_member_id))
+
+    status = (request.args.get('status') or '').strip()
+    if status:
+        conditions.append('t.status = ?')
+        params.append(status)
+
+    filter_name = (request.args.get('filter') or '').strip().lower()
+    if filter_name == 'completed':
+        conditions.append('LOWER(t.status) = LOWER(?)')
+        params.append('Completed')
+    elif filter_name == 'overdue':
+        conditions.append("t.due_date IS NOT NULL AND t.due_date != '' AND date(t.due_date) < date('now') AND LOWER(t.status) != LOWER('Completed')")
+
+    if conditions:
+        query += ' WHERE ' + ' AND '.join(conditions)
+
+    query += ' ORDER BY CASE WHEN LOWER(t.status)=LOWER(\'Completed\') THEN 1 ELSE 0 END, COALESCE(t.due_date, "9999-12-31") ASC, t.created_at DESC'
+    rows = db.execute(query, params).fetchall()
+    return jsonify([_serialize_task_row(db, row) for row in rows])
+
+
+@app.route('/api/tasks/<int:task_id>', methods=['GET', 'PUT', 'DELETE'])
+def task_detail(task_id):
+    db = get_db()
+    row = db.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
+    if row is None:
+        return jsonify({'error': 'Task not found'}), 404
+
+    if request.method == 'GET':
+        return jsonify(_serialize_task_row(db, row))
+
+    if request.method == 'DELETE':
+        db.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
+        db.commit()
+        return jsonify({'success': True})
+
+    data = request.get_json() or {}
+    title = (data.get('title') or row['title'] or '').strip()
+    if not title:
+        return jsonify({'error': 'Task title is required'}), 400
+
+    description = (data.get('description') if data.get('description') is not None else row['description'] or '').strip()
+    due_date = (data.get('due_date') if data.get('due_date') is not None else row['due_date'] or '').strip() or None
+    status = (data.get('status') if data.get('status') is not None else row['status'] or 'Not Started').strip()
+    custom_fields = json.dumps(data.get('custom_fields') if data.get('custom_fields') is not None else json.loads(row['custom_fields'] or '{}'))
+
+    db.execute(
+        'UPDATE tasks SET title = ?, description = ?, status = ?, due_date = ?, custom_fields = ?, updated_at = datetime(\'now\') WHERE id = ?',
+        (title, description, status, due_date, custom_fields, task_id),
+    )
+
+    if 'assignee_ids' in data:
+        assignee_ids = [int(item) for item in data.get('assignee_ids', []) if str(item).isdigit()]
+        db.execute('DELETE FROM task_assignments WHERE task_id = ?', (task_id,))
+        for member_id in assignee_ids:
+            db.execute('INSERT OR IGNORE INTO task_assignments (task_id, team_member_id) VALUES (?, ?)', (task_id, member_id))
+        _create_task_activity(db, task_id, 'ASSIGNED', 'Task assignment updated')
+
+    _create_task_activity(db, task_id, 'UPDATED', f'Task updated: {title}')
+    db.commit()
+    updated_row = db.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
+    return jsonify(_serialize_task_row(db, updated_row))
+
+
+@app.route('/api/tasks/<int:task_id>/status', methods=['PUT'])
+def update_task_status(task_id):
+    db = get_db()
+    row = db.execute('SELECT id, title, status FROM tasks WHERE id = ?', (task_id,)).fetchone()
+    if row is None:
+        return jsonify({'error': 'Task not found'}), 404
+    data = request.get_json() or {}
+    status = (data.get('status') or '').strip()
+    if not status:
+        return jsonify({'error': 'Status is required'}), 400
+    db.execute('UPDATE tasks SET status = ?, updated_at = datetime(\'now\') WHERE id = ?', (status, task_id))
+    _create_task_activity(db, task_id, 'STATUS_CHANGED', f'Status changed from {row["status"]} to {status}')
+    db.commit()
+    updated = db.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
+    return jsonify(_serialize_task_row(db, updated))
+
+
+@app.route('/api/tasks/<int:task_id>/comments', methods=['GET', 'POST'])
+def task_comments(task_id):
+    db = get_db()
+    task = db.execute('SELECT id, title FROM tasks WHERE id = ?', (task_id,)).fetchone()
+    if task is None:
+        return jsonify({'error': 'Task not found'}), 404
+
+    if request.method == 'GET':
+        rows = db.execute('SELECT * FROM task_comments WHERE task_id = ? ORDER BY created_at ASC, id ASC', (task_id,)).fetchall()
+        comments = []
+        for row in rows:
+            comments.append({
+                'id': row['id'],
+                'task_id': row['task_id'],
+                'user_name': row['user_name'] or 'Team',
+                'text': row['text'] or '',
+                'parent_id': row['parent_id'],
+                'mentions': json.loads(row['mentions'] or '[]'),
+                'created_at': row['created_at'],
+            })
+        return jsonify(comments)
+
+    data = request.get_json() or {}
+    text = (data.get('text') or '').strip()
+    if not text:
+        return jsonify({'error': 'Comment text is required'}), 400
+    user_name = (data.get('user_name') or 'Team').strip() or 'Team'
+    parent_id = data.get('parent_id')
+    mentions = data.get('mentions') if isinstance(data.get('mentions'), list) else _extract_mentions(text)
+    cursor = db.execute(
+        'INSERT INTO task_comments (task_id, user_name, text, parent_id, mentions) VALUES (?, ?, ?, ?, ?)',
+        (task_id, user_name, text, parent_id, json.dumps(mentions)),
+    )
+    _create_task_activity(db, task_id, 'COMMENT', f'Comment added by {user_name}')
+    if mentions and 'email' in _notification_channels('note_mention'):
+        members = db.execute(
+            'SELECT name, email FROM team_members WHERE LOWER(name) IN (' + ','.join('?' for _ in mentions) + ')',
+            [mention.replace('.', ' ').lower() for mention in mentions],
+        ).fetchall()
+        for member in members:
+            try:
+                _send_email_notification(member['email'], f'Mentioned in task: {task["title"]}', f'Hi {member["name"]},\n\nYou were mentioned in task "{task["title"]}".')
+            except Exception:
+                pass
+    db.commit()
+    return jsonify({
+        'id': cursor.lastrowid,
+        'task_id': task_id,
+        'user_name': user_name,
+        'text': text,
+        'parent_id': parent_id,
+        'mentions': mentions,
+        'created_at': datetime.now().isoformat(),
+    }), 201
+
+
+@app.route('/api/tasks/<int:task_id>/activities', methods=['GET'])
+def task_activities(task_id):
+    db = get_db()
+    rows = db.execute(
+        '''
+        SELECT ta.id, ta.task_id, ta.action, ta.details as description,
+               COALESCE(tm.name, ta.details) as user_name, ta.timestamp as created_at
+        FROM task_activities ta
+        LEFT JOIN team_members tm ON ta.team_member_id = tm.id
+        WHERE ta.task_id = ?
+        ORDER BY ta.timestamp DESC, ta.id DESC
+        ''',
+        (task_id,),
+    ).fetchall()
+    return jsonify([dict(row) for row in rows])
+
+
+@app.route('/api/settings/task-stages', methods=['GET', 'PUT', 'POST'])
+def task_stages():
+    if request.method == 'GET':
+        return jsonify(_load_task_stages())
+
+    data = request.get_json() or {}
+    if request.method == 'POST':
+        stages = _load_task_stages()
+        next_id = max([int(stage.get('id', 0)) for stage in stages] + [0]) + 1
+        new_stage = {
+            'id': next_id,
+            'name': (data.get('name') or '').strip() or f'Stage {next_id}',
+            'color': (data.get('color') or '#6366f1').strip(),
+            'sort_order': len(stages),
+        }
+        stages.append(new_stage)
+        _save_task_stages(stages)
+        return jsonify(new_stage), 201
+
+    stages = data.get('stages') if isinstance(data.get('stages'), list) else data
+    if not isinstance(stages, list):
+        return jsonify({'error': 'Stages payload is required'}), 400
+    normalized = []
+    for index, stage in enumerate(stages):
+        normalized.append({
+            'id': int(stage.get('id', index + 1)),
+            'name': (stage.get('name') or '').strip() or f'Stage {index + 1}',
+            'color': (stage.get('color') or '#6366f1').strip(),
+            'sort_order': int(stage.get('sort_order', index)),
+        })
+    _save_task_stages(normalized)
+    return jsonify(normalized)
 
 
 @app.route('/api/notifications', methods=['GET'])
@@ -1575,637 +2043,3 @@ def update_client(client_id):
     old_name = (existing['name'] or '').strip()
     if old_name and old_name.lower() != name.lower():
         db.execute(
-            'UPDATE castings SET client_name = ?, client_company = ?, client_contact = ?, client_email = ? WHERE LOWER(client_name) = LOWER(?)',
-            (name, company, contact, email, old_name),
-        )
-
-    _sync_client_tags(db, client_id, data.get('tag_ids'))
-    db.commit()
-
-    client = db.execute('SELECT * FROM clients WHERE id = ?', (client_id,)).fetchone()
-    return jsonify(_serialize_client_row(db, client))
-
-
-@app.route('/api/clients/<int:client_id>/tags', methods=['POST'])
-def add_tag_to_client(client_id):
-    data = request.json or {}
-    db = get_db()
-
-    _, error = _get_client_or_404(db, client_id)
-    if error:
-        return error
-
-    tag_id = data.get('tag_id')
-    try:
-        tag_id = int(tag_id)
-    except (TypeError, ValueError):
-        return jsonify({'error': 'Valid tag_id is required'}), 400
-
-    tag_exists = db.execute('SELECT id FROM settings_client_tags WHERE id = ?', (tag_id,)).fetchone()
-    if tag_exists is None:
-        return jsonify({'error': 'Client tag not found'}), 404
-
-    db.execute(
-        'INSERT OR IGNORE INTO client_tag_assignments (client_id, tag_id) VALUES (?, ?)',
-        (client_id, tag_id),
-    )
-    db.commit()
-
-    client = db.execute('SELECT * FROM clients WHERE id = ?', (client_id,)).fetchone()
-    return jsonify(_serialize_client_row(db, client))
-
-
-@app.route('/api/clients/<int:client_id>/tags/<int:tag_id>', methods=['DELETE'])
-def remove_tag_from_client(client_id, tag_id):
-    db = get_db()
-
-    _, error = _get_client_or_404(db, client_id)
-    if error:
-        return error
-
-    db.execute(
-        'DELETE FROM client_tag_assignments WHERE client_id = ? AND tag_id = ?',
-        (client_id, tag_id),
-    )
-    db.commit()
-
-    client = db.execute('SELECT * FROM clients WHERE id = ?', (client_id,)).fetchone()
-    return jsonify(_serialize_client_row(db, client))
-
-
-@app.route('/api/clients/<int:client_id>', methods=['DELETE'])
-def delete_client(client_id):
-    db = get_db()
-    client, error = _get_client_or_404(db, client_id)
-    if error:
-        return error
-
-    casting_count = db.execute(
-        'SELECT COUNT(*) AS count FROM castings WHERE LOWER(client_name) = LOWER(?)',
-        ((client['name'] or '').strip(),),
-    ).fetchone()['count']
-    if casting_count > 0:
-        return jsonify({'error': 'Cannot delete client with castings. Remove or reassign castings first.'}), 400
-
-    db.execute('DELETE FROM clients WHERE id = ?', (client_id,))
-    db.commit()
-    return jsonify({'message': 'Client deleted'})
-
-# ==================== DASHBOARD ROUTES ====================
-
-@app.route('/api/dashboard', methods=['GET'])
-def dashboard():
-    db = get_db()
-
-    # Total, active, and closed casting counts
-    total_castings = db.execute('SELECT COUNT(*) as cnt FROM castings').fetchone()['cnt']
-
-    active_statuses = ('NEW', 'REVIEWING', 'PROPOSED', 'NEGOTIATING', 'CONFIRMED', 'IN_PROGRESS')
-    closed_statuses = ('WON', 'LOST', 'INVOICED', 'PAID', 'COMPLETED', 'DECLINED')
-
-    active_castings = db.execute(
-        'SELECT COUNT(*) as cnt FROM castings WHERE status IN (?, ?, ?, ?, ?, ?)',
-        active_statuses
-    ).fetchone()['cnt']
-
-    closed_castings = db.execute(
-        'SELECT COUNT(*) as cnt FROM castings WHERE status IN (?, ?, ?, ?, ?, ?)',
-        closed_statuses
-    ).fetchone()['cnt']
-
-    # Pipeline counts
-    pipeline = db.execute('''
-        SELECT status as status, COUNT(*) as count
-        FROM castings
-        GROUP BY status
-    ''').fetchall()
-
-    # Team workload
-    workload = db.execute('''
-        SELECT tm.id, tm.name, COUNT(ca.casting_id) as count
-        FROM team_members tm
-        LEFT JOIN casting_assignments ca ON tm.id = ca.team_member_id
-        LEFT JOIN castings c ON ca.casting_id = c.id AND c.status NOT IN ('WON', 'LOST', 'INVOICED', 'PAID')
-        WHERE tm.is_active = 1
-        GROUP BY tm.id
-    ''').fetchall()
-
-    # Recent activity
-    recent = db.execute('''
-        SELECT a.id, a.casting_id, a.action, a.details as description,
-               COALESCE(tm.name, a.details) as user_name, a.timestamp as created_at
-        FROM activities a
-        LEFT JOIN team_members tm ON a.team_member_id = tm.id
-        ORDER BY a.timestamp DESC
-        LIMIT 10
-    ''').fetchall()
-
-    # Source breakdown
-    sources = db.execute('''
-        SELECT source, COUNT(*) as count
-        FROM castings
-        GROUP BY source
-    ''').fetchall()
-
-    # Total revenue (sum of budget_max where status indicates won/paid)
-    revenue_row = db.execute('''
-        SELECT COALESCE(SUM(budget_max), 0) as total
-        FROM castings
-        WHERE status IN ('WON', 'INVOICED', 'PAID')
-    ''').fetchone()
-    total_revenue = revenue_row['total'] if revenue_row else 0
-
-    # Total clients (unique client names)
-    clients_row = db.execute('''
-        SELECT COUNT(DISTINCT client_name) as total
-        FROM castings
-        WHERE client_name IS NOT NULL AND client_name != ''
-    ''').fetchone()
-    total_clients = clients_row['total'] if clients_row else 0
-
-    # Monthly trend (last 6 months of castings created)
-    from datetime import datetime, timedelta
-    months = []
-    now = datetime.now()
-    for i in range(5, -1, -1):
-        # Calculate month start and end
-        month_start = datetime(now.year, now.month, 1) - timedelta(days=30 * i)
-        if month_start.month == 12:
-            month_end = datetime(month_start.year + 1, 1, 1) - timedelta(days=1)
-        else:
-            month_end = datetime(month_start.year, month_start.month + 1, 1) - timedelta(days=1)
-
-        month_name = month_start.strftime('%b')
-
-        count_row = db.execute('''
-            SELECT COUNT(*) as cnt FROM castings
-            WHERE created_at >= ? AND created_at <= ?
-        ''', (month_start.isoformat(), month_end.isoformat())).fetchone()
-
-        months.append({
-            'month': month_name,
-            'count': count_row['cnt'] if count_row else 0
-        })
-
-    return jsonify({
-        'total_castings': total_castings,
-        'active_castings': active_castings,
-        'closed_castings': closed_castings,
-        'pipeline': [dict(p) for p in pipeline],
-        'workload': [dict(w) for w in workload],
-        'recent_activity': [dict(a) for a in recent],
-        'sources': [dict(s) for s in sources],
-        'total_revenue': total_revenue,
-        'total_clients': total_clients,
-        'trend': months
-    })
-
-# ==================== MESSAGE PARSER ====================
-
-@app.route('/api/parse', methods=['POST'])
-def parse_message():
-    from backend.utils.parser import parse_casting_message
-    data = request.json
-    raw_text = data.get('text', '')
-
-    parsed = parse_casting_message(raw_text)
-    return jsonify(parsed)
-
-
-@app.route('/api/assistant/query', methods=['POST'])
-def assistant_query():
-    db = get_db()
-    data = request.get_json() or {}
-    query = data.get('query', '')
-    response = query_casting_assistant(db, query)
-    return jsonify(response)
-
-# ==================== SETTINGS ROUTES ====================
-
-# Password verification
-@app.route('/api/auth/verify-password', methods=['POST'])
-def verify_password():
-    data = request.json
-    correct = os.getenv('ADMIN_PASSWORD', 'toabh2026')
-    return jsonify({'valid': data.get('password') == correct})
-
-# Pipeline stages
-@app.route('/api/settings/pipeline', methods=['GET'])
-def get_pipeline():
-    db = get_db()
-    rows = db.execute('SELECT id, name, color FROM settings_pipeline ORDER BY sort_order, id').fetchall()
-    return jsonify([dict(r) for r in rows])
-
-@app.route('/api/settings/pipeline', methods=['POST'])
-def create_pipeline():
-    data = request.get_json() or {}
-    name = (data.get('name') or '').strip()
-    color = data.get('color') or '#6366f1'
-    if not name:
-        return jsonify({'error': 'name required'}), 400
-    db = get_db()
-    # Duplicate check
-    existing = db.execute(
-        'SELECT id FROM settings_pipeline WHERE LOWER(name)=LOWER(?)', (name,)
-    ).fetchone()
-    if existing:
-        return jsonify({'error': f'A stage named "{name}" already exists'}), 409
-    # Get max sort_order
-    max_order = db.execute('SELECT MAX(sort_order) FROM settings_pipeline').fetchone()[0] or 0
-    cursor = db.execute(
-        'INSERT INTO settings_pipeline (name, color, sort_order) VALUES (?, ?, ?)',
-        (name, color, max_order + 1)
-    )
-    db.commit()
-    return jsonify({'id': cursor.lastrowid, 'name': name, 'color': color})
-
-@app.route('/api/settings/pipeline/<int:item_id>', methods=['PUT'])
-def update_pipeline_item(item_id):
-    data = request.get_json() or {}
-    name = (data.get('name') or '').strip()
-    color = data.get('color') or '#6366f1'
-    if not name:
-        return jsonify({'error': 'name required'}), 400
-    db = get_db()
-    # Duplicate check (excluding current item)
-    existing = db.execute(
-        'SELECT id FROM settings_pipeline WHERE LOWER(name)=LOWER(?) AND id!=?',
-        (name, item_id)
-    ).fetchone()
-    if existing:
-        return jsonify({'error': f'A stage named "{name}" already exists'}), 409
-    db.execute('UPDATE settings_pipeline SET name=?, color=? WHERE id=?', (name, color, item_id))
-    db.commit()
-    return jsonify({'id': item_id, 'name': name, 'color': color})
-
-@app.route('/api/settings/pipeline/<int:item_id>', methods=['DELETE'])
-def delete_pipeline_item(item_id):
-    db = get_db()
-    # Minimum guard: prevent deleting last stage
-    count = db.execute('SELECT COUNT(*) as cnt FROM settings_pipeline').fetchone()['cnt']
-    if count <= 1:
-        return jsonify({'error': 'Cannot delete the last pipeline stage. At least one stage is required.'}), 400
-    db.execute('DELETE FROM settings_pipeline WHERE id=?', (item_id,))
-    db.commit()
-    return jsonify({'success': True})
-
-@app.route('/api/settings/pipeline/reorder', methods=['PUT'])
-def reorder_pipeline():
-    data = request.get_json()
-    stages = data.get('stages', [])
-    db = get_db()
-    for s in stages:
-        db.execute('UPDATE settings_pipeline SET sort_order=? WHERE id=?',
-                   (s.get('sort_order', 0), s['id']))
-    db.commit()
-    return jsonify({'success': True})
-
-# Lead sources
-@app.route('/api/settings/sources', methods=['GET'])
-def get_sources():
-    db = get_db()
-    rows = db.execute('SELECT id, name FROM settings_sources ORDER BY id').fetchall()
-    return jsonify([dict(r) for r in rows])
-
-@app.route('/api/settings/sources', methods=['POST'])
-def create_source():
-    data = request.get_json() or {}
-    name = (data.get('name') or '').strip()
-    if not name:
-        return jsonify({'error': 'name required'}), 400
-    db = get_db()
-    # Duplicate check
-    existing = db.execute(
-        'SELECT id FROM settings_sources WHERE LOWER(name)=LOWER(?)', (name,)
-    ).fetchone()
-    if existing:
-        return jsonify({'error': f'A lead source named "{name}" already exists'}), 409
-    cursor = db.execute('INSERT INTO settings_sources (name) VALUES (?)', (name,))
-    db.commit()
-    return jsonify({'id': cursor.lastrowid, 'name': name})
-
-@app.route('/api/settings/sources/<int:item_id>', methods=['PUT'])
-def update_source_item(item_id):
-    data = request.get_json() or {}
-    name = (data.get('name') or '').strip()
-    if not name:
-        return jsonify({'error': 'name required'}), 400
-    db = get_db()
-    # Duplicate check (excluding current item)
-    existing = db.execute(
-        'SELECT id FROM settings_sources WHERE LOWER(name)=LOWER(?) AND id!=?',
-        (name, item_id)
-    ).fetchone()
-    if existing:
-        return jsonify({'error': f'A lead source named "{name}" already exists'}), 409
-    db.execute('UPDATE settings_sources SET name=? WHERE id=?', (name, item_id))
-    db.commit()
-    return jsonify({'id': item_id, 'name': name})
-
-@app.route('/api/settings/sources/<int:item_id>', methods=['DELETE'])
-def delete_source_item(item_id):
-    db = get_db()
-    # Minimum guard: prevent deleting last source
-    count = db.execute('SELECT COUNT(*) as cnt FROM settings_sources').fetchone()['cnt']
-    if count <= 1:
-        return jsonify({'error': 'Cannot delete the last lead source. At least one source is required.'}), 400
-    db.execute('DELETE FROM settings_sources WHERE id=?', (item_id,))
-    db.commit()
-    return jsonify({'success': True})
-
-# Custom fields
-@app.route('/api/settings/custom-fields', methods=['GET'])
-def get_custom_fields():
-    os.makedirs(SETTINGS_DIR, exist_ok=True)
-    try:
-        with open(os.path.join(SETTINGS_DIR, 'custom_fields.json')) as f:
-            return jsonify(json.load(f))
-    except:
-        return jsonify([
-            {'id':'cf1','name':'Talent Age Range','type':'text','tab':'Project Info','required':False},
-            {'id':'cf2','name':'Languages Known','type':'text','tab':'Project Info','required':False},
-            {'id':'cf3','name':'Required Equipment Type','type':'dropdown','options':['Yes','No'],'tab':'Project Info','required':False},
-        ])
-
-@app.route('/api/settings/custom-fields', methods=['PUT'])
-def update_custom_fields():
-    data = request.json
-    os.makedirs(SETTINGS_DIR, exist_ok=True)
-    with open(os.path.join(SETTINGS_DIR, 'custom_fields.json'), 'w') as f:
-        json.dump(data['fields'], f)
-    return jsonify(data['fields'])
-
-@app.route('/api/settings/custom-fields', methods=['POST'])
-def create_custom_field():
-    field_data = request.get_json()
-    if not field_data:
-        return jsonify({'error': 'No data'}), 400
-    name = (field_data.get('name') or '').strip()
-    field_type = field_data.get('type', 'text')
-    tab = field_data.get('tab', 'Custom')
-    options = field_data.get('options', [])
-    required = field_data.get('required', False)
-    if not name:
-        return jsonify({'error': 'Name is required'}), 400
-    if field_type == 'dropdown' and not options:
-        return jsonify({'error': 'Dropdown fields need at least one option'}), 400
-    # Load existing fields
-    os.makedirs(SETTINGS_DIR, exist_ok=True)
-    try:
-        with open(os.path.join(SETTINGS_DIR, 'custom_fields.json')) as f:
-            fields = json.load(f)
-    except:
-        fields = []
-    # Generate new id
-    existing_ids = [f.get('id', '') for f in fields]
-    nums = [int(f.replace('cf', '')) for f in existing_ids if f.startswith('cf') and f[2:].isdigit()]
-    new_id = f"cf{(max(nums) + 1) if nums else 1:03d}"
-    new_field = {
-        'id': new_id,
-        'name': name,
-        'type': field_type,
-        'tab': tab,
-        'options': options,
-        'required': required
-    }
-    fields.append(new_field)
-    with open(os.path.join(SETTINGS_DIR, 'custom_fields.json'), 'w') as f:
-        json.dump(fields, f)
-    return jsonify(new_field), 201
-
-# Dashboard modules toggle
-@app.route('/api/settings/dashboard-modules', methods=['GET'])
-def get_dashboard_modules():
-    os.makedirs(SETTINGS_DIR, exist_ok=True)
-    try:
-        with open(os.path.join(SETTINGS_DIR, 'dashboard_modules.json')) as f:
-            return jsonify(json.load(f))
-    except:
-        return jsonify({'kanban':True,'calendar':True,'activityFeed':True,'quickActions':True,'charts':True})
-
-@app.route('/api/settings/dashboard-modules', methods=['PUT'])
-def update_dashboard_modules():
-    data = request.json
-    os.makedirs(SETTINGS_DIR, exist_ok=True)
-    # Store the full object (includes default_view + module flags)
-    with open(os.path.join(SETTINGS_DIR, 'dashboard_modules.json'), 'w') as f:
-        json.dump(data, f)
-    return jsonify(data)
-
-# Notification preferences
-@app.route('/api/settings/automation-rules', methods=['GET'])
-def get_automation_rules():
-    os.makedirs(SETTINGS_DIR, exist_ok=True)
-    default_rules = {
-        'rules': [
-            {
-                'id': 'note_mention',
-                'label': 'Note mentions',
-                'description': 'Get notified when someone mentions you in an internal note.',
-                'channels': ['in_app', 'email'],
-                'enabled': True,
-            },
-            {
-                'id': 'attachment_uploaded',
-                'label': 'Attachment uploaded',
-                'description': 'Stay updated when a new brief, deck, or file is added.',
-                'channels': ['in_app'],
-                'enabled': True,
-            },
-            {
-                'id': 'status_changed',
-                'label': 'Status changed',
-                'description': 'Get an update when a job moves to a new stage.',
-                'channels': ['in_app', 'email'],
-                'enabled': True,
-            },
-            {
-                'id': 'assignment_changed',
-                'label': 'Assignment changed',
-                'description': 'Know when a job is assigned or reassigned.',
-                'channels': ['in_app', 'email'],
-                'enabled': True,
-            },
-        ]
-    }
-    try:
-        with open(os.path.join(SETTINGS_DIR, 'automation_rules.json')) as f:
-            return jsonify(json.load(f))
-    except:
-        return jsonify(default_rules)
-
-@app.route('/api/settings/automation-rules', methods=['PUT'])
-def update_automation_rules():
-    data = request.json or {}
-    payload = {'rules': data.get('rules', [])}
-    os.makedirs(SETTINGS_DIR, exist_ok=True)
-    with open(os.path.join(SETTINGS_DIR, 'automation_rules.json'), 'w') as f:
-        json.dump(payload, f)
-    return jsonify({'message': 'Notification settings saved', 'rules': payload['rules']})
-
-# Email config (store SMTP settings - basic)
-@app.route('/api/settings/email-config', methods=['GET'])
-def get_email_config():
-    os.makedirs(SETTINGS_DIR, exist_ok=True)
-    try:
-        with open(os.path.join(SETTINGS_DIR, 'email_config.json')) as f:
-            return jsonify(json.load(f))
-    except:
-        return jsonify({'from_email':'noreply@toabh.com','from_name':'TOABH Casting','smtp_host':'','smtp_port':587})
-
-@app.route('/api/settings/email-config', methods=['PUT'])
-def update_email_config():
-    data = request.json
-    os.makedirs(SETTINGS_DIR, exist_ok=True)
-    with open(os.path.join(SETTINGS_DIR, 'email_config.json'), 'w') as f:
-        json.dump(data, f)
-    return jsonify({'message':'Email config saved'})
-
-@app.route('/api/settings/email-config/test', methods=['POST'])
-def test_email_config():
-    data = request.get_json() or {}
-    host = data.get('smtp_host', '')
-    port = int(data.get('smtp_port', 587) or 587)
-    username = data.get('smtp_username', '')
-    password = data.get('smtp_password', '')
-    from_email = data.get('from_email', data.get('from_address', ''))
-    if not host or not username:
-        return jsonify({'success': False, 'message': 'SMTP host and username are required'}), 400
-    try:
-        server = smtplib.SMTP(host, port, timeout=10)
-        server.ehlo()
-        server.starttls()
-        server.login(username, password)
-        server.quit()
-        return jsonify({'success': True, 'message': f'Connection successful! Connected to {host}:{port}'})
-    except smtplib.SMTPAuthenticationError:
-        return jsonify({'success': False, 'message': 'Authentication failed. Check username and password.'}), 400
-    except Exception as e:
-        return jsonify({'success': False, 'message': f'Connection failed: {str(e)}'}), 400
-
-# Email templates
-@app.route('/api/settings/email-templates', methods=['GET'])
-def get_email_templates():
-    os.makedirs(SETTINGS_DIR, exist_ok=True)
-    try:
-        with open(os.path.join(SETTINGS_DIR, 'email_templates.json')) as f:
-            templates = json.load(f)
-    except:
-        templates = [
-            {'id':'tpl1','name':'Casting Confirmed','subject':'Your casting has been confirmed','body':'Hi {{client_name}},\n\nYour casting for {{project_name}} on {{shoot_date}} has been confirmed.\n\nBest,\nTOABH Team'},
-            {'id':'tpl2','name':'Casting Reminder','subject':'Reminder: {{project_name}} shoot tomorrow','body':'Hi {{client_name}},\n\nThis is a reminder that {{project_name}} shoot is scheduled for {{shoot_date}}.\n\nBest,\nTOABH Team'},
-        ]
-    # Return as flat array (frontend expects this)
-    return jsonify(templates)
-
-@app.route('/api/settings/email-templates', methods=['PUT'])
-def update_email_templates():
-    data = request.json
-    os.makedirs(SETTINGS_DIR, exist_ok=True)
-    with open(os.path.join(SETTINGS_DIR, 'email_templates.json'), 'w') as f:
-        json.dump(data['templates'], f)
-    return jsonify({'message':'Templates saved'})
-
-@app.route('/api/settings/email-templates', methods=['POST'])
-def create_email_template():
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'No data'}), 400
-    name = (data.get('name') or '').strip()
-    subject = (data.get('subject') or '').strip()
-    body = (data.get('body') or '').strip()
-    if not name or not subject:
-        return jsonify({'error': 'Name and subject are required'}), 400
-    os.makedirs(SETTINGS_DIR, exist_ok=True)
-    try:
-        with open(os.path.join(SETTINGS_DIR, 'email_templates.json')) as f:
-            templates = json.load(f)
-    except:
-        templates = []
-    existing_ids = [t.get('id', 0) for t in templates if isinstance(t.get('id'), int)]
-    new_id = (max(existing_ids) + 1) if existing_ids else 1
-    new_template = {'id': new_id, 'name': name, 'subject': subject, 'body': body}
-    templates.append(new_template)
-    with open(os.path.join(SETTINGS_DIR, 'email_templates.json'), 'w') as f:
-        json.dump(templates, f)
-    return jsonify(new_template), 201
-
-@app.route('/api/settings/email-templates/<int:template_id>', methods=['PUT'])
-def update_single_email_template(template_id):
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'No data'}), 400
-    name = (data.get('name') or '').strip()
-    subject = (data.get('subject') or '').strip()
-    body = (data.get('body') or '').strip()
-    if not name or not subject:
-        return jsonify({'error': 'Name and subject are required'}), 400
-    os.makedirs(SETTINGS_DIR, exist_ok=True)
-    try:
-        with open(os.path.join(SETTINGS_DIR, 'email_templates.json')) as f:
-            templates = json.load(f)
-    except:
-        templates = []
-    for t in templates:
-        if t.get('id') == template_id:
-            t['name'] = name
-            t['subject'] = subject
-            t['body'] = body
-            break
-    with open(os.path.join(SETTINGS_DIR, 'email_templates.json'), 'w') as f:
-        json.dump(templates, f)
-    return jsonify({'id': template_id, 'name': name, 'subject': subject, 'body': body})
-
-@app.route('/api/settings/email-templates/<int:template_id>', methods=['DELETE'])
-def delete_email_template(template_id):
-    os.makedirs(SETTINGS_DIR, exist_ok=True)
-    try:
-        with open(os.path.join(SETTINGS_DIR, 'email_templates.json')) as f:
-            templates = json.load(f)
-    except:
-        templates = []
-    templates = [t for t in templates if t.get('id') != template_id]
-    with open(os.path.join(SETTINGS_DIR, 'email_templates.json'), 'w') as f:
-        json.dump(templates, f)
-    return jsonify({'success': True})
-
-# Users management (in-memory for now)
-USERS = [
-    {'id':1,'name':'Toaney Bhatia','email':'toaney@toabh.com','role':'admin','is_active':True},
-    {'id':2,'name':'Ainesh Sikdar','email':'ainesh@toabh.com','role':'booker','is_active':True},
-]
-
-@app.route('/api/users', methods=['GET'])
-def get_users():
-    return jsonify(USERS)
-
-@app.route('/api/users', methods=['POST'])
-def create_user():
-    data = request.json
-    new_user = {
-        'id': max(u['id'] for u in USERS) + 1,
-        'name': data['name'],
-        'email': data['email'],
-        'role': data.get('role','viewer'),
-        'is_active': True
-    }
-    USERS.append(new_user)
-    return jsonify(new_user), 201
-
-@app.route('/api/users/<int:user_id>', methods=['PUT'])
-def update_user(user_id):
-    data = request.json
-    for u in USERS:
-        if u['id'] == user_id:
-            u.update({k:v for k,v in data.items() if k in ['name','email','role','is_active']})
-            return jsonify(u)
-    return jsonify({'error':'Not found'}), 404
-
-@app.route('/api/users/<int:user_id>', methods=['DELETE'])
-def delete_user(user_id):
-    global USERS
-    USERS = [u for u in USERS if u['id'] != user_id]
-    return jsonify({'message':'Deleted'})
-
-# ==================== SEARCH ROUTE ====================
-

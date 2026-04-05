@@ -13,6 +13,7 @@ const pageTitles: { [key: string]: string } = {
   '/castings': 'Castings',
   '/clients': 'Clients',
   '/calendar': 'Calendar',
+  '/tasks': 'Tasks',
   '/team': 'Team',
   '/activity': 'Activity Log',
   '/reports': 'Reports',
