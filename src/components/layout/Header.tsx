@@ -7,7 +7,6 @@ import { useOverlay } from '@/hooks/useOverlayManager'
 import { api, toApiUrl } from '@/lib/api'
 import { getInitials } from '@/lib/utils'
 import type { Activity } from '@/types'
-import { ProfileDashboard } from '@/components/profile/ProfileDashboard'
 
 const pageTitles: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
@@ -18,6 +17,7 @@ const pageTitles: { [key: string]: string } = {
   '/activity': 'Activity Log',
   '/reports': 'Reports',
   '/settings': 'Settings',
+  '/profile': 'Profile',
 }
 
 const NOTIFICATION_STORAGE_KEY = 'toabh_notification_reads'
@@ -69,7 +69,6 @@ export function Header() {
   const { setSearchOpen, currentUser } = useAppStore()
   const { openOverlay, closeOverlay } = useOverlay()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const [profileOpen, setProfileOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [notifications, setNotifications] = useState<Activity[]>([])
   const [loadingNotifications, setLoadingNotifications] = useState(false)
@@ -338,7 +337,7 @@ export function Header() {
 
                     <button
                       onClick={() => {
-                        setProfileOpen(true)
+                        navigate('/profile')
                         setUserMenuOpen(false)
                       }}
                       className="flex items-center gap-3 px-4 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 active:bg-slate-100 transition-colors text-sm font-medium rounded-lg mx-1.5 w-[calc(100%-12px)]"
@@ -371,7 +370,6 @@ export function Header() {
           </div>
         </div>
       </div>
-      <ProfileDashboard open={profileOpen} onClose={() => setProfileOpen(false)} />
     </header>
   )
 }
