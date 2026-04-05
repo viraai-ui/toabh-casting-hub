@@ -2,29 +2,35 @@ import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
+  Briefcase,
   ChevronDown,
   ChevronRight,
+  LayoutGrid,
+  List,
   Loader2,
   Mail,
   MessageCircle,
+  Pencil,
   Phone,
   Plus,
   Search,
-  Pencil,
-  Trash2,
   Tag,
-  Briefcase,
+  Trash2,
   Users,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, formatDate, getInitials } from '@/lib/utils'
 import { useOverlay } from '@/hooks/useOverlayManager'
 import type { Casting, Client, ClientTag } from '@/types'
-import { ClientTagPill, getClientTagStyles } from '@/components/clients/ClientTagPill'
+import { ClientTagPill } from '@/components/clients/ClientTagPill'
 
 interface ClientTagWithUsage extends ClientTag {
   usage_count?: number
 }
+
+type ClientViewMode = 'grid' | 'list'
+
+const CLIENT_VIEW_STORAGE_KEY = 'toabh-clients-view-mode'
 
 export function Clients() {
   const { openOverlay, closeOverlay } = useOverlay()
@@ -39,6 +45,7 @@ export function Clients() {
   const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [quickAddClientId, setQuickAddClientId] = useState<number | null>(null)
   const [savingTagClientId, setSavingTagClientId] = useState<number | null>(null)
+  const [viewMode, setViewMode] = useState<ClientViewMode>('grid')
 
   const fetchPageData = async () => {
     try {
@@ -65,12 +72,23 @@ export function Clients() {
   }, [])
 
   useEffect(() => {
+    const savedView = window.localStorage.getItem(CLIENT_VIEW_STORAGE_KEY)
+    if (savedView === 'grid' || savedView === 'list') {
+      setViewMode(savedView)
+    }
+  }, [])
+
+  useEffect(() => {
     if (modalOpen) {
       openOverlay('client-modal', () => setModalOpen(false))
     } else {
       closeOverlay('client-modal')
     }
   }, [modalOpen, openOverlay, closeOverlay])
+
+  useEffect(() => {
+    window.localStorage.setItem(CLIENT_VIEW_STORAGE_KEY, viewMode)
+  }, [viewMode])
 
   const getClientCastings = (clientId: number) => {
     const clientName = clients.find((client) => client.id === clientId)?.name?.toLowerCase()
@@ -81,17 +99,19 @@ export function Clients() {
     const query = searchQuery.trim().toLowerCase()
 
     return clients.filter((client) => {
+      const clientTags = client.tags ?? []
       const matchesQuery =
         !query ||
         client.name.toLowerCase().includes(query) ||
         client.company?.toLowerCase().includes(query) ||
         client.email?.toLowerCase().includes(query) ||
         client.phone?.toLowerCase().includes(query) ||
-        (client.tags ?? []).some((tag) => tag.name.toLowerCase().includes(query))
+        client.notes?.toLowerCase().includes(query) ||
+        clientTags.some((tag) => tag.name.toLowerCase().includes(query))
 
       const matchesTagFilter =
         selectedFilterTagIds.length === 0 ||
-        selectedFilterTagIds.every((tagId) => (client.tags ?? []).some((tag) => tag.id === tagId))
+        selectedFilterTagIds.every((tagId) => clientTags.some((tag) => tag.id === tagId))
 
       return matchesQuery && matchesTagFilter
     })
@@ -108,7 +128,11 @@ export function Clients() {
   )
 
   const updateClientFromResponse = (updatedClient: Client) => {
-    setClients((prev) => prev.map((client) => (client.id === updatedClient.id ? updatedClient : client)))
+    setClients((prev) =>
+      prev
+        .map((client) => (client.id === updatedClient.id ? updatedClient : client))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    )
   }
 
   const handleDelete = async (client: Client) => {
@@ -121,6 +145,8 @@ export function Clients() {
     try {
       await api.del(`/clients/${client.id}`)
       setClients((prev) => prev.filter((item) => item.id !== client.id))
+      if (expandedClient === client.id) setExpandedClient(null)
+      if (quickAddClientId === client.id) setQuickAddClientId(null)
     } catch (err) {
       console.error('Failed to delete client:', err)
     }
@@ -157,6 +183,11 @@ export function Clients() {
     )
   }
 
+  const handleViewChange = (mode: ClientViewMode) => {
+    setViewMode(mode)
+    setQuickAddClientId(null)
+  }
+
   return (
     <div className="space-y-4">
       <section className="rounded-[30px] border border-slate-200 bg-gradient-to-br from-white via-amber-50/70 to-orange-50 px-5 py-5 shadow-sm sm:px-6">
@@ -166,9 +197,11 @@ export function Clients() {
               <Users className="h-3.5 w-3.5" />
               Client CRM
             </div>
-            <h1 className="mt-3 text-2xl font-semibold text-slate-900 sm:text-[30px]">Clients with smart tags, faster scanning, cleaner layout</h1>
+            <h1 className="mt-3 text-2xl font-semibold text-slate-900 sm:text-[30px]">
+              Clients with smart tags, fast scanning, and dual layouts
+            </h1>
             <p className="mt-2 max-w-xl text-sm text-slate-600 sm:text-[15px]">
-              Search faster, group by custom tags, and update client labels directly from the list without losing the current casting workflow.
+              Switch between compact list mode and clean card mode, filter by reusable client tags, and update labels inline.
             </p>
           </div>
 
@@ -182,28 +215,59 @@ export function Clients() {
       </section>
 
       <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search clients, company, phone, email, or tags..."
+              placeholder="Search clients, company, phone, email, notes, or tags..."
               className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-3 pl-10 pr-4 text-sm text-slate-900 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
             />
           </div>
 
-          <button
-            onClick={() => {
-              setEditingClient(null)
-              setModalOpen(true)
-            }}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-amber-600"
-          >
-            <Plus className="h-4 w-4" />
-            Add Client
-          </button>
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end xl:flex-nowrap">
+            <div className="inline-flex items-center rounded-2xl border border-slate-200 bg-slate-50 p-1">
+              <button
+                type="button"
+                onClick={() => handleViewChange('list')}
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition sm:text-sm',
+                  viewMode === 'list'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700',
+                )}
+              >
+                <List className="h-4 w-4" />
+                List
+              </button>
+              <button
+                type="button"
+                onClick={() => handleViewChange('grid')}
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition sm:text-sm',
+                  viewMode === 'grid'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700',
+                )}
+              >
+                <LayoutGrid className="h-4 w-4" />
+                Grid
+              </button>
+            </div>
+
+            <button
+              onClick={() => {
+                setEditingClient(null)
+                setModalOpen(true)
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-amber-600"
+            >
+              <Plus className="h-4 w-4" />
+              Add Client
+            </button>
+          </div>
         </div>
 
         {availableTags.length > 0 && (
@@ -218,10 +282,11 @@ export function Clients() {
                     type="button"
                     onClick={() => toggleFilterTag(tag.id)}
                     className={cn(
-                      'rounded-full border px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-amber-500/20',
-                      isSelected ? 'shadow-sm ring-1 ring-offset-1 ring-offset-white' : 'opacity-75 hover:opacity-100',
+                      'rounded-full border px-3 py-1.5 text-xs font-semibold transition',
+                      isSelected
+                        ? 'border-amber-300 bg-amber-50 text-amber-700'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300',
                     )}
-                    style={getClientTagStyles(tag.color)}
                   >
                     {tag.name}
                   </button>
@@ -250,230 +315,62 @@ export function Clients() {
           <p className="text-sm font-medium text-slate-700">No clients found</p>
           <p className="mt-1 text-sm text-slate-500">Try changing the search or tag filters.</p>
         </div>
+      ) : viewMode === 'grid' ? (
+        <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+          {filteredClients.map((client) => (
+            <ClientGridCard
+              key={client.id}
+              client={client}
+              castings={getClientCastings(client.id)}
+              availableTags={availableTags}
+              expanded={expandedClient === client.id}
+              quickAddOpen={quickAddClientId === client.id}
+              savingTag={savingTagClientId === client.id}
+              onToggleExpand={() => setExpandedClient((prev) => (prev === client.id ? null : client.id))}
+              onToggleQuickAdd={() => setQuickAddClientId((prev) => (prev === client.id ? null : client.id))}
+              onEdit={() => {
+                setEditingClient(client)
+                setModalOpen(true)
+              }}
+              onDelete={() => handleDelete(client)}
+              onAddTag={(tagId) => addTagToClient(client.id, tagId)}
+              onRemoveTag={(tagId) => removeTagFromClient(client.id, tagId)}
+            />
+          ))}
+        </div>
       ) : (
-        <div className="space-y-3">
-          {filteredClients.map((client) => {
-            const clientCastings = getClientCastings(client.id)
-            const isExpanded = expandedClient === client.id
-            const clientTags = client.tags ?? []
-            const availableQuickAddTags = availableTags.filter(
-              (tag) => !clientTags.some((clientTag) => clientTag.id === tag.id),
-            )
-            const whatsappNumber = client.phone
-              ? client.phone.replace(/\D/g, '').replace(/^91/, '').replace(/^0/, '')
-              : ''
+        <div className="rounded-[28px] border border-slate-200 bg-white shadow-sm">
+          <div className="hidden grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.6fr)_minmax(0,1.8fr)_88px_176px] items-center gap-3 border-b border-slate-200 bg-slate-50/80 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 lg:grid">
+            <span>Name</span>
+            <span>Company</span>
+            <span>Contact</span>
+            <span>Tags</span>
+            <span>Castings</span>
+            <span className="text-right">Actions</span>
+          </div>
 
-            return (
-              <motion.div
+          <div className="divide-y divide-slate-100">
+            {filteredClients.map((client) => (
+              <ClientListRow
                 key={client.id}
-                layout
-                initial={false}
-                className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm"
-              >
-                <div
-                  className="cursor-pointer p-4 sm:p-5"
-                  onClick={() => setExpandedClient(isExpanded ? null : client.id)}
-                >
-                  <div className="flex items-start gap-3 sm:gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-sm font-semibold text-white shadow-sm sm:h-14 sm:w-14 sm:text-base">
-                      {getInitials(client.name)}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate text-base font-semibold text-slate-900 sm:text-lg">{client.name}</h3>
-                        {client.company && (
-                          <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-500 sm:text-xs">
-                            {client.company}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="mt-2 flex flex-col gap-1 text-xs text-slate-500 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1 sm:text-sm">
-                        {client.email && <span className="truncate">{client.email}</span>}
-                        {client.phone && <span>{client.phone}</span>}
-                        <span>{clientCastings.length} casting{clientCastings.length === 1 ? '' : 's'}</span>
-                      </div>
-
-                      <div className="mt-3 flex flex-wrap items-center gap-2" onClick={(event) => event.stopPropagation()}>
-                        {clientTags.map((tag) => (
-                          <ClientTagPill
-                            key={tag.id}
-                            tag={tag}
-                            onRemove={() => removeTagFromClient(client.id, tag.id)}
-                          />
-                        ))}
-
-                        {availableTags.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => setQuickAddClientId((prev) => (prev === client.id ? null : client.id))}
-                            className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
-                          >
-                            <Plus className="h-3.5 w-3.5" />
-                            Tag
-                          </button>
-                        )}
-                      </div>
-
-                      <AnimatePresence>
-                        {quickAddClientId === client.id && availableQuickAddTags.length > 0 && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -6 }}
-                            className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3"
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Quick add tags</p>
-                            <div className="flex flex-wrap gap-2">
-                              {availableQuickAddTags.map((tag) => (
-                                <button
-                                  key={tag.id}
-                                  type="button"
-                                  onClick={() => addTagToClient(client.id, tag.id)}
-                                  disabled={savingTagClientId === client.id}
-                                  className="rounded-full border px-3 py-1.5 text-xs font-semibold transition hover:opacity-100 disabled:opacity-50"
-                                  style={getClientTagStyles(tag.color)}
-                                >
-                                  {tag.name}
-                                </button>
-                              ))}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-
-                    <div className="flex shrink-0 items-center gap-1">
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          setEditingClient(client)
-                          setModalOpen(true)
-                        }}
-                        className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-amber-50 hover:text-amber-600"
-                        title="Edit client"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          handleDelete(client)
-                        }}
-                        className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-red-50 hover:text-red-500"
-                        title="Delete client"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                      <div className="flex h-10 w-10 items-center justify-center text-slate-400">
-                        {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                      </div>
-                    </div>
-                  </div>
-
-                  {(client.phone || client.email) && (
-                    <div className="mt-4 flex flex-wrap items-center gap-2" onClick={(event) => event.stopPropagation()}>
-                      {client.phone && (
-                        <a
-                          href={`tel:${client.phone}`}
-                          className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-blue-50 px-4 py-2.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100 sm:text-sm"
-                        >
-                          <Phone className="h-4 w-4" />
-                          Call
-                        </a>
-                      )}
-                      {client.phone && (
-                        <a
-                          href={`https://wa.me/${whatsappNumber}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-green-50 px-4 py-2.5 text-xs font-semibold text-green-600 transition hover:bg-green-100 sm:text-sm"
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                          WhatsApp
-                        </a>
-                      )}
-                      {!client.phone && client.email && (
-                        <a
-                          href={`mailto:${client.email}`}
-                          className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 sm:text-sm"
-                        >
-                          <Mail className="h-4 w-4" />
-                          Email
-                        </a>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2, ease: 'easeInOut' }}
-                      className="overflow-hidden border-t border-slate-100"
-                    >
-                      <div className="grid gap-4 bg-slate-50/80 p-4 sm:p-5 lg:grid-cols-[1.2fr_0.8fr]">
-                        <div className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Castings</span>
-                            <span className="text-xs text-slate-400">{clientCastings.length} total</span>
-                          </div>
-
-                          {clientCastings.length === 0 ? (
-                            <p className="mt-3 text-sm italic text-slate-400">No castings yet</p>
-                          ) : (
-                            <div className="mt-3 space-y-2">
-                              {clientCastings.map((casting) => (
-                                <div
-                                  key={casting.id}
-                                  className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-white px-3 py-3"
-                                >
-                                  <div className="min-w-0 flex-1">
-                                    <p className="truncate text-sm font-medium text-slate-800">
-                                      {casting.project_name || 'Untitled'}
-                                    </p>
-                                    <p className="mt-0.5 text-xs text-slate-400">
-                                      {casting.shoot_date_start ? formatDate(casting.shoot_date_start) : 'No date set'}
-                                    </p>
-                                  </div>
-                                  <span
-                                    className={cn(
-                                      'shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold',
-                                      casting.status === 'COMPLETED'
-                                        ? 'bg-emerald-100 text-emerald-700'
-                                        : casting.status === 'IN_PROGRESS'
-                                          ? 'bg-amber-100 text-amber-700'
-                                          : casting.status === 'NEW'
-                                            ? 'bg-blue-100 text-blue-700'
-                                            : 'bg-slate-100 text-slate-600',
-                                    )}
-                                  >
-                                    {casting.status}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm">
-                          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Notes</span>
-                          <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600">
-                            {client.notes?.trim() || 'No internal notes added yet.'}
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            )
-          })}
+                client={client}
+                castings={getClientCastings(client.id)}
+                availableTags={availableTags}
+                expanded={expandedClient === client.id}
+                quickAddOpen={quickAddClientId === client.id}
+                savingTag={savingTagClientId === client.id}
+                onToggleExpand={() => setExpandedClient((prev) => (prev === client.id ? null : client.id))}
+                onToggleQuickAdd={() => setQuickAddClientId((prev) => (prev === client.id ? null : client.id))}
+                onEdit={() => {
+                  setEditingClient(client)
+                  setModalOpen(true)
+                }}
+                onDelete={() => handleDelete(client)}
+                onAddTag={(tagId) => addTagToClient(client.id, tagId)}
+                onRemoveTag={(tagId) => removeTagFromClient(client.id, tagId)}
+              />
+            ))}
+          </div>
         </div>
       )}
 
@@ -493,6 +390,489 @@ export function Clients() {
           }
         }}
       />
+    </div>
+  )
+}
+
+function ClientGridCard({
+  client,
+  castings,
+  availableTags,
+  expanded,
+  quickAddOpen,
+  savingTag,
+  onToggleExpand,
+  onToggleQuickAdd,
+  onEdit,
+  onDelete,
+  onAddTag,
+  onRemoveTag,
+}: {
+  client: Client
+  castings: Casting[]
+  availableTags: ClientTag[]
+  expanded: boolean
+  quickAddOpen: boolean
+  savingTag: boolean
+  onToggleExpand: () => void
+  onToggleQuickAdd: () => void
+  onEdit: () => void
+  onDelete: () => void
+  onAddTag: (tagId: number) => void
+  onRemoveTag: (tagId: number) => void
+}) {
+  const clientTags = client.tags ?? []
+  const availableQuickAddTags = availableTags.filter(
+    (tag) => !clientTags.some((clientTag) => clientTag.id === tag.id),
+  )
+
+  return (
+    <motion.div layout initial={false} className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm">
+      <div className="p-4 sm:p-5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-sm font-semibold text-white shadow-sm">
+            {getInitials(client.name)}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="truncate text-base font-semibold text-slate-900">{client.name}</h3>
+                {client.company && <p className="mt-0.5 truncate text-sm text-slate-500">{client.company}</p>}
+              </div>
+              <ClientPrimaryActions
+                client={client}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onToggleExpand={onToggleExpand}
+                expanded={expanded}
+              />
+            </div>
+
+            <div className="mt-3 space-y-1.5 text-sm text-slate-500">
+              {client.phone && <p className="truncate">{client.phone}</p>}
+              {client.email && <p className="truncate">{client.email}</p>}
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
+                {castings.length} casting{castings.length === 1 ? '' : 's'}
+              </p>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2" onClick={(event) => event.stopPropagation()}>
+                  {clientTags.length > 0 ? (
+                    clientTags.map((tag) => (
+                      <ClientTagPill
+                        key={tag.id}
+                        tag={tag}
+                        onRemove={() => onRemoveTag(tag.id)}
+                        className="max-w-full"
+                      />
+                    ))
+                  ) : (
+                    <span className="text-xs text-slate-400">No tags</span>
+                  )}
+
+                  {availableTags.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={onToggleQuickAdd}
+                      className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-2.5 py-1 text-[11px] font-semibold text-slate-500 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
+                    >
+                      <Plus className="h-3 w-3" />
+                      Tag
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <ClientContactActions client={client} compact />
+            </div>
+
+            <AnimatePresence>
+              {quickAddOpen && availableQuickAddTags.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3"
+                >
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Quick add tags</p>
+                  <div className="flex flex-wrap gap-2">
+                    {availableQuickAddTags.map((tag) => (
+                      <button
+                        key={tag.id}
+                        type="button"
+                        onClick={() => onAddTag(tag.id)}
+                        disabled={savingTag}
+                        className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 disabled:opacity-50"
+                      >
+                        {tag.name}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+
+      <ClientExpandedPanel client={client} castings={castings} expanded={expanded} />
+    </motion.div>
+  )
+}
+
+function ClientListRow({
+  client,
+  castings,
+  availableTags,
+  expanded,
+  quickAddOpen,
+  savingTag,
+  onToggleExpand,
+  onToggleQuickAdd,
+  onEdit,
+  onDelete,
+  onAddTag,
+  onRemoveTag,
+}: {
+  client: Client
+  castings: Casting[]
+  availableTags: ClientTag[]
+  expanded: boolean
+  quickAddOpen: boolean
+  savingTag: boolean
+  onToggleExpand: () => void
+  onToggleQuickAdd: () => void
+  onEdit: () => void
+  onDelete: () => void
+  onAddTag: (tagId: number) => void
+  onRemoveTag: (tagId: number) => void
+}) {
+  const clientTags = client.tags ?? []
+  const availableQuickAddTags = availableTags.filter(
+    (tag) => !clientTags.some((clientTag) => clientTag.id === tag.id),
+  )
+
+  return (
+    <motion.div layout initial={false} className="overflow-hidden">
+      <div className="p-4 lg:px-4 lg:py-3">
+        <div className="space-y-3 lg:hidden">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-slate-900">{client.name}</p>
+              {client.company && <p className="truncate text-xs text-slate-500">{client.company}</p>}
+            </div>
+            <ClientPrimaryActions
+              client={client}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onToggleExpand={onToggleExpand}
+              expanded={expanded}
+            />
+          </div>
+
+          <div className="grid gap-2 text-xs text-slate-500 sm:grid-cols-2">
+            <span className="truncate">{client.phone || 'No phone'}</span>
+            <span className="truncate">{client.email || 'No email'}</span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {clientTags.length > 0 ? (
+              clientTags.map((tag) => (
+                <ClientTagPill key={tag.id} tag={tag} onRemove={() => onRemoveTag(tag.id)} />
+              ))
+            ) : (
+              <span className="text-xs text-slate-400">No tags</span>
+            )}
+            {availableTags.length > 0 && (
+              <button
+                type="button"
+                onClick={onToggleQuickAdd}
+                className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-2.5 py-1 text-[11px] font-semibold text-slate-500 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
+              >
+                <Plus className="h-3 w-3" />
+                Tag
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+              {castings.length} casting{castings.length === 1 ? '' : 's'}
+            </span>
+            <ClientContactActions client={client} compact />
+          </div>
+        </div>
+
+        <div className="hidden lg:grid lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.6fr)_minmax(0,1.8fr)_88px_176px] lg:items-center lg:gap-3">
+          <button type="button" onClick={onToggleExpand} className="flex min-w-0 items-center gap-3 text-left">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-xs font-semibold text-white">
+              {getInitials(client.name)}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-slate-900">{client.name}</p>
+              <p className="mt-0.5 text-xs text-slate-400">Updated {formatDate(client.updated_at)}</p>
+            </div>
+          </button>
+
+          <div className="min-w-0 text-sm text-slate-600">{client.company || '—'}</div>
+
+          <div className="min-w-0 space-y-0.5 text-xs text-slate-500">
+            <p className="truncate">{client.phone || 'No phone'}</p>
+            <p className="truncate">{client.email || 'No email'}</p>
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5" onClick={(event) => event.stopPropagation()}>
+              {clientTags.length > 0 ? (
+                clientTags.map((tag) => (
+                  <ClientTagPill key={tag.id} tag={tag} onRemove={() => onRemoveTag(tag.id)} className="max-w-full" />
+                ))
+              ) : (
+                <span className="text-xs text-slate-400">No tags</span>
+              )}
+              {availableTags.length > 0 && (
+                <button
+                  type="button"
+                  onClick={onToggleQuickAdd}
+                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-500 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
+                >
+                  <Plus className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="text-sm font-semibold text-slate-600">{castings.length}</div>
+
+          <div className="flex items-center justify-end gap-1.5">
+            <ClientContactActions client={client} compact />
+            <button
+              type="button"
+              onClick={onEdit}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-600"
+              title="Edit client"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+              title="Delete client"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={onToggleExpand}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+              title={expanded ? 'Collapse details' : 'Expand details'}
+            >
+              {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+            </button>
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {quickAddOpen && availableQuickAddTags.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3"
+            >
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Quick add tags</p>
+              <div className="flex flex-wrap gap-2">
+                {availableQuickAddTags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => onAddTag(tag.id)}
+                    disabled={savingTag}
+                    className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 disabled:opacity-50"
+                  >
+                    {tag.name}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <ClientExpandedPanel client={client} castings={castings} expanded={expanded} />
+    </motion.div>
+  )
+}
+
+function ClientExpandedPanel({
+  client,
+  castings,
+  expanded,
+}: {
+  client: Client
+  castings: Casting[]
+  expanded: boolean
+}) {
+  return (
+    <AnimatePresence>
+      {expanded && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.2, ease: 'easeInOut' }}
+          className="overflow-hidden border-t border-slate-100"
+        >
+          <div className="grid gap-4 bg-slate-50/80 p-4 sm:p-5 lg:grid-cols-[1.2fr_0.8fr]">
+            <div className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Castings</span>
+                <span className="text-xs text-slate-400">{castings.length} total</span>
+              </div>
+
+              {castings.length === 0 ? (
+                <p className="mt-3 text-sm italic text-slate-400">No castings yet</p>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {castings.map((casting) => (
+                    <div
+                      key={casting.id}
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-white px-3 py-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-slate-800">
+                          {casting.project_name || 'Untitled'}
+                        </p>
+                        <p className="mt-0.5 text-xs text-slate-400">
+                          {casting.shoot_date_start ? formatDate(casting.shoot_date_start) : 'No date set'}
+                        </p>
+                      </div>
+                      <span
+                        className={cn(
+                          'shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                          casting.status === 'COMPLETED'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : casting.status === 'IN_PROGRESS'
+                              ? 'bg-amber-100 text-amber-700'
+                              : casting.status === 'NEW'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-slate-100 text-slate-600',
+                        )}
+                      >
+                        {casting.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm">
+              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Notes</span>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600">
+                {client.notes?.trim() || 'No internal notes added yet.'}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
+function ClientPrimaryActions({
+  client,
+  expanded,
+  onEdit,
+  onDelete,
+  onToggleExpand,
+}: {
+  client: Client
+  expanded: boolean
+  onEdit: () => void
+  onDelete: () => void
+  onToggleExpand: () => void
+}) {
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      <button
+        type="button"
+        onClick={onEdit}
+        className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-600"
+        title={`Edit ${client.name}`}
+      >
+        <Pencil className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        onClick={onDelete}
+        className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+        title={`Delete ${client.name}`}
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        onClick={onToggleExpand}
+        className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition hover:bg-slate-50 hover:text-slate-700"
+        title={expanded ? 'Collapse details' : 'Expand details'}
+      >
+        {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+      </button>
+    </div>
+  )
+}
+
+function ClientContactActions({
+  client,
+  compact = false,
+}: {
+  client: Client
+  compact?: boolean
+}) {
+  const whatsappNumber = client.phone
+    ? client.phone.replace(/\D/g, '').replace(/^91/, '').replace(/^0/, '')
+    : ''
+
+  const buttonClass = compact
+    ? 'inline-flex h-8 w-8 items-center justify-center rounded-lg border border-transparent transition'
+    : 'inline-flex h-9 w-9 items-center justify-center rounded-xl border border-transparent transition'
+
+  return (
+    <div className="flex items-center gap-1.5">
+      {client.phone && (
+        <a
+          href={`tel:${client.phone}`}
+          className={cn(buttonClass, 'bg-blue-50 text-blue-600 hover:bg-blue-100')}
+          title={`Call ${client.name}`}
+        >
+          <Phone className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
+        </a>
+      )}
+      {client.phone && whatsappNumber && (
+        <a
+          href={`https://wa.me/${whatsappNumber}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn(buttonClass, 'bg-green-50 text-green-600 hover:bg-green-100')}
+          title={`WhatsApp ${client.name}`}
+        >
+          <MessageCircle className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
+        </a>
+      )}
+      {!client.phone && client.email && (
+        <a
+          href={`mailto:${client.email}`}
+          className={cn(buttonClass, 'bg-slate-100 text-slate-700 hover:bg-slate-200')}
+          title={`Email ${client.name}`}
+        >
+          <Mail className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
+        </a>
+      )}
     </div>
   )
 }
@@ -599,7 +979,9 @@ function ClientFormModal({
 
   const fieldClasses = (error: string | null) =>
     `w-full rounded-2xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 transition ${
-      error ? 'border-red-400 focus:ring-red-400/30' : 'border-slate-200 focus:border-amber-400 focus:ring-amber-500/20'
+      error
+        ? 'border-red-400 focus:ring-red-400/30'
+        : 'border-slate-200 focus:border-amber-400 focus:ring-amber-500/20'
     }`
 
   const markTouched = (field: string) => {
@@ -631,9 +1013,7 @@ function ClientFormModal({
         tag_ids: form.tag_ids,
       }
 
-      const savedClient = client
-        ? await api.put(`/clients/${client.id}`, payload)
-        : await api.post('/clients', payload)
+      const savedClient = client ? await api.put(`/clients/${client.id}`, payload) : await api.post('/clients', payload)
 
       onSave(savedClient as Client)
       onClose()
@@ -749,10 +1129,12 @@ function ClientFormModal({
                             type="button"
                             onClick={() => toggleTagSelection(tag.id)}
                             className={cn(
-                              'rounded-full border px-3 py-2 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-amber-500/20',
-                              selected ? 'shadow-sm ring-1 ring-offset-1 ring-offset-slate-50' : 'opacity-75 hover:opacity-100',
+                              'rounded-full border px-3 py-2 text-xs font-semibold transition',
+                              selected
+                                ? 'border-amber-300 bg-amber-50 text-amber-700'
+                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300',
                             )}
-                            style={getClientTagStyles(tag.color)}
+                            style={selected ? { borderColor: tag.color, color: tag.color, backgroundColor: `${tag.color}14` } : undefined}
                           >
                             {tag.name}
                           </button>
