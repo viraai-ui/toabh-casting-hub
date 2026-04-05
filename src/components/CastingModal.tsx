@@ -730,149 +730,6 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
                         </div>
                       </div>
 
-                      <div className="border-t border-slate-200 pt-3 sm:pt-4 mt-2 space-y-3 sm:space-y-4">
-                        <div>
-                          <p className="text-[11px] sm:text-xs font-medium text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">
-                            Attachments
-                          </p>
-                          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 sm:p-4">
-                            <input
-                              ref={fileInputRef}
-                              type="file"
-                              multiple
-                              accept={ATTACHMENT_ACCEPT}
-                              onChange={handleFileSelection}
-                              className="hidden"
-                            />
-
-                            <div
-                              role="button"
-                              tabIndex={0}
-                              onClick={() => fileInputRef.current?.click()}
-                              onKeyDown={(event) => {
-                                if (event.key === 'Enter' || event.key === ' ') {
-                                  event.preventDefault()
-                                  fileInputRef.current?.click()
-                                }
-                              }}
-                              onDragEnter={(event) => {
-                                event.preventDefault()
-                                setIsDragActive(true)
-                              }}
-                              onDragOver={(event) => {
-                                event.preventDefault()
-                                setIsDragActive(true)
-                              }}
-                              onDragLeave={(event) => {
-                                event.preventDefault()
-                                const relatedTarget = event.relatedTarget as Node | null
-                                if (!relatedTarget || !event.currentTarget.contains(relatedTarget)) {
-                                  setIsDragActive(false)
-                                }
-                              }}
-                              onDrop={(event) => {
-                                event.preventDefault()
-                                setIsDragActive(false)
-                                if (event.dataTransfer.files?.length) {
-                                  enqueueFiles(event.dataTransfer.files)
-                                }
-                              }}
-                              className={cn(
-                                'flex min-h-[148px] flex-col items-center justify-center rounded-2xl border border-dashed px-4 py-5 text-center transition-all',
-                                isDragActive
-                                  ? 'border-amber-400 bg-amber-50 text-amber-700'
-                                  : 'border-slate-300 bg-white text-slate-600 hover:border-amber-300 hover:bg-amber-50/40 hover:text-slate-900'
-                              )}
-                            >
-                              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
-                                <Paperclip className="h-5 w-5" />
-                              </div>
-                              <p className="text-sm font-semibold text-slate-900">Drag and drop files here</p>
-                              <p className="mt-1 text-xs sm:text-sm text-slate-500">
-                                PDF, images, PPT, Excel, Word, text, ZIP and more
-                              </p>
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation()
-                                  fileInputRef.current?.click()
-                                }}
-                                className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
-                              >
-                                <Upload className="h-4 w-4" />
-                                Browse Files
-                              </button>
-                            </div>
-
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              <span className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500 ring-1 ring-slate-200">
-                                Multiple files supported
-                              </span>
-                              <span className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500 ring-1 ring-slate-200">
-                                Files upload when you save the casting
-                              </span>
-                            </div>
-
-                            {uploadNotice && (
-                              <div
-                                className={cn(
-                                  'mt-3 rounded-xl border px-3 py-2 text-xs sm:text-sm',
-                                  uploadNotice.tone === 'error'
-                                    ? 'border-red-200 bg-red-50 text-red-600'
-                                    : uploadNotice.tone === 'success'
-                                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                                      : 'border-slate-200 bg-white text-slate-600'
-                                )}
-                              >
-                                {uploadNotice.message}
-                              </div>
-                            )}
-
-                            {queuedAttachments.length > 0 && (
-                              <div className="mt-4 space-y-2">
-                                {queuedAttachments.map((attachment) => {
-                                  const AttachmentIcon = attachmentIconForFile(attachment.file)
-                                  return (
-                                    <div
-                                      key={attachment.id}
-                                      className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3"
-                                    >
-                                      <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-                                        <AttachmentIcon className="h-4 w-4" />
-                                      </div>
-                                      <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-medium text-slate-900">{attachment.file.name}</p>
-                                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                                          <span>{formatFileSize(attachment.file.size)}</span>
-                                          <span className="text-slate-300">•</span>
-                                          <span>
-                                            {attachment.status === 'uploading'
-                                              ? 'Uploading…'
-                                              : attachment.status === 'error'
-                                                ? 'Needs retry'
-                                                : 'Ready to upload'}
-                                          </span>
-                                        </div>
-                                        {attachment.error && (
-                                          <p className="mt-1 text-xs text-red-500">{attachment.error}</p>
-                                        )}
-                                      </div>
-                                      <button
-                                        type="button"
-                                        onClick={() => removeQueuedAttachment(attachment.id)}
-                                        disabled={saving || attachment.status === 'uploading'}
-                                        className="inline-flex min-h-[36px] items-center justify-center rounded-xl px-2 py-1 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
-                                      >
-                                        Remove
-                                      </button>
-                                    </div>
-                                  )
-                                })}
-                              </div>
-                            )}
-                          </div>
-                      </div>
-
                       <div className="border-t border-slate-200 pt-3 sm:pt-4 mt-2">
                         <div className="mb-2 sm:mb-3 flex items-center gap-2 text-[11px] sm:text-xs font-medium uppercase tracking-wide text-slate-400">
                           <Paperclip className="h-3.5 w-3.5 text-slate-400" />
@@ -1013,8 +870,8 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
 
                       {/* ======= DYNAMIC CUSTOM FIELDS ======= */}
                       {customFields.length > 0 && (
-<div>
-                            <p className="text-[11px] sm:text-xs font-medium text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">
+                        <div className="border-t border-slate-200 pt-3 sm:pt-4 mt-2">
+                          <p className="text-[11px] sm:text-xs font-medium text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">
                               Additional Information
                             </p>
                             <div className="space-y-3 sm:space-y-4">
@@ -1078,7 +935,6 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
                             </div>
                           </div>
                         )}
-                      </div>
                     </div>
                   )}
 
