@@ -1,49 +1,69 @@
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Plus, ChevronDown, ChevronRight, Pencil, Trash2, Loader2, Phone, Mail, MessageCircle } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import type { FormEvent } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import {
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+  Mail,
+  MessageCircle,
+  Phone,
+  Plus,
+  Search,
+  Pencil,
+  Trash2,
+  Tag,
+  Briefcase,
+  Users,
+} from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, formatDate, getInitials } from '@/lib/utils'
 import { useOverlay } from '@/hooks/useOverlayManager'
-import type { Client, Casting } from '@/types'
+import type { Casting, Client, ClientTag } from '@/types'
+import { ClientTagPill, getClientTagStyles } from '@/components/clients/ClientTagPill'
+
+interface ClientTagWithUsage extends ClientTag {
+  usage_count?: number
+}
 
 export function Clients() {
   const { openOverlay, closeOverlay } = useOverlay()
   const [clients, setClients] = useState<Client[]>([])
   const [castings, setCastings] = useState<Casting[]>([])
+  const [availableTags, setAvailableTags] = useState<ClientTagWithUsage[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedFilterTagIds, setSelectedFilterTagIds] = useState<number[]>([])
   const [expandedClient, setExpandedClient] = useState<number | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
+  const [quickAddClientId, setQuickAddClientId] = useState<number | null>(null)
+  const [savingTagClientId, setSavingTagClientId] = useState<number | null>(null)
 
-  const fetchClients = async () => {
+  const fetchPageData = async () => {
     try {
-      const data = await api.get('/clients')
-      setClients(Array.isArray(data) ? data : [])
+      const [clientsData, castingsData, tagsData] = await Promise.all([
+        api.get('/clients'),
+        api.get('/castings'),
+        api.get('/settings/client-tags'),
+      ])
+      setClients(Array.isArray(clientsData) ? clientsData : [])
+      setCastings(Array.isArray(castingsData) ? castingsData : [])
+      setAvailableTags(Array.isArray(tagsData) ? tagsData : [])
     } catch (err) {
-      console.error('Failed to fetch clients:', err)
+      console.error('Failed to load clients page:', err)
       setClients([])
+      setCastings([])
+      setAvailableTags([])
     } finally {
       setLoading(false)
     }
   }
 
-  const fetchCastings = async () => {
-    try {
-      const data = await api.get('/castings')
-      setCastings(Array.isArray(data) ? data : [])
-    } catch (err) {
-      console.error('Failed to fetch castings:', err)
-      setCastings([])
-    }
-  }
-
   useEffect(() => {
-    fetchClients()
-    fetchCastings()
+    fetchPageData()
   }, [])
 
-  // Register Add/Edit Client modal with overlay manager
   useEffect(() => {
     if (modalOpen) {
       openOverlay('client-modal', () => setModalOpen(false))
@@ -52,73 +72,193 @@ export function Clients() {
     }
   }, [modalOpen, openOverlay, closeOverlay])
 
-  const filteredClients = clients.filter((client) =>
-    client.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const getClientCastings = (clientId: number) => {
+    const clientName = clients.find((client) => client.id === clientId)?.name?.toLowerCase()
+    return castings.filter((casting) => casting.client_name?.toLowerCase() === clientName)
+  }
+
+  const filteredClients = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+
+    return clients.filter((client) => {
+      const matchesQuery =
+        !query ||
+        client.name.toLowerCase().includes(query) ||
+        client.company?.toLowerCase().includes(query) ||
+        client.email?.toLowerCase().includes(query) ||
+        client.phone?.toLowerCase().includes(query) ||
+        (client.tags ?? []).some((tag) => tag.name.toLowerCase().includes(query))
+
+      const matchesTagFilter =
+        selectedFilterTagIds.length === 0 ||
+        selectedFilterTagIds.every((tagId) => (client.tags ?? []).some((tag) => tag.id === tagId))
+
+      return matchesQuery && matchesTagFilter
+    })
+  }, [clients, searchQuery, selectedFilterTagIds])
+
+  const taggedClientsCount = useMemo(
+    () => clients.filter((client) => (client.tags ?? []).length > 0).length,
+    [clients],
   )
 
-  const getClientCastings = (clientId: number) => {
-    return castings.filter(
-      (c) => c.client_name?.toLowerCase() === clients.find((cl) => cl.id === clientId)?.name?.toLowerCase()
-    )
+  const totalClientTagAssignments = useMemo(
+    () => clients.reduce((sum, client) => sum + (client.tags?.length ?? 0), 0),
+    [clients],
+  )
+
+  const updateClientFromResponse = (updatedClient: Client) => {
+    setClients((prev) => prev.map((client) => (client.id === updatedClient.id ? updatedClient : client)))
   }
 
   const handleDelete = async (client: Client) => {
     const clientCastings = getClientCastings(client.id)
     if (clientCastings.length > 0) {
-      alert('Cannot delete client with castings. Remove all castings first.')
+      window.alert('Cannot delete client with castings. Remove all castings first.')
       return
     }
-    if (!confirm(`Delete ${client.name}?`)) return
+    if (!window.confirm(`Delete ${client.name}?`)) return
     try {
       await api.del(`/clients/${client.id}`)
-      fetchClients()
+      setClients((prev) => prev.filter((item) => item.id !== client.id))
     } catch (err) {
-      console.error('Failed to delete:', err)
+      console.error('Failed to delete client:', err)
     }
+  }
+
+  const addTagToClient = async (clientId: number, tagId: number) => {
+    setSavingTagClientId(clientId)
+    try {
+      const updated = await api.post(`/clients/${clientId}/tags`, { tag_id: tagId })
+      updateClientFromResponse(updated as Client)
+      setQuickAddClientId(null)
+    } catch (err) {
+      console.error('Failed to add tag to client:', err)
+    } finally {
+      setSavingTagClientId(null)
+    }
+  }
+
+  const removeTagFromClient = async (clientId: number, tagId: number) => {
+    setSavingTagClientId(clientId)
+    try {
+      const updated = await api.del(`/clients/${clientId}/tags/${tagId}`)
+      updateClientFromResponse(updated as Client)
+    } catch (err) {
+      console.error('Failed to remove tag from client:', err)
+    } finally {
+      setSavingTagClientId(null)
+    }
+  }
+
+  const toggleFilterTag = (tagId: number) => {
+    setSelectedFilterTagIds((prev) =>
+      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId],
+    )
   }
 
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search clients..."
-            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500"
-          />
-        </div>
-        <button
-          onClick={() => {
-            setEditingClient(null)
-            setModalOpen(true)
-          }}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Client
-        </button>
-      </div>
+      <section className="rounded-[30px] border border-slate-200 bg-gradient-to-br from-white via-amber-50/70 to-orange-50 px-5 py-5 shadow-sm sm:px-6">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
+              <Users className="h-3.5 w-3.5" />
+              Client CRM
+            </div>
+            <h1 className="mt-3 text-2xl font-semibold text-slate-900 sm:text-[30px]">Clients with smart tags, faster scanning, cleaner layout</h1>
+            <p className="mt-2 max-w-xl text-sm text-slate-600 sm:text-[15px]">
+              Search faster, group by custom tags, and update client labels directly from the list without losing the current casting workflow.
+            </p>
+          </div>
 
-      {/* Client List */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[520px]">
+            <StatCard icon={Users} label="Total Clients" value={clients.length} />
+            <StatCard icon={Tag} label="Tagged Clients" value={taggedClientsCount} />
+            <StatCard icon={Briefcase} label="Live Castings" value={castings.length} />
+            <StatCard icon={Tag} label="Tag Links" value={totalClientTagAssignments} />
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search clients, company, phone, email, or tags..."
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-3 pl-10 pr-4 text-sm text-slate-900 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+            />
+          </div>
+
+          <button
+            onClick={() => {
+              setEditingClient(null)
+              setModalOpen(true)
+            }}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-amber-600"
+          >
+            <Plus className="h-4 w-4" />
+            Add Client
+          </button>
+        </div>
+
+        {availableTags.length > 0 && (
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Filter Tags</span>
+              {availableTags.map((tag) => {
+                const isSelected = selectedFilterTagIds.includes(tag.id)
+                return (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => toggleFilterTag(tag.id)}
+                    className={cn(
+                      'rounded-full border px-3 py-1.5 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-amber-500/20',
+                      isSelected ? 'shadow-sm ring-1 ring-offset-1 ring-offset-white' : 'opacity-75 hover:opacity-100',
+                    )}
+                    style={getClientTagStyles(tag.color)}
+                  >
+                    {tag.name}
+                  </button>
+                )
+              })}
+              {selectedFilterTagIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedFilterTagIds([])}
+                  className="rounded-full border border-transparent px-2 py-1 text-xs font-medium text-slate-500 transition hover:bg-slate-200"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </section>
+
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
         </div>
       ) : filteredClients.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-sm">
-          <p className="text-slate-400 text-sm">No clients found</p>
+        <div className="rounded-[28px] border border-slate-200 bg-white px-4 py-16 text-center shadow-sm">
+          <p className="text-sm font-medium text-slate-700">No clients found</p>
+          <p className="mt-1 text-sm text-slate-500">Try changing the search or tag filters.</p>
         </div>
       ) : (
-        <div className="space-y-2 sm:space-y-3">
+        <div className="space-y-3">
           {filteredClients.map((client) => {
             const clientCastings = getClientCastings(client.id)
             const isExpanded = expandedClient === client.id
-
-            // Format phone for WhatsApp: strip non-digits, remove leading 0/91
+            const clientTags = client.tags ?? []
+            const availableQuickAddTags = availableTags.filter(
+              (tag) => !clientTags.some((clientTag) => clientTag.id === tag.id),
+            )
             const whatsappNumber = client.phone
               ? client.phone.replace(/\D/g, '').replace(/^91/, '').replace(/^0/, '')
               : ''
@@ -128,125 +268,146 @@ export function Clients() {
                 key={client.id}
                 layout
                 initial={false}
-                className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
+                className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm"
               >
-                {/* ── CARD BODY — fully clickable ───────────────────────── */}
                 <div
-                  className="flex items-start gap-3 p-3 sm:p-4 cursor-pointer active:bg-slate-50 transition-colors select-none"
+                  className="cursor-pointer p-4 sm:p-5"
                   onClick={() => setExpandedClient(isExpanded ? null : client.id)}
                 >
-                  {/* Avatar */}
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-semibold text-sm sm:text-base shrink-0">
-                    {getInitials(client.name)}
-                  </div>
-
-                  {/* Info column */}
-                  <div className="flex-1 min-w-0">
-                    {/* Row 1: Name + company badge */}
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-semibold text-slate-900 text-sm sm:text-[15px] truncate max-w-[120px] sm:max-w-[180px]">
-                        {client.name}
-                      </span>
-                      {client.company && (
-                        <span className="text-[10px] sm:text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-full shrink-0 truncate max-w-[80px] sm:max-w-[120px]">
-                          {client.company}
-                        </span>
-                      )}
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-sm font-semibold text-white shadow-sm sm:h-14 sm:w-14 sm:text-base">
+                      {getInitials(client.name)}
                     </div>
 
-                    {/* Row 2: Email */}
-                    {client.email && (
-                      <p className="text-[11px] sm:text-xs text-slate-400 truncate mt-0.5 max-w-[200px] sm:max-w-none">
-                        {client.email}
-                      </p>
-                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="truncate text-base font-semibold text-slate-900 sm:text-lg">{client.name}</h3>
+                        {client.company && (
+                          <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-500 sm:text-xs">
+                            {client.company}
+                          </span>
+                        )}
+                      </div>
 
-                    {/* Row 3: Phone */}
-                    {client.phone && (
-                      <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
-                        {client.phone}
-                      </p>
-                    )}
-                  </div>
+                      <div className="mt-2 flex flex-col gap-1 text-xs text-slate-500 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1 sm:text-sm">
+                        {client.email && <span className="truncate">{client.email}</span>}
+                        {client.phone && <span>{client.phone}</span>}
+                        <span>{clientCastings.length} casting{clientCastings.length === 1 ? '' : 's'}</span>
+                      </div>
 
-                  {/* Action icons — top-right, independent click targets */}
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setEditingClient(client)
-                        setModalOpen(true)
-                      }}
-                      title="Edit client"
-                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 active:scale-95 transition-all duration-150"
-                    >
-                      <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDelete(client)
-                      }}
-                      title="Delete client"
-                      className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 active:scale-95 transition-all duration-150"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    </button>
-                    <div className="w-7 h-8 sm:w-8 flex items-center justify-center text-slate-400">
-                      {isExpanded ? (
-                        <ChevronDown className="w-4 h-4" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4" />
-                      )}
+                      <div className="mt-3 flex flex-wrap items-center gap-2" onClick={(event) => event.stopPropagation()}>
+                        {clientTags.map((tag) => (
+                          <ClientTagPill
+                            key={tag.id}
+                            tag={tag}
+                            onRemove={() => removeTagFromClient(client.id, tag.id)}
+                          />
+                        ))}
+
+                        {availableTags.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setQuickAddClientId((prev) => (prev === client.id ? null : client.id))}
+                            className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            Tag
+                          </button>
+                        )}
+                      </div>
+
+                      <AnimatePresence>
+                        {quickAddClientId === client.id && availableQuickAddTags.length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -6 }}
+                            className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-3"
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Quick add tags</p>
+                            <div className="flex flex-wrap gap-2">
+                              {availableQuickAddTags.map((tag) => (
+                                <button
+                                  key={tag.id}
+                                  type="button"
+                                  onClick={() => addTagToClient(client.id, tag.id)}
+                                  disabled={savingTagClientId === client.id}
+                                  className="rounded-full border px-3 py-1.5 text-xs font-semibold transition hover:opacity-100 disabled:opacity-50"
+                                  style={getClientTagStyles(tag.color)}
+                                >
+                                  {tag.name}
+                                </button>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          setEditingClient(client)
+                          setModalOpen(true)
+                        }}
+                        className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-amber-50 hover:text-amber-600"
+                        title="Edit client"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          handleDelete(client)
+                        }}
+                        className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                        title="Delete client"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                      <div className="flex h-10 w-10 items-center justify-center text-slate-400">
+                        {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                      </div>
                     </div>
                   </div>
+
+                  {(client.phone || client.email) && (
+                    <div className="mt-4 flex flex-wrap items-center gap-2" onClick={(event) => event.stopPropagation()}>
+                      {client.phone && (
+                        <a
+                          href={`tel:${client.phone}`}
+                          className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-blue-50 px-4 py-2.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100 sm:text-sm"
+                        >
+                          <Phone className="h-4 w-4" />
+                          Call
+                        </a>
+                      )}
+                      {client.phone && (
+                        <a
+                          href={`https://wa.me/${whatsappNumber}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-green-50 px-4 py-2.5 text-xs font-semibold text-green-600 transition hover:bg-green-100 sm:text-sm"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                          WhatsApp
+                        </a>
+                      )}
+                      {!client.phone && client.email && (
+                        <a
+                          href={`mailto:${client.email}`}
+                          className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 sm:text-sm"
+                        >
+                          <Mail className="h-4 w-4" />
+                          Email
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                {/* ── CTA ROW — Call + WhatsApp ─────────────────────────── */}
-                {(client.phone || client.email) && (
-                  <div
-                    className="flex items-center gap-2 px-3 pb-3 sm:px-4 sm:pb-4 pt-1"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {client.phone && (
-                      <a
-                        href={`tel:${client.phone}`}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 active:scale-[0.97] transition-all text-[11px] sm:text-xs font-medium"
-                      >
-                        <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                        <span>Call</span>
-                      </a>
-                    )}
-                    {client.phone && (
-                      <a
-                        href={`https://wa.me/${whatsappNumber}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 active:scale-[0.97] transition-all text-[11px] sm:text-xs font-medium"
-                      >
-                        <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                        <span>WhatsApp</span>
-                      </a>
-                    )}
-                    {!client.phone && client.email && (
-                      <a
-                        href={`mailto:${client.email}`}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 active:scale-[0.97] transition-all text-[11px] sm:text-xs font-medium"
-                      >
-                        <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                        <span>Email</span>
-                      </a>
-                    )}
-                    {/* Castings count badge */}
-                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 shrink-0">
-                      <span className="text-[10px] sm:text-xs font-semibold text-slate-600 leading-none">
-                        {clientCastings.length}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* ── EXPANDED CASTINGS ─────────────────────────────────── */}
                 <AnimatePresence>
                   {isExpanded && (
                     <motion.div
@@ -256,45 +417,56 @@ export function Clients() {
                       transition={{ duration: 0.2, ease: 'easeInOut' }}
                       className="overflow-hidden border-t border-slate-100"
                     >
-                      <div className="px-3 py-3 sm:px-4 sm:py-4 bg-slate-50/50">
-                        <div className="flex items-center justify-between mb-2.5">
-                          <span className="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                            Castings
-                          </span>
-                          <span className="text-[10px] sm:text-xs text-slate-400">
-                            {clientCastings.length} total
-                          </span>
-                        </div>
-                        {clientCastings.length === 0 ? (
-                          <p className="text-xs sm:text-sm text-slate-400 italic">No castings yet</p>
-                        ) : (
-                          <div className="space-y-1.5 sm:space-y-2">
-                            {clientCastings.map((casting) => (
-                              <div
-                                key={casting.id}
-                                className="flex items-center justify-between p-2.5 sm:p-3 bg-white rounded-xl border border-slate-100"
-                              >
-                                <div className="flex-1 min-w-0 mr-3">
-                                  <p className="text-xs sm:text-sm font-medium text-slate-800 truncate">
-                                    {casting.project_name || 'Untitled'}
-                                  </p>
-                                  <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">
-                                    {casting.shoot_date_start ? formatDate(casting.shoot_date_start) : 'No date set'}
-                                  </p>
-                                </div>
-                                <span className={cn(
-                                  'shrink-0 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold',
-                                  casting.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
-                                  casting.status === 'IN_PROGRESS' ? 'bg-amber-100 text-amber-700' :
-                                  casting.status === 'NEW' ? 'bg-blue-100 text-blue-700' :
-                                  'bg-slate-100 text-slate-600'
-                                )}>
-                                  {casting.status}
-                                </span>
-                              </div>
-                            ))}
+                      <div className="grid gap-4 bg-slate-50/80 p-4 sm:p-5 lg:grid-cols-[1.2fr_0.8fr]">
+                        <div className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Castings</span>
+                            <span className="text-xs text-slate-400">{clientCastings.length} total</span>
                           </div>
-                        )}
+
+                          {clientCastings.length === 0 ? (
+                            <p className="mt-3 text-sm italic text-slate-400">No castings yet</p>
+                          ) : (
+                            <div className="mt-3 space-y-2">
+                              {clientCastings.map((casting) => (
+                                <div
+                                  key={casting.id}
+                                  className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-white px-3 py-3"
+                                >
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-sm font-medium text-slate-800">
+                                      {casting.project_name || 'Untitled'}
+                                    </p>
+                                    <p className="mt-0.5 text-xs text-slate-400">
+                                      {casting.shoot_date_start ? formatDate(casting.shoot_date_start) : 'No date set'}
+                                    </p>
+                                  </div>
+                                  <span
+                                    className={cn(
+                                      'shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                                      casting.status === 'COMPLETED'
+                                        ? 'bg-emerald-100 text-emerald-700'
+                                        : casting.status === 'IN_PROGRESS'
+                                          ? 'bg-amber-100 text-amber-700'
+                                          : casting.status === 'NEW'
+                                            ? 'bg-blue-100 text-blue-700'
+                                            : 'bg-slate-100 text-slate-600',
+                                    )}
+                                  >
+                                    {casting.status}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm">
+                          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Notes</span>
+                          <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600">
+                            {client.notes?.trim() || 'No internal notes added yet.'}
+                          </p>
+                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -305,7 +477,6 @@ export function Clients() {
         </div>
       )}
 
-      {/* Client Modal */}
       <ClientFormModal
         open={modalOpen}
         onClose={() => {
@@ -313,8 +484,39 @@ export function Clients() {
           setEditingClient(null)
         }}
         client={editingClient}
-        onSave={fetchClients}
+        availableTags={availableTags}
+        onSave={(savedClient) => {
+          if (editingClient) {
+            updateClientFromResponse(savedClient)
+          } else {
+            setClients((prev) => [savedClient, ...prev].sort((a, b) => a.name.localeCompare(b.name)))
+          }
+        }}
       />
+    </div>
+  )
+}
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Users
+  label: string
+  value: number
+}) {
+  return (
+    <div className="rounded-2xl border border-white/80 bg-white/85 p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{label}</p>
+          <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
+        </div>
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
     </div>
   )
 }
@@ -323,12 +525,14 @@ function ClientFormModal({
   open,
   onClose,
   client,
+  availableTags,
   onSave,
 }: {
   open: boolean
   onClose: () => void
   client: Client | null
-  onSave: () => void
+  availableTags: ClientTag[]
+  onSave: (client: Client) => void
 }) {
   const [form, setForm] = useState({
     name: '',
@@ -336,17 +540,17 @@ function ClientFormModal({
     email: '',
     company: '',
     notes: '',
+    tag_ids: [] as number[],
   })
-  // Track which fields the user has interacted with (for showing inline errors)
   const [touched, setTouched] = useState<Record<string, boolean>>({})
   const [saving, setSaving] = useState(false)
 
-  // Reset form + touched when modal opens/closes or client changes
   useEffect(() => {
     if (!open) {
       setTouched({})
       return
     }
+
     if (client) {
       setForm({
         name: client.name || '',
@@ -354,16 +558,22 @@ function ClientFormModal({
         email: client.email || '',
         company: client.company || '',
         notes: client.notes || '',
+        tag_ids: (client.tags ?? []).map((tag) => tag.id),
       })
     } else {
-      setForm({ name: '', phone: '', email: '', company: '', notes: '' })
+      setForm({
+        name: '',
+        phone: '',
+        email: '',
+        company: '',
+        notes: '',
+        tag_ids: [],
+      })
     }
   }, [open, client])
 
-  // Validation helpers
   const validateName = (value: string) => {
-    const trimmed = value.trim()
-    if (!trimmed) return 'Name is required'
+    if (!value.trim()) return 'Name is required'
     return null
   }
 
@@ -375,7 +585,7 @@ function ClientFormModal({
   }
 
   const validateEmail = (value: string) => {
-    if (!value.trim()) return null // optional
+    if (!value.trim()) return null
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(value.trim())) return 'Enter a valid email address'
     return null
@@ -385,39 +595,50 @@ function ClientFormModal({
   const phoneError = touched.phone ? validatePhone(form.phone) : null
   const emailError = touched.email ? validateEmail(form.email) : null
 
-  const isFormValid =
-    !validateName(form.name) &&
-    !validatePhone(form.phone) &&
-    !validateEmail(form.email)
+  const isFormValid = !validateName(form.name) && !validatePhone(form.phone) && !validateEmail(form.email)
+
+  const fieldClasses = (error: string | null) =>
+    `w-full rounded-2xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 transition ${
+      error ? 'border-red-400 focus:ring-red-400/30' : 'border-slate-200 focus:border-amber-400 focus:ring-amber-500/20'
+    }`
 
   const markTouched = (field: string) => {
     setTouched((prev) => ({ ...prev, [field]: true }))
   }
 
-  const fieldClasses = (error: string | null) =>
-    `w-full px-3 py-2 border rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-colors ${
-      error
-        ? 'border-red-400 focus:ring-red-400/50'
-        : 'border-slate-200'
-    }`
+  const toggleTagSelection = (tagId: number) => {
+    setForm((prev) => ({
+      ...prev,
+      tag_ids: prev.tag_ids.includes(tagId)
+        ? prev.tag_ids.filter((id) => id !== tagId)
+        : [...prev.tag_ids, tagId],
+    }))
+  }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    // Mark all required fields as touched to show any hidden errors
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
     setTouched({ name: true, phone: true, email: true })
     if (!isFormValid) return
 
     setSaving(true)
     try {
-      if (client) {
-        await api.put(`/clients/${client.id}`, form)
-      } else {
-        await api.post('/clients', form)
+      const payload = {
+        name: form.name.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim(),
+        company: form.company.trim(),
+        notes: form.notes,
+        tag_ids: form.tag_ids,
       }
-      onSave()
+
+      const savedClient = client
+        ? await api.put(`/clients/${client.id}`, payload)
+        : await api.post('/clients', payload)
+
+      onSave(savedClient as Client)
       onClose()
     } catch (err) {
-      console.error('Failed to save:', err)
+      console.error('Failed to save client:', err)
     } finally {
       setSaving(false)
     }
@@ -434,131 +655,135 @@ function ClientFormModal({
         >
           <div onClick={onClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
           <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
+            initial={{ scale: 0.96, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            className="relative w-full max-w-md glass rounded-2xl shadow-2xl"
+            exit={{ scale: 0.96, opacity: 0 }}
+            className="relative max-h-[92vh] w-full max-w-2xl overflow-hidden rounded-[30px] border border-white/20 bg-white shadow-2xl"
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/20">
-              <h2 className="text-lg font-semibold text-slate-900">
-                {client ? 'Edit Client' : 'Add Client'}
-              </h2>
-              <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">{client ? 'Edit Client' : 'Add Client'}</h2>
+                <p className="text-sm text-slate-500">Manage contact details and attach multiple tags.</p>
+              </div>
+              <button onClick={onClose} className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
                 ×
               </button>
             </div>
-            <form onSubmit={handleSubmit} noValidate className="p-6 space-y-4">
-              {/* Name */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => {
-                    setForm({ ...form, name: e.target.value })
-                    if (!touched.name) markTouched('name')
-                  }}
-                  onBlur={() => markTouched('name')}
-                  placeholder="e.g. Priya Kapoor"
-                  className={fieldClasses(nameError)}
-                />
-                {nameError && (
-                  <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
-                    <span>⚠</span> {nameError}
-                  </p>
+
+            <form onSubmit={handleSubmit} noValidate className="max-h-[calc(92vh-88px)] overflow-y-auto px-5 py-5 sm:px-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">Name *</label>
+                  <input
+                    type="text"
+                    value={form.name}
+                    onChange={(event) => {
+                      setForm({ ...form, name: event.target.value })
+                      if (!touched.name) markTouched('name')
+                    }}
+                    onBlur={() => markTouched('name')}
+                    placeholder="e.g. Priya Kapoor"
+                    className={fieldClasses(nameError)}
+                  />
+                  {nameError && <p className="mt-1 text-xs text-red-600">{nameError}</p>}
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">Phone *</label>
+                  <input
+                    type="tel"
+                    value={form.phone}
+                    onChange={(event) => {
+                      setForm({ ...form, phone: event.target.value })
+                      if (!touched.phone) markTouched('phone')
+                    }}
+                    onBlur={() => markTouched('phone')}
+                    placeholder="e.g. 9876543210"
+                    className={fieldClasses(phoneError)}
+                  />
+                  {phoneError && <p className="mt-1 text-xs text-red-600">{phoneError}</p>}
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">Email</label>
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(event) => {
+                      setForm({ ...form, email: event.target.value })
+                      if (!touched.email) markTouched('email')
+                    }}
+                    onBlur={() => markTouched('email')}
+                    placeholder="e.g. priya@agency.com"
+                    className={fieldClasses(emailError)}
+                  />
+                  {emailError && <p className="mt-1 text-xs text-red-600">{emailError}</p>}
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">Company</label>
+                  <input
+                    type="text"
+                    value={form.company}
+                    onChange={(event) => setForm({ ...form, company: event.target.value })}
+                    placeholder="e.g. Pulse Media"
+                    className={fieldClasses(null)}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">Client Tags</label>
+                {availableTags.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
+                    No tags created yet. Add tags in Settings → Client Tags.
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+                    <div className="flex flex-wrap gap-2">
+                      {availableTags.map((tag) => {
+                        const selected = form.tag_ids.includes(tag.id)
+                        return (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() => toggleTagSelection(tag.id)}
+                            className={cn(
+                              'rounded-full border px-3 py-2 text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-amber-500/20',
+                              selected ? 'shadow-sm ring-1 ring-offset-1 ring-offset-slate-50' : 'opacity-75 hover:opacity-100',
+                            )}
+                            style={getClientTagStyles(tag.color)}
+                          >
+                            {tag.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
                 )}
               </div>
 
-              {/* Phone */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Phone <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  value={form.phone}
-                  onChange={(e) => {
-                    setForm({ ...form, phone: e.target.value })
-                    if (!touched.phone) markTouched('phone')
-                  }}
-                  onBlur={() => markTouched('phone')}
-                  placeholder="e.g. 9876543210"
-                  className={fieldClasses(phoneError)}
-                />
-                {phoneError && (
-                  <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
-                    <span>⚠</span> {phoneError}
-                  </p>
-                )}
-              </div>
-
-              {/* Email (optional) */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Email <span className="text-slate-400 font-normal">(optional)</span>
-                </label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => {
-                    setForm({ ...form, email: e.target.value })
-                    if (!touched.email) markTouched('email')
-                  }}
-                  onBlur={() => markTouched('email')}
-                  placeholder="e.g. priya@agency.com"
-                  className={fieldClasses(emailError)}
-                />
-                {emailError && (
-                  <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
-                    <span>⚠</span> {emailError}
-                  </p>
-                )}
-              </div>
-
-              {/* Company (optional) */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Company <span className="text-slate-400 font-normal">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.company}
-                  onChange={(e) => setForm({ ...form, company: e.target.value })}
-                  placeholder="e.g. Pulse Media"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                />
-              </div>
-
-              {/* Notes (optional) */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Notes <span className="text-slate-400 font-normal">(optional)</span>
-                </label>
+              <div className="mt-4">
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">Notes</label>
                 <textarea
                   value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  rows={3}
+                  onChange={(event) => setForm({ ...form, notes: event.target.value })}
+                  rows={4}
                   placeholder="Any additional notes..."
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50 resize-none"
+                  className={`${fieldClasses(null)} resize-none`}
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="mt-6 flex justify-end gap-3">
                 <button type="button" onClick={onClose} className="btn-secondary">
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className={cn(
-                    'btn-primary',
-                    !isFormValid && 'opacity-60 cursor-not-allowed'
-                  )}
-                  title={!isFormValid ? 'Fill in all required fields to save' : ''}
+                  className={cn('btn-primary', !isFormValid && 'cursor-not-allowed opacity-60')}
                 >
-                  {saving ? 'Saving...' : 'Save'}
+                  {saving ? 'Saving...' : client ? 'Save Changes' : 'Create Client'}
                 </button>
               </div>
             </form>

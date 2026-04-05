@@ -28,6 +28,12 @@ export interface Casting {
   updated_at: string
 }
 
+export interface ClientTag {
+  id: number
+  name: string
+  color: string
+}
+
 export interface Client {
   id: number
   name: string
@@ -35,9 +41,11 @@ export interface Client {
   email: string
   company: string
   notes: string
+  contact?: string | null
   assigned_to: number | null
   created_at: string
   updated_at: string
+  tags?: ClientTag[]
 }
 
 export interface TeamMember {
