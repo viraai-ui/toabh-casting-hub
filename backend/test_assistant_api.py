@@ -4,9 +4,9 @@ import sys
 import unittest
 from datetime import date, timedelta
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from utils.assistant import query_casting_assistant
+from backend.utils.assistant import query_casting_assistant
 
 
 class AssistantQueryTests(unittest.TestCase):
