@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router-dom'
+import { useEffect } from 'react'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
 import { Header } from './Header'
@@ -7,9 +8,30 @@ import { OverlayProvider } from '@/hooks/useOverlayManager'
 import { useAppStore } from '@/hooks/useStore'
 import { cn } from '@/lib/utils'
 import { CastingAssistant } from '@/components/assistant/CastingAssistant'
+import { api } from '@/lib/api'
+import type { UserProfile } from '@/types'
 
 export function AppLayout() {
-  const { searchOpen, sidebarCollapsed } = useAppStore()
+  const { searchOpen, sidebarCollapsed, setCurrentUser } = useAppStore()
+
+  useEffect(() => {
+    api.get('/profile')
+      .then((data) => {
+        const profile = data as UserProfile
+        setCurrentUser({
+          name: profile.name,
+          role: profile.role,
+          email: profile.email,
+          phone: profile.phone,
+          avatar: profile.avatar_url,
+          date_of_birth: profile.date_of_birth,
+          team_member_id: profile.team_member_id,
+        })
+      })
+      .catch(() => {
+        setCurrentUser({ name: 'Toaney Bhatia', role: 'Admin' })
+      })
+  }, [setCurrentUser])
 
   return (
     <OverlayProvider>

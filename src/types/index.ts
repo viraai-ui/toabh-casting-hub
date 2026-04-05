@@ -166,3 +166,31 @@ export interface NotificationItem {
   client_id?: number | null
   user_name?: string
 }
+
+export interface ProfileTaskItem {
+  id: number
+  project_name: string
+  client_name: string
+  status: string
+  shoot_date_start?: string | null
+}
+
+export interface ProfileStats {
+  total_jobs: number
+  active_jobs: number
+  completed_jobs: number
+  pending_tasks: number
+}
+
+export interface UserProfile {
+  name: string
+  email: string
+  phone: string
+  date_of_birth?: string | null
+  role: string
+  avatar_url?: string | null
+  team_member_id?: number | null
+  stats: ProfileStats
+  recent_activity: Activity[]
+  tasks: ProfileTaskItem[]
+}

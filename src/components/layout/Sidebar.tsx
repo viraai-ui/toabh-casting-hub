@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { cn, getInitials } from '@/lib/utils'
 import { useAppStore } from '@/hooks/useStore'
+import { toApiUrl } from '@/lib/api'
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
@@ -95,9 +96,17 @@ export function Sidebar() {
 
           {/* User */}
           <div className={cn('flex items-center gap-3 px-3 py-2', sidebarCollapsed && 'justify-center')}>
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-sm font-medium">
-              {currentUser ? getInitials(currentUser.name) : 'TB'}
-            </div>
+            {currentUser?.avatar ? (
+              <img
+                src={toApiUrl(currentUser.avatar)}
+                alt={currentUser.name}
+                className="h-9 w-9 rounded-full object-cover bg-slate-100"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-sm font-medium">
+                {currentUser ? getInitials(currentUser.name) : 'TB'}
+              </div>
+            )}
             {!sidebarCollapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-slate-900 truncate">

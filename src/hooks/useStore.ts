@@ -11,9 +11,21 @@ interface AppState {
   currentUser: {
     name: string
     role: string
-    avatar?: string
+    email?: string
+    phone?: string
+    avatar?: string | null
+    date_of_birth?: string | null
+    team_member_id?: number | null
   } | null
-  setCurrentUser: (user: { name: string; role: string; avatar?: string } | null) => void
+  setCurrentUser: (user: {
+    name: string
+    role: string
+    email?: string
+    phone?: string
+    avatar?: string | null
+    date_of_birth?: string | null
+    team_member_id?: number | null
+  } | null) => void
   
   castingViewMode: 'list' | 'grid' | 'kanban'
   setCastingViewMode: (mode: 'list' | 'grid' | 'kanban') => void

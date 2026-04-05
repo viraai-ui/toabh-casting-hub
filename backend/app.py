@@ -1100,8 +1100,8 @@ def upload_team_avatar(member_id):
     upload_dir = os.path.join(UPLOADS_DIR, 'avatars')
     os.makedirs(upload_dir, exist_ok=True)
 
-    # Use a safe filename: avatar_{member_id}.{ext}
-    filename = f'avatar_{member_id}.{ext}'
+    # Use a safe filename keyed by team member id
+    filename = f'{member_id}.{ext}'
     filepath = os.path.join(upload_dir, filename)
     file.save(filepath)
 
@@ -1117,10 +1117,221 @@ def serve_team_avatar(member_id):
     """Serve the uploaded avatar image."""
     upload_dir = os.path.join(UPLOADS_DIR, 'avatars')
     for ext in ['png', 'jpg', 'jpeg', 'gif', 'webp']:
-        filepath = os.path.join(upload_dir, f'avatar_{member_id}.{ext}')
+        filepath = os.path.join(upload_dir, f'{member_id}.{ext}')
         if os.path.exists(filepath):
             return send_file(filepath)
     return jsonify({'error': 'Avatar not found'}), 404
+
+
+def _profile_settings_path():
+    return os.path.join(SETTINGS_DIR, 'profile.json')
+
+
+def _get_default_profile(db):
+    member = db.execute(
+        '''
+        SELECT id, name, role, COALESCE(email, '') as email, COALESCE(phone, '') as phone, COALESCE(avatar_url, '') as avatar_url
+        FROM team_members
+        WHERE LOWER(name) = LOWER(?)
+        ORDER BY id ASC
+        LIMIT 1
+        ''',
+        ('Toaney Bhatia',)
+    ).fetchone()
+
+    if member is None:
+        member = db.execute(
+            '''
+            SELECT id, name, role, COALESCE(email, '') as email, COALESCE(phone, '') as phone, COALESCE(avatar_url, '') as avatar_url
+            FROM team_members
+            ORDER BY id ASC
+            LIMIT 1
+            '''
+        ).fetchone()
+
+    if member is None:
+        return {
+            'name': 'Toaney Bhatia',
+            'email': '',
+            'phone': '',
+            'date_of_birth': '',
+            'role': 'Admin',
+            'avatar_url': '',
+            'team_member_id': None,
+        }
+
+    return {
+        'name': member['name'],
+        'email': member['email'],
+        'phone': member['phone'],
+        'date_of_birth': '',
+        'role': member['role'] or 'Admin',
+        'avatar_url': member['avatar_url'],
+        'team_member_id': member['id'],
+    }
+
+
+def _load_profile_settings(db):
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
+    profile = _get_default_profile(db)
+    try:
+        with open(_profile_settings_path()) as f:
+            saved = json.load(f)
+            if isinstance(saved, dict):
+                profile.update({
+                    'name': (saved.get('name') or profile['name']).strip() if isinstance(saved.get('name'), str) else profile['name'],
+                    'email': (saved.get('email') or profile['email']).strip() if isinstance(saved.get('email'), str) else profile['email'],
+                    'phone': (saved.get('phone') or profile['phone']).strip() if isinstance(saved.get('phone'), str) else profile['phone'],
+                    'date_of_birth': (saved.get('date_of_birth') or '').strip() if isinstance(saved.get('date_of_birth'), str) else '',
+                    'role': (saved.get('role') or profile['role']).strip() if isinstance(saved.get('role'), str) else profile['role'],
+                    'avatar_url': (saved.get('avatar_url') or profile['avatar_url']).strip() if isinstance(saved.get('avatar_url'), str) else profile['avatar_url'],
+                    'team_member_id': saved.get('team_member_id') if isinstance(saved.get('team_member_id'), int) else profile['team_member_id'],
+                })
+    except Exception:
+        pass
+
+    return profile
+
+
+def _save_profile_settings(profile):
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
+    with open(_profile_settings_path(), 'w') as f:
+        json.dump(profile, f)
+
+
+def _sync_profile_to_team_member(db, profile):
+    team_member_id = profile.get('team_member_id')
+    if not team_member_id:
+        return
+    db.execute(
+        'UPDATE team_members SET name = ?, role = ?, email = ?, phone = ?, avatar_url = ? WHERE id = ?',
+        (
+            profile.get('name') or None,
+            profile.get('role') or None,
+            profile.get('email') or None,
+            profile.get('phone') or None,
+            profile.get('avatar_url') or None,
+            team_member_id,
+        ),
+    )
+
+
+def _build_profile_payload(db, profile):
+    team_member_id = profile.get('team_member_id')
+    active_statuses = ('NEW', 'REVIEWING', 'PROPOSED', 'NEGOTIATING', 'CONFIRMED', 'IN_PROGRESS')
+    completed_statuses = ('WON', 'PAID', 'COMPLETED')
+
+    if team_member_id:
+        assigned_rows = db.execute(
+            '''
+            SELECT c.id, COALESCE(c.project_name, '') as project_name, COALESCE(c.client_name, '') as client_name,
+                   COALESCE(c.status, '') as status, c.shoot_date_start
+            FROM castings c
+            INNER JOIN casting_assignments ca ON ca.casting_id = c.id
+            WHERE ca.team_member_id = ?
+            ORDER BY COALESCE(c.updated_at, c.created_at) DESC, c.id DESC
+            ''',
+            (team_member_id,)
+        ).fetchall()
+
+        activity_rows = db.execute(
+            '''
+            SELECT a.id, a.casting_id, a.action, a.details as description,
+                   COALESCE(tm.name, a.details) as user_name, a.timestamp as created_at
+            FROM activities a
+            LEFT JOIN team_members tm ON a.team_member_id = tm.id
+            WHERE a.team_member_id = ? OR LOWER(COALESCE(tm.name, '')) = LOWER(?)
+            ORDER BY a.timestamp DESC
+            LIMIT 8
+            ''',
+            (team_member_id, profile.get('name') or ''),
+        ).fetchall()
+    else:
+        assigned_rows = []
+        activity_rows = []
+
+    total_jobs = len(assigned_rows)
+    active_jobs = sum(1 for row in assigned_rows if row['status'] in active_statuses)
+    completed_jobs = sum(1 for row in assigned_rows if row['status'] in completed_statuses)
+
+    tasks = [dict(row) for row in assigned_rows[:8]]
+    recent_activity = [dict(row) for row in activity_rows]
+
+    return {
+        'name': profile.get('name') or '',
+        'email': profile.get('email') or '',
+        'phone': profile.get('phone') or '',
+        'date_of_birth': profile.get('date_of_birth') or '',
+        'role': profile.get('role') or 'Admin',
+        'avatar_url': profile.get('avatar_url') or '',
+        'team_member_id': profile.get('team_member_id'),
+        'stats': {
+            'total_jobs': total_jobs,
+            'active_jobs': active_jobs,
+            'completed_jobs': completed_jobs,
+            'pending_tasks': active_jobs,
+        },
+        'recent_activity': recent_activity,
+        'tasks': tasks,
+    }
+
+
+@app.route('/api/profile', methods=['GET', 'PUT'])
+def profile():
+    db = get_db()
+
+    if request.method == 'GET':
+        return jsonify(_build_profile_payload(db, _load_profile_settings(db)))
+
+    data = request.get_json() or {}
+    profile = _load_profile_settings(db)
+    name = (data.get('name') or '').strip()
+    email = (data.get('email') or '').strip()
+    phone = (data.get('phone') or '').strip()
+    date_of_birth = (data.get('date_of_birth') or '').strip()
+
+    if not name:
+        return jsonify({'error': 'Name is required'}), 400
+    if email and '@' not in email:
+        return jsonify({'error': 'Enter a valid email address'}), 400
+
+    profile.update({
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'date_of_birth': date_of_birth,
+    })
+    _sync_profile_to_team_member(db, profile)
+    db.commit()
+    _save_profile_settings(profile)
+    return jsonify(_build_profile_payload(db, profile))
+
+
+@app.route('/api/profile/avatar', methods=['POST', 'DELETE'])
+def profile_avatar():
+    db = get_db()
+    profile = _load_profile_settings(db)
+    team_member_id = profile.get('team_member_id')
+
+    if request.method == 'DELETE':
+        profile['avatar_url'] = ''
+        if team_member_id:
+            db.execute('UPDATE team_members SET avatar_url = NULL WHERE id = ?', (team_member_id,))
+            db.commit()
+        _save_profile_settings(profile)
+        return jsonify(_build_profile_payload(db, profile))
+
+    if not team_member_id:
+        return jsonify({'error': 'Profile is not linked to a team member'}), 400
+
+    response, status = upload_team_avatar(team_member_id)
+    payload = response.get_json() if hasattr(response, 'get_json') else None
+    if status != 200 or not payload:
+        return response, status
+
+    profile['avatar_url'] = payload.get('avatar_url') or ''
+    _save_profile_settings(profile)
+    return jsonify(_build_profile_payload(db, profile))
 
 # ==================== CLIENTS ROUTES ====================
 
@@ -1998,115 +2209,3 @@ def delete_user(user_id):
 
 # ==================== SEARCH ROUTE ====================
 
-@app.route('/api/search', methods=['GET'])
-def search():
-    db = get_db()
-    q = (request.args.get('q') or '').strip()
-
-    if not q:
-        return jsonify({'projects': [], 'castings': [], 'clients': [], 'team': []})
-
-    like = f'%{q}%'
-
-    casting_rows = db.execute('''
-        SELECT
-            c.id,
-            COALESCE(c.project_name, '') as project_name,
-            COALESCE(c.client_name, '') as client_name,
-            COALESCE(c.client_company, '') as client_company,
-            COALESCE(c.client_contact, '') as client_contact,
-            COALESCE(c.status, '') as status,
-            COALESCE(c.created_at, '') as created_at,
-            COALESCE(c.updated_at, '') as updated_at
-        FROM castings c
-        WHERE
-            COALESCE(c.project_name, '') LIKE ?
-            OR COALESCE(c.client_name, '') LIKE ?
-            OR COALESCE(c.client_company, '') LIKE ?
-            OR COALESCE(c.client_contact, '') LIKE ?
-        ORDER BY c.updated_at DESC, c.created_at DESC
-        LIMIT 8
-    ''', (like, like, like, like)).fetchall()
-
-    client_rows = db.execute('''
-        SELECT
-            cl.id,
-            COALESCE(cl.name, '') as name,
-            COALESCE(cl.company, '') as company,
-            COALESCE(cl.phone, '') as phone,
-            COALESCE(cl.email, '') as email,
-            COALESCE(cl.notes, '') as notes,
-            COALESCE(cl.created_at, '') as created_at,
-            COALESCE(cl.updated_at, '') as updated_at
-        FROM clients cl
-        WHERE
-            COALESCE(cl.name, '') LIKE ?
-            OR COALESCE(cl.company, '') LIKE ?
-            OR COALESCE(cl.phone, '') LIKE ?
-            OR COALESCE(cl.email, '') LIKE ?
-        ORDER BY cl.updated_at DESC, cl.created_at DESC
-        LIMIT 5
-    ''', (like, like, like, like)).fetchall()
-
-    project_rows = db.execute('''
-        SELECT
-            MIN(c.id) as id,
-            COALESCE(c.project_name, '') as project_name,
-            COALESCE(MAX(c.client_name), '') as client_name,
-            COALESCE(MAX(c.status), '') as status,
-            COALESCE(MAX(c.updated_at), MAX(c.created_at), '') as updated_at
-        FROM castings c
-        WHERE COALESCE(c.project_name, '') LIKE ?
-        GROUP BY COALESCE(c.project_name, '')
-        ORDER BY MAX(c.updated_at) DESC, MAX(c.created_at) DESC
-        LIMIT 6
-    ''', (like,)).fetchall()
-
-    team_rows = db.execute('''
-        SELECT
-            tm.id,
-            COALESCE(tm.name, '') as name,
-            COALESCE(tm.role, '') as role,
-            COALESCE(tm.email, '') as email,
-            COALESCE(tm.phone, '') as phone,
-            COALESCE(tm.avatar_url, '') as avatar_url,
-            COALESCE(tm.is_active, 1) as is_active
-        FROM team_members tm
-        WHERE
-            COALESCE(tm.name, '') LIKE ?
-            OR COALESCE(tm.role, '') LIKE ?
-            OR COALESCE(tm.email, '') LIKE ?
-            OR COALESCE(tm.phone, '') LIKE ?
-        ORDER BY tm.is_active DESC, tm.name ASC
-        LIMIT 4
-    ''', (like, like, like, like)).fetchall()
-
-    return jsonify({
-        'projects': [dict(r) for r in project_rows],
-        'castings': [dict(r) for r in casting_rows],
-        'clients': [dict(r) for r in client_rows],
-        'team': [dict(r) for r in team_rows],
-    })
-
-# ==================== STATIC FILES (MUST BE LAST) ====================
-
-@app.route('/')
-def serve_index():
-    return send_from_directory(FRONTEND_DIST, 'index.html')
-
-@app.route('/<path:path>')
-def serve_static(path):
-    # API routes are handled above, so if we get here it's for static files
-    file_path = os.path.join(FRONTEND_DIST, path)
-    if os.path.exists(file_path):
-        return send_from_directory(FRONTEND_DIST, path)
-    # Fallback to index.html for SPA routing
-    return send_from_directory(FRONTEND_DIST, 'index.html')
-
-# Initialize DB on startup
-with app.app_context():
-    init_db()
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
