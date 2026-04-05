@@ -34,6 +34,7 @@ function TaskComposer({
   team,
   stages,
   task,
+  currentUserTeamMemberId,
 }: {
   open: boolean
   onClose: () => void
@@ -41,6 +42,7 @@ function TaskComposer({
   team: TeamMember[]
   stages: TaskStage[]
   task: Task | null
+  currentUserTeamMemberId?: number | null
 }) {
   const [form, setForm] = useState({ title: '', description: '', status: 'Not Started', due_date: '', assignee_ids: [] as number[] })
   const [saving, setSaving] = useState(false)
@@ -52,9 +54,9 @@ function TaskComposer({
       description: task?.description || '',
       status: task?.status || stages[0]?.name || 'Not Started',
       due_date: task?.due_date || '',
-      assignee_ids: task?.assigned_to?.map((member) => member.id) || [],
+      assignee_ids: task?.assigned_to?.map((member) => member.id) || (currentUserTeamMemberId ? [currentUserTeamMemberId] : []),
     })
-  }, [open, task, stages])
+  }, [open, task, stages, currentUserTeamMemberId])
 
   if (!open) return null
 
@@ -393,7 +395,7 @@ export function Tasks() {
         </div>
       </div>
 
-      <TaskComposer open={composerOpen} onClose={() => setComposerOpen(false)} onSaved={fetchData} task={selectedTask} team={team} stages={stages} />
+      <TaskComposer open={composerOpen} onClose={() => setComposerOpen(false)} onSaved={fetchData} task={selectedTask} team={team} stages={stages} currentUserTeamMemberId={currentUser?.team_member_id} />
       <TaskDetail task={detailOpen ? selectedTask : null} team={team} stages={stages} onClose={() => setDetailOpen(false)} onRefresh={fetchData} />
     </div>
   )
