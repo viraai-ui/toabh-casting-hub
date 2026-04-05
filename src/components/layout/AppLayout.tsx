@@ -47,7 +47,7 @@ export function AppLayout() {
             sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-[260px]'
           )}
         >
-          <div className="p-4 lg:p-6">
+          <div className="p-4 lg:px-6 lg:pt-6 lg:pb-10 lg:pr-32 xl:pr-36">
             <Outlet />
           </div>
         </main>

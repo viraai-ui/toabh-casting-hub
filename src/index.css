@@ -45,7 +45,7 @@
   }
   
   .card {
-    @apply bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-sm;
+    @apply rounded-3xl border border-slate-200/70 bg-white/88 shadow-[0_18px_45px_rgba(15,23,42,0.06)] backdrop-blur-xl;
   }
 }
 
