@@ -95,7 +95,7 @@ export function Calendar() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-[calc(100dvh-7.5rem)] min-h-[600px] w-full flex-col lg:h-[calc(100dvh-6rem)]">
       {/* ── Header: month nav + today + view tabs ────────────────────── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-3">
         {/* Left: month nav */}
@@ -143,7 +143,7 @@ export function Calendar() {
       </div>
 
       {/* ── Filters: collapsible on mobile ───────────────────────────── */}
-      <div className="mb-3">
+      <div className="mb-2 shrink-0">
         {/* Filter toggle row */}
         <button
           onClick={() => setFiltersOpen(!filtersOpen)}
@@ -196,7 +196,7 @@ export function Calendar() {
       </div>
 
       {/* ── Calendar views ───────────────────────────────────────────── */}
-      <div className="flex-1 min-h-0">
+      <div className="min-h-0 flex-1 w-full">
         {view === 'month' && (
           <MonthView
             currentDate={currentDate}
@@ -271,79 +271,72 @@ function MonthView({
   const dayLabelsShort = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-      {/* Day-of-week header row */}
-      <div className="grid grid-cols-7 shrink-0 border-b border-slate-100 bg-slate-50/50">
+    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+      <div className="grid grid-cols-7 shrink-0 border-b border-slate-100 bg-slate-50/60">
         {dayLabels.map((label, i) => (
           <div
             key={label}
-            className="py-1.5 sm:py-2.5 text-center text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wide"
+            className="py-1.5 text-center text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400 sm:py-2.5 sm:text-xs"
           >
-            {/* Short label on mobile, full on sm+ */}
             <span className="sm:hidden">{dayLabelsShort[i]}</span>
             <span className="hidden sm:inline">{label}</span>
           </div>
         ))}
       </div>
 
-      {/* Calendar grid — fills remaining height, 6 equal rows */}
-      <div className="flex flex-col flex-1 min-h-0">
-        {weeks.map((week, wi) => (
-          <div key={wi} className="grid grid-cols-7 flex-1 min-h-0 border-b border-slate-100 last:border-b-0">
-            {week.map((day) => {
-              const dayCastings = getCastingsForDate(day)
-              const isCurrentMonth = isSameMonth(day, currentDate)
-              const isToday = isSameDay(day, new Date())
-              const visibleCastings = dayCastings.slice(0, 2) // max 2 on mobile
-              const overflow = dayCastings.length - 2
+      <div className="grid min-h-0 flex-1 grid-cols-7 grid-rows-6">
+        {weeks.flat().map((day) => {
+          const dayCastings = getCastingsForDate(day)
+          const isCurrentMonth = isSameMonth(day, currentDate)
+          const isToday = isSameDay(day, new Date())
+          const visibleCastings = dayCastings.slice(0, 3)
+          const overflow = dayCastings.length - visibleCastings.length
 
-              return (
-                <div
-                  key={day.toISOString()}
-                  className={cn(
-                    'flex flex-col min-h-0 p-1 sm:p-1.5 border-r border-slate-100 last:border-r-0 overflow-hidden',
-                    !isCurrentMonth && 'bg-slate-50/60'
-                  )}
-                >
-                  {/* Day number */}
-                  <div className={cn(
-                    'shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center mb-0.5 text-[11px] sm:text-sm font-medium leading-none',
-                    isToday
-                      ? 'bg-amber-500 text-white'
-                      : isCurrentMonth
+          return (
+            <div
+              key={day.toISOString()}
+              className={cn(
+                'flex min-w-0 min-h-0 flex-col overflow-hidden border-b border-r border-slate-100 p-1 sm:p-1.5',
+                !isCurrentMonth && 'bg-slate-50/60'
+              )}
+            >
+              <div
+                className={cn(
+                  'mb-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-medium leading-none sm:h-6 sm:w-6 sm:text-sm',
+                  isToday
+                    ? 'bg-amber-500 text-white'
+                    : isCurrentMonth
                       ? 'text-slate-700'
                       : 'text-slate-300'
-                  )}>
-                    {format(day, 'd')}
-                  </div>
+                )}
+              >
+                {format(day, 'd')}
+              </div>
 
-                  {/* Events column */}
-                  <div className="flex flex-col gap-0.5 min-h-0 overflow-hidden">
-                    {visibleCastings.map((casting) => (
-                      <button
-                        key={casting.id}
-                        onClick={() => onCastingClick(casting)}
-                        className="w-full text-left rounded px-1 py-0.5 text-[10px] sm:text-xs font-medium truncate leading-tight hover:opacity-75 transition-opacity"
-                        style={{
-                          backgroundColor: `${getCastingColor(casting.status)}18`,
-                          color: getCastingColor(casting.status),
-                        }}
-                        title={casting.project_name || casting.client_name}
-                      >
-                        {casting.project_name || casting.client_name}
-                      </button>
-                    ))}
-                    {overflow > 0 && (
-                      <span className="text-[10px] text-slate-400 pl-1 leading-tight">
-                        +{overflow}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        ))}
+              <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-hidden">
+                {visibleCastings.map((casting) => (
+                  <button
+                    key={casting.id}
+                    onClick={() => onCastingClick(casting)}
+                    className="w-full truncate rounded px-1 py-0.5 text-left text-[9px] font-medium leading-tight transition-opacity hover:opacity-75 sm:text-[11px]"
+                    style={{
+                      backgroundColor: `${getCastingColor(casting.status)}18`,
+                      color: getCastingColor(casting.status),
+                    }}
+                    title={casting.project_name || casting.client_name}
+                  >
+                    {casting.project_name || casting.client_name}
+                  </button>
+                ))}
+                {overflow > 0 && (
+                  <span className="truncate pl-1 text-[9px] leading-tight text-slate-400 sm:text-[10px]">
+                    +{overflow} more
+                  </span>
+                )}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -368,17 +361,16 @@ function WeekView({
   const hours = Array.from({ length: 17 }, (_, i) => i + 6)
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-      {/* Day headers */}
-      <div className="grid grid-cols-8 border-b border-slate-100 bg-slate-50/50">
+    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+      <div className="grid grid-cols-[42px_repeat(7,minmax(0,1fr))] border-b border-slate-100 bg-slate-50/50 sm:grid-cols-[56px_repeat(7,minmax(0,1fr))]">
         <div className="p-2" />
         {days.map((day) => (
-          <div key={day.toISOString()} className="p-2 text-center border-l border-slate-100">
-            <p className="text-[10px] sm:text-xs text-slate-400 uppercase font-medium">
+          <div key={day.toISOString()} className="min-w-0 border-l border-slate-100 p-2 text-center">
+            <p className="text-[9px] font-medium uppercase text-slate-400 sm:text-xs">
               {format(day, 'EEE')}
             </p>
             <p className={cn(
-              'text-base sm:text-lg font-bold leading-none mt-0.5',
+              'mt-0.5 text-sm font-bold leading-none sm:text-lg',
               isSameDay(day, new Date()) && 'text-amber-500'
             )}>
               {format(day, 'd')}
@@ -387,44 +379,41 @@ function WeekView({
         ))}
       </div>
 
-      {/* Time grid — horizontal scroll on mobile, natural width on desktop */}
-      <div className="overflow-x-auto">
-        <div className="min-w-[600px]">
-          {hours.map((hour) => (
-            <div key={hour} className="grid grid-cols-8 border-b border-slate-50">
-              <div className="p-1.5 pr-2 text-[11px] text-slate-400 text-right leading-none self-center">
-                {format(new Date().setHours(hour, 0), 'h a')}
-              </div>
-              {days.map((day) => {
-                const dayCastings = getCastingsForDate(day)
-                const hourCasting = dayCastings.find((c) => {
-                  if (!c.shoot_date_start) return false
-                  return parseISO(c.shoot_date_start).getHours() === hour
-                })
-                return (
-                  <div
-                    key={`${day.toISOString()}-${hour}`}
-                    className="min-h-[52px] sm:min-h-[60px] p-1 border-l border-slate-50"
-                  >
-                    {hourCasting && (
-                      <button
-                        onClick={() => onCastingClick(hourCasting)}
-                        className="w-full text-left rounded px-1.5 py-0.5 text-[10px] sm:text-xs font-medium truncate"
-                        style={{
-                          backgroundColor: `${getCastingColor(hourCasting.status)}18`,
-                          color: getCastingColor(hourCasting.status),
-                        }}
-                        title={hourCasting.project_name || hourCasting.client_name}
-                      >
-                        {hourCasting.project_name || hourCasting.client_name}
-                      </button>
-                    )}
-                  </div>
-                )
-              })}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {hours.map((hour) => (
+          <div key={hour} className="grid grid-cols-[42px_repeat(7,minmax(0,1fr))] border-b border-slate-50 sm:grid-cols-[56px_repeat(7,minmax(0,1fr))]">
+            <div className="self-center p-1.5 pr-2 text-right text-[10px] leading-none text-slate-400 sm:text-[11px]">
+              {format(new Date().setHours(hour, 0), 'h a')}
             </div>
-          ))}
-        </div>
+            {days.map((day) => {
+              const dayCastings = getCastingsForDate(day)
+              const hourCasting = dayCastings.find((c) => {
+                if (!c.shoot_date_start) return false
+                return parseISO(c.shoot_date_start).getHours() === hour
+              })
+              return (
+                <div
+                  key={`${day.toISOString()}-${hour}`}
+                  className="min-w-0 min-h-[52px] border-l border-slate-50 p-1 sm:min-h-[60px]"
+                >
+                  {hourCasting && (
+                    <button
+                      onClick={() => onCastingClick(hourCasting)}
+                      className="w-full truncate rounded px-1 py-0.5 text-left text-[9px] font-medium sm:px-1.5 sm:text-[11px]"
+                      style={{
+                        backgroundColor: `${getCastingColor(hourCasting.status)}18`,
+                        color: getCastingColor(hourCasting.status),
+                      }}
+                      title={hourCasting.project_name || hourCasting.client_name}
+                    >
+                      {hourCasting.project_name || hourCasting.client_name}
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -447,7 +436,7 @@ function DayView({
   )
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+    <div className="h-full min-h-0 overflow-y-auto rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
       <h3 className="font-semibold text-slate-800 text-sm sm:text-base mb-3">
         {format(currentDate, 'EEE, MMM d')}
       </h3>
