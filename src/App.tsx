@@ -10,6 +10,7 @@ import { Team } from './pages/Team'
 import { ActivityLog } from './pages/ActivityLog'
 import { Reports } from './pages/Reports'
 import { Settings } from './pages/Settings'
+import { Profile } from './pages/Profile'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
 const queryClient = new QueryClient({
@@ -104,6 +105,14 @@ function App() {
                 element={
                   <ErrorBoundary>
                     <Settings />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ErrorBoundary>
+                    <Profile />
                   </ErrorBoundary>
                 }
               />
