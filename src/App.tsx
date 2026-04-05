@@ -6,7 +6,6 @@ import { Dashboard } from './pages/Dashboard'
 import { Castings } from './pages/Castings'
 import { Clients } from './pages/Clients'
 import { Calendar } from './pages/Calendar'
-import { Tasks } from './pages/Tasks'
 import { Team } from './pages/Team'
 import { ActivityLog } from './pages/ActivityLog'
 import { Reports } from './pages/Reports'
@@ -74,14 +73,6 @@ function App() {
                 element={
                   <ErrorBoundary>
                     <Calendar />
-                  </ErrorBoundary>
-                }
-              />
-              <Route
-                path="/tasks"
-                element={
-                  <ErrorBoundary>
-                    <Tasks />
                   </ErrorBoundary>
                 }
               />
