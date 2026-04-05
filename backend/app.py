@@ -414,6 +414,9 @@ def init_db():
 
     db.commit()
 
+with app.app_context():
+    init_db()
+
 # ==================== ACTIVITIES ROUTES ====================
 
 @app.route('/api/health', methods=['GET'])
