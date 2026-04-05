@@ -4,6 +4,7 @@ import {
   useCallback,
   useMemo,
   useRef,
+  useLayoutEffect,
   type Dispatch,
   type DragEvent,
   type MouseEvent,
@@ -530,7 +531,10 @@ function ListView({
     () => getStoredListViewPreferences().visibility,
   )
   const [columnOrder, setColumnOrder] = useState<string[]>(() => getStoredListViewPreferences().order)
+  const [columnSettingsPosition, setColumnSettingsPosition] = useState({ left: 0, top: 0, placement: 'bottom' as 'bottom' | 'top' })
   const settingsRef = useRef<HTMLDivElement | null>(null)
+  const settingsButtonRef = useRef<HTMLButtonElement | null>(null)
+  const settingsMenuRef = useRef<HTMLDivElement | null>(null)
 
   const persistColumnPreferences = useCallback(
     (nextVisibility: Record<string, boolean>, nextOrder: string[]) => {
@@ -567,6 +571,47 @@ function ListView({
       document.removeEventListener('keydown', handleEscape)
     }
   }, [])
+
+  useLayoutEffect(() => {
+    if (!showColumnSettings) return
+
+    const updateMenuPosition = () => {
+      const buttonRect = settingsButtonRef.current?.getBoundingClientRect()
+      const menuRect = settingsMenuRef.current?.getBoundingClientRect()
+      if (!buttonRect) return
+
+      const menuWidth = menuRect?.width || 256
+      const menuHeight = menuRect?.height || 320
+      const viewportPadding = 8
+      const availableBelow = window.innerHeight - buttonRect.bottom
+      const shouldFlip = availableBelow < menuHeight + 16 && buttonRect.top > menuHeight + 16
+
+      let left = buttonRect.left
+      if (left + menuWidth > window.innerWidth - viewportPadding) {
+        left = window.innerWidth - menuWidth - viewportPadding
+      }
+      left = Math.max(viewportPadding, left)
+
+      const top = shouldFlip
+        ? Math.max(viewportPadding, buttonRect.top - menuHeight - 8)
+        : Math.min(window.innerHeight - menuHeight - viewportPadding, buttonRect.bottom + 8)
+
+      setColumnSettingsPosition({
+        left,
+        top,
+        placement: shouldFlip ? 'top' : 'bottom',
+      })
+    }
+
+    updateMenuPosition()
+    window.addEventListener('resize', updateMenuPosition)
+    window.addEventListener('scroll', updateMenuPosition, true)
+
+    return () => {
+      window.removeEventListener('resize', updateMenuPosition)
+      window.removeEventListener('scroll', updateMenuPosition, true)
+    }
+  }, [showColumnSettings, columnOrder, columnVisibility])
 
   // Track in-flight request versions to handle rapid changes
   const versionRef = useRef<Map<number, number>>(new Map())
@@ -784,8 +829,9 @@ function ListView({
             <ChevronDown className="h-3 w-3 shrink-0" />
           ))}
         {column.key === settingsAnchorColumnKey && (
-          <div ref={settingsRef} className="relative ml-1">
+          <div ref={settingsRef} className="ml-1">
             <button
+              ref={settingsButtonRef}
               type="button"
               onClick={(event) => {
                 event.stopPropagation()
@@ -801,11 +847,18 @@ function ListView({
             </button>
 
             {showColumnSettings && (
-              <div className="absolute left-0 top-full z-30 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl">
+              <div
+                ref={settingsMenuRef}
+                className="fixed z-[120] w-64 max-w-[calc(100vw-16px)] rounded-xl border border-slate-200 bg-white p-2.5 shadow-2xl"
+                style={{
+                  left: columnSettingsPosition.left,
+                  top: columnSettingsPosition.top,
+                }}
+              >
                 <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-2">
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">Customize columns</p>
-                    <p className="text-xs text-slate-500">Toggle visibility and drag to reorder.</p>
+                    <p className="text-[13px] font-semibold text-slate-900">Customize columns</p>
+                    <p className="text-[11px] text-slate-500">Toggle visibility and reorder columns.</p>
                   </div>
                   <button
                     type="button"
@@ -813,13 +866,13 @@ function ListView({
                       event.stopPropagation()
                       resetColumnPreferences()
                     }}
-                    className="text-xs font-semibold text-amber-600 hover:text-amber-700"
+                    className="text-[11px] font-semibold text-amber-600 hover:text-amber-700"
                   >
                     Reset
                   </button>
                 </div>
 
-                <div className="mt-3 space-y-2">
+                <div className="mt-2.5 space-y-1.5">
                   {orderedColumns.map((orderedColumn) => {
                     const visibleCount = orderedColumns.filter((item) => columnVisibility[item.key]).length
                     const isLocked = visibleCount <= 1 && columnVisibility[orderedColumn.key]
@@ -835,23 +888,22 @@ function ListView({
                         onDragEnd={() => setDraggedColumnKey(null)}
                         onClick={(event) => event.stopPropagation()}
                         className={cn(
-                          'flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-left transition',
+                          'flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-left transition',
                           draggedColumnKey === orderedColumn.key && 'border-amber-300 bg-amber-50',
                         )}
                       >
-                        <span className="text-slate-400">⋮⋮</span>
+                        <span className="flex h-6 w-4 shrink-0 items-center justify-center text-[11px] leading-none text-slate-400">⋮⋮</span>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-slate-800">{orderedColumn.label}</p>
-                          <p className="text-[11px] text-slate-500">Drag or tap arrows to reorder</p>
+                          <p className="truncate text-[13px] font-medium leading-4 text-slate-800">{orderedColumn.label}</p>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="ml-auto flex shrink-0 items-center gap-1.5">
                           <button
                             type="button"
                             onClick={(event) => {
                               event.stopPropagation()
                               nudgeColumn(orderedColumn.key, 'up')
                             }}
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                            className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-slate-200 bg-white text-[11px] text-slate-500 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
                             disabled={orderedColumns[0]?.key === orderedColumn.key}
                             aria-label={`Move ${orderedColumn.label} up`}
                           >
@@ -863,13 +915,13 @@ function ListView({
                               event.stopPropagation()
                               nudgeColumn(orderedColumn.key, 'down')
                             }}
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                            className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-slate-200 bg-white text-[11px] text-slate-500 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
                             disabled={orderedColumns[orderedColumns.length - 1]?.key === orderedColumn.key}
                             aria-label={`Move ${orderedColumn.label} down`}
                           >
                             ↓
                           </button>
-                          <label className="inline-flex items-center" onClick={(event) => event.stopPropagation()}>
+                          <label className="inline-flex h-6 items-center" onClick={(event) => event.stopPropagation()}>
                             <input
                               type="checkbox"
                               checked={Boolean(columnVisibility[orderedColumn.key])}
@@ -877,7 +929,7 @@ function ListView({
                               onChange={(event) =>
                                 updateColumnVisibility(orderedColumn.key, event.target.checked)
                               }
-                              className="h-4 w-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500"
+                              className="h-3.5 w-3.5 rounded border-slate-300 text-amber-500 focus:ring-amber-500"
                             />
                           </label>
                         </div>
@@ -894,7 +946,7 @@ function ListView({
   }
 
   return (
-    <div className="card overflow-hidden">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
         <table className={cn('w-full table-auto', columnDensityClass)} style={{ minWidth: `${tableMinWidth}px` }}>
           <thead>
@@ -1249,6 +1301,7 @@ function ListView({
           </tbody>
         </table>
       </div>
+      <div className="w-full border-t border-slate-100" />
     </div>
   )
 }
