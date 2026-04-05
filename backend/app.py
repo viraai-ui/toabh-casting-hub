@@ -342,6 +342,23 @@ def list_activities():
     rows = db.execute(query, params).fetchall()
     return jsonify({'activities': [_activity_row_to_dict(row) for row in rows]})
 
+
+@app.route('/api/notifications', methods=['GET'])
+def list_notifications():
+    db = get_db()
+    rows = db.execute('''
+        SELECT a.id, a.casting_id, a.action, a.details as description,
+               COALESCE(tm.name, a.details) as user_name, a.timestamp as created_at
+        FROM activities a
+        LEFT JOIN team_members tm ON a.team_member_id = tm.id
+        ORDER BY a.timestamp DESC
+        LIMIT 20
+    ''').fetchall()
+
+    activities = [_activity_row_to_dict(row) for row in rows]
+    notifications = [_build_notification_from_activity(activity) for activity in activities]
+    return jsonify({'notifications': notifications})
+
 def _extract_mentions(text):
     if not text:
         return []
@@ -403,6 +420,43 @@ def _activity_row_to_dict(row):
         item['parent_id'] = parsed['parent_id']
         item['mentions'] = parsed['mentions']
     return item
+
+
+def _build_notification_from_activity(activity):
+    action = (activity.get('action') or '').upper()
+    created_at = activity.get('created_at') or activity.get('timestamp') or datetime.now().isoformat()
+    casting_id = activity.get('casting_id')
+    user_name = activity.get('user_name') or activity.get('team_member_name') or 'Team'
+    body = activity.get('description') or activity.get('details') or 'Activity update'
+
+    notification_type = 'general'
+    title = 'Activity update'
+
+    if action in {'ASSIGNED', 'REASSIGNED'}:
+        notification_type = 'assignment'
+        title = 'New assignment'
+    elif action in {'STATUS_CHANGE', 'STATUS_CHANGED'}:
+        notification_type = 'status_change'
+        title = 'Status changed'
+    elif action == 'NOTE':
+        mentions = activity.get('mentions') or []
+        if mentions:
+            notification_type = 'mention'
+            title = 'You were mentioned'
+        else:
+            notification_type = 'comment'
+            title = 'New comment added'
+
+    return {
+        'id': f"{action.lower() or 'activity'}-{activity.get('id')}",
+        'type': notification_type,
+        'title': title,
+        'message': body,
+        'created_at': created_at,
+        'casting_id': casting_id,
+        'client_id': None,
+        'user_name': user_name,
+    }
 
 
 @app.route('/api/comments/<int:casting_id>', methods=['GET'])
@@ -563,7 +617,13 @@ def list_castings():
     # GET - list with filters
     query = '''
         SELECT c.*, GROUP_CONCAT(ca.team_member_id) as assigned_ids,
-               GROUP_CONCAT(tm.name) as assigned_names
+               GROUP_CONCAT(tm.name) as assigned_names,
+               (SELECT COUNT(*) FROM casting_attachments ca2 WHERE ca2.casting_id = c.id) as attachments_count,
+               (SELECT '/api/attachments/' || id
+                FROM casting_attachments ca2
+                WHERE ca2.casting_id = c.id
+                ORDER BY created_at DESC, id DESC
+                LIMIT 1) as latest_attachment_url
         FROM castings c
         LEFT JOIN casting_assignments ca ON c.id = ca.casting_id
         LEFT JOIN team_members tm ON ca.team_member_id = tm.id
@@ -601,6 +661,11 @@ def list_castings():
     castings = []
     for row in rows:
         casting = dict(row)
+        if casting.get('attachments_count') is not None:
+            try:
+                casting['attachments_count'] = int(casting['attachments_count'])
+            except Exception:
+                casting['attachments_count'] = 0
         if casting['assigned_ids']:
             casting['assigned_to'] = [
                 {'id': int(id), 'name': name}
@@ -619,7 +684,13 @@ def single_casting(casting_id):
     if request.method == 'GET':
         row = db.execute('''
             SELECT c.*, GROUP_CONCAT(ca.team_member_id) as assigned_ids,
-                   GROUP_CONCAT(tm.name) as assigned_names
+                   GROUP_CONCAT(tm.name) as assigned_names,
+                   (SELECT COUNT(*) FROM casting_attachments ca2 WHERE ca2.casting_id = c.id) as attachments_count,
+                   (SELECT '/api/attachments/' || id
+                    FROM casting_attachments ca2
+                    WHERE ca2.casting_id = c.id
+                    ORDER BY created_at DESC, id DESC
+                    LIMIT 1) as latest_attachment_url
             FROM castings c
             LEFT JOIN casting_assignments ca ON c.id = ca.casting_id
             LEFT JOIN team_members tm ON ca.team_member_id = tm.id
@@ -631,6 +702,11 @@ def single_casting(casting_id):
             return jsonify({'error': 'Not found'}), 404
 
         casting = dict(row)
+        if casting.get('attachments_count') is not None:
+            try:
+                casting['attachments_count'] = int(casting['attachments_count'])
+            except Exception:
+                casting['attachments_count'] = 0
         if casting['assigned_ids']:
             casting['assigned_to'] = [
                 {'id': int(id), 'name': name}
@@ -1649,7 +1725,7 @@ def search():
     q = (request.args.get('q') or '').strip()
 
     if not q:
-        return jsonify({'castings': [], 'clients': [], 'team': []})
+        return jsonify({'projects': [], 'castings': [], 'clients': [], 'team': []})
 
     like = f'%{q}%'
 
@@ -1693,6 +1769,20 @@ def search():
         LIMIT 5
     ''', (like, like, like, like)).fetchall()
 
+    project_rows = db.execute('''
+        SELECT
+            MIN(c.id) as id,
+            COALESCE(c.project_name, '') as project_name,
+            COALESCE(MAX(c.client_name), '') as client_name,
+            COALESCE(MAX(c.status), '') as status,
+            COALESCE(MAX(c.updated_at), MAX(c.created_at), '') as updated_at
+        FROM castings c
+        WHERE COALESCE(c.project_name, '') LIKE ?
+        GROUP BY COALESCE(c.project_name, '')
+        ORDER BY MAX(c.updated_at) DESC, MAX(c.created_at) DESC
+        LIMIT 6
+    ''', (like,)).fetchall()
+
     team_rows = db.execute('''
         SELECT
             tm.id,
@@ -1713,6 +1803,7 @@ def search():
     ''', (like, like, like, like)).fetchall()
 
     return jsonify({
+        'projects': [dict(r) for r in project_rows],
         'castings': [dict(r) for r in casting_rows],
         'clients': [dict(r) for r in client_rows],
         'team': [dict(r) for r in team_rows],

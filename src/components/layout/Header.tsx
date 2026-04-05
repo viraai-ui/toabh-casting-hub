@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Search, Bell, User, Settings, LogOut, ChevronDown, CheckCheck } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAppStore } from '@/hooks/useStore'
@@ -71,6 +71,8 @@ export function Header() {
   const [notifications, setNotifications] = useState<Activity[]>([])
   const [loadingNotifications, setLoadingNotifications] = useState(false)
   const [readIds, setReadIds] = useState<number[]>([])
+  const notificationTriggerRef = useRef<HTMLButtonElement | null>(null)
+  const notificationPanelRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     try {
@@ -103,6 +105,36 @@ export function Header() {
       closeOverlay('header-notifications')
     }
   }, [notificationsOpen, openOverlay, closeOverlay])
+
+  useEffect(() => {
+    if (!notificationsOpen) return
+
+    const handleOutsideInteraction = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null
+      if (!target) return
+
+      if (notificationTriggerRef.current?.contains(target)) return
+      if (notificationPanelRef.current?.contains(target)) return
+
+      setNotificationsOpen(false)
+    }
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setNotificationsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideInteraction)
+    document.addEventListener('touchstart', handleOutsideInteraction)
+    document.addEventListener('keydown', handleEscape)
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideInteraction)
+      document.removeEventListener('touchstart', handleOutsideInteraction)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [notificationsOpen])
 
   const fetchNotifications = async (showLoader = false) => {
     if (showLoader) setLoadingNotifications(true)
@@ -177,7 +209,10 @@ export function Header() {
 
           <div className="relative">
             <button
+              ref={notificationTriggerRef}
               onClick={() => setNotificationsOpen((open) => !open)}
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
               className="p-2 rounded-lg hover:bg-slate-100 transition-colors relative"
               aria-label="Notifications"
             >
@@ -191,13 +226,15 @@ export function Header() {
 
             <AnimatePresence>
               {notificationsOpen && (
-                <>
-                  <div onClick={() => setNotificationsOpen(false)} className="fixed inset-0 z-40" />
                   <motion.div
+                    ref={notificationPanelRef}
                     initial={{ opacity: 0, y: -8, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8, scale: 0.98 }}
                     transition={{ duration: 0.15, ease: 'easeOut' }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                     className="absolute right-0 top-full z-50 mt-2 w-[min(24rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
                   >
                     <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
@@ -253,7 +290,6 @@ export function Header() {
                       )}
                     </div>
                   </motion.div>
-                </>
               )}
             </AnimatePresence>
           </div>

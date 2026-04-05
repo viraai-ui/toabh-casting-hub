@@ -276,43 +276,35 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Phase 3 communication</p>
-          <h3 className="mt-1 text-base font-semibold text-slate-900">Internal chat, activity, and attachments</h3>
-          <p className="mt-1 text-sm text-slate-500">Keep the casting team aligned without leaving the detail view.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {telHref && (
-            <a
-              href={telHref}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
-            >
-              <PhoneCall className="h-3.5 w-3.5" />
-              Call client
-            </a>
-          )}
-          {whatsappHref && (
-            <a
-              href={whatsappHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100"
-            >
-              <Phone className="h-3.5 w-3.5" />
-              WhatsApp client
-            </a>
-          )}
-        </div>
+      <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+        {telHref && (
+          <a
+            href={telHref}
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
+          >
+            <PhoneCall className="h-3.5 w-3.5" />
+            Call client
+          </a>
+        )}
+        {whatsappHref && (
+          <a
+            href={whatsappHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100"
+          >
+            <Phone className="h-3.5 w-3.5" />
+            WhatsApp client
+          </a>
+        )}
       </div>
 
-      <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
-        <div className="rounded-3xl border border-white bg-white p-4 shadow-sm sm:p-5">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] xl:items-stretch">
+        <div className="rounded-3xl border border-white bg-white p-4 shadow-sm sm:p-5 xl:h-full xl:min-h-[760px] xl:flex xl:flex-col">
           <div className="flex items-center gap-2">
             <MessageCircle className="h-4 w-4 text-amber-500" />
-            <h4 className="text-sm font-semibold text-slate-900">Internal chat</h4>
+            <h4 className="text-sm font-semibold text-slate-900">Internal Chat</h4>
           </div>
-          <p className="mt-1 text-xs text-slate-500">Threaded notes with mentions and timestamps for the casting team.</p>
 
           <div className="mt-4 rounded-3xl border border-slate-100 bg-slate-50 p-3 sm:p-4">
             {replyTo && (
@@ -337,8 +329,7 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
               placeholder="Add a note for the casting team. Use @Name to mention someone..."
               className="min-h-28 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-amber-300 focus:ring-2 focus:ring-amber-100"
             />
-            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs text-slate-400">Mentions like @Rhea or @Aryan are highlighted and saved in the thread.</p>
+            <div className="mt-3 flex justify-end">
               <button
                 type="button"
                 onClick={() => void submitNote()}
@@ -350,7 +341,7 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
             </div>
           </div>
 
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 space-y-3 xl:flex-1 xl:overflow-y-auto xl:pr-1">
             {threadTree.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
                 No internal notes yet.
@@ -366,15 +357,53 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="rounded-3xl border border-white bg-white p-4 shadow-sm sm:p-5">
+        <div className="grid gap-4 xl:h-full xl:grid-rows-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+          <div className="rounded-3xl border border-white bg-white p-4 shadow-sm sm:p-5 xl:min-h-0">
+            <div className="flex items-center gap-2">
+              <Paperclip className="h-4 w-4 text-amber-500" />
+              <h4 className="text-sm font-semibold text-slate-900">Attachments</h4>
+            </div>
+
+            <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-sm font-medium text-slate-600 transition hover:border-amber-300 hover:text-slate-900">
+              <Upload className="h-4 w-4" />
+              {uploading ? 'Uploading...' : 'Upload attachment'}
+              <input
+                type="file"
+                aria-label="Upload attachment"
+                className="sr-only"
+                onChange={(event) => void handleAttachmentUpload(event)}
+              />
+            </label>
+
+            <div className="mt-3 space-y-2 xl:max-h-[260px] xl:overflow-y-auto xl:pr-1">
+              {attachments.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
+                  No attachments yet.
+                </div>
+              ) : (
+                attachments.map((attachment) => (
+                  <a
+                    key={attachment.id}
+                    href={toApiUrl(attachment.url)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 text-sm text-slate-700 transition hover:border-slate-200 hover:bg-white"
+                  >
+                    <span className="truncate font-medium">{attachment.original_filename}</span>
+                    <span className="shrink-0 text-xs text-slate-400">{formatDate(attachment.created_at)}</span>
+                  </a>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-white bg-white p-4 shadow-sm sm:p-5 xl:min-h-0">
             <div className="flex items-center gap-2">
               <Clock3 className="h-4 w-4 text-amber-500" />
               <h4 className="text-sm font-semibold text-slate-900">Activity</h4>
             </div>
-            <p className="mt-1 text-xs text-slate-500">Recent movement on this casting.</p>
 
-            <div className="mt-3 space-y-3">
+            <div className="mt-3 space-y-3 xl:max-h-[420px] xl:overflow-y-auto xl:pr-1">
               {activities.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
                   No activity yet.
@@ -395,46 +424,6 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
                     </article>
                   )
                 })
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-white bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex items-center gap-2">
-              <Paperclip className="h-4 w-4 text-amber-500" />
-              <h4 className="text-sm font-semibold text-slate-900">Attachments</h4>
-            </div>
-            <p className="mt-1 text-xs text-slate-500">Share PDFs, images, videos, and supporting documents.</p>
-
-            <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-sm font-medium text-slate-600 transition hover:border-amber-300 hover:text-slate-900">
-              <Upload className="h-4 w-4" />
-              {uploading ? 'Uploading...' : 'Upload attachment'}
-              <input
-                type="file"
-                aria-label="Upload attachment"
-                className="sr-only"
-                onChange={(event) => void handleAttachmentUpload(event)}
-              />
-            </label>
-
-            <div className="mt-3 space-y-2">
-              {attachments.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
-                  No attachments yet.
-                </div>
-              ) : (
-                attachments.map((attachment) => (
-                  <a
-                    key={attachment.id}
-                    href={toApiUrl(attachment.url)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 text-sm text-slate-700 transition hover:border-slate-200 hover:bg-white"
-                  >
-                    <span className="truncate font-medium">{attachment.original_filename}</span>
-                    <span className="shrink-0 text-xs text-slate-400">{formatDate(attachment.created_at)}</span>
-                  </a>
-                ))
               )}
             </div>
           </div>
