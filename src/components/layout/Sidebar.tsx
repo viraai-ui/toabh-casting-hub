@@ -3,7 +3,6 @@ import { AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard,
   Briefcase,
-  CheckSquare,
   Users,
   Calendar,
   UserCircle,
@@ -23,7 +22,6 @@ const navItems = [
   { icon: Briefcase, label: 'Castings', path: '/castings' },
   { icon: Users, label: 'Clients', path: '/clients' },
   { icon: Calendar, label: 'Calendar', path: '/calendar' },
-  { icon: CheckSquare, label: 'Tasks', path: '/tasks' },
   { icon: UserCircle, label: 'Team', path: '/team' },
   { icon: Activity, label: 'Activity', path: '/activity' },
   { icon: BarChart3, label: 'Reports', path: '/reports' },
