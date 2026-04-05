@@ -1,16 +1,7 @@
-import { type ChangeEvent, Fragment, useEffect, useMemo, useState } from 'react'
-import {
-  AtSign,
-  Clock3,
-  MessageCircle,
-  Paperclip,
-  Phone,
-  PhoneCall,
-  Reply,
-  Upload,
-} from 'lucide-react'
+import { type KeyboardEvent, Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { AtSign, Clock3, MessageCircle, Paperclip, Reply, SendHorizontal } from 'lucide-react'
 import { api, toApiUrl } from '@/lib/api'
-import { formatDate, formatRelativeTime, getInitials } from '@/lib/utils'
+import { cn, formatDate, formatRelativeTime, getInitials } from '@/lib/utils'
 import { toast } from 'sonner'
 import type { Casting, CastingAttachment, Comment } from '@/types'
 
@@ -36,41 +27,17 @@ interface ThreadNode extends Comment {
   replies: Comment[]
 }
 
-function buildPhoneActions(phone: string, projectName: string) {
-  const trimmedPhone = phone.trim()
-  const digits = trimmedPhone.replace(/\D/g, '')
-
-  if (!digits) {
-    return {
-      telHref: null,
-      whatsappHref: null,
-    }
-  }
-
-  const normalizedDigits = trimmedPhone.startsWith('+') ? digits : digits.length === 10 ? `91${digits}` : digits
-
-  return {
-    telHref: trimmedPhone.startsWith('+') ? `tel:+${digits}` : `tel:+${normalizedDigits}`,
-    whatsappHref: `https://wa.me/${normalizedDigits}?text=${encodeURIComponent(`Regarding ${projectName || 'your casting'}`)}`,
-  }
+interface MentionOption {
+  id: number
+  name: string
+  role?: string
+  handle: string
 }
 
-function extractMentions(text: string) {
-  return Array.from(new Set(Array.from(text.matchAll(/@([A-Za-z0-9_.-]+)/g)).map((match) => match[1])))
-}
-
-function renderMentionText(text: string) {
-  const parts = text.split(/(@[A-Za-z0-9_.-]+)/g)
-  return parts.map((part, index) => {
-    if (/^@[A-Za-z0-9_.-]+$/.test(part)) {
-      return (
-        <span key={`${part}-${index}`} className="rounded-full bg-amber-100 px-1.5 py-0.5 font-medium text-amber-700">
-          {part}
-        </span>
-      )
-    }
-    return <Fragment key={`${part}-${index}`}>{part}</Fragment>
-  })
+interface ActiveMention {
+  start: number
+  end: number
+  query: string
 }
 
 function buildThreads(comments: Comment[]) {
@@ -96,6 +63,40 @@ function buildThreads(comments: Comment[]) {
   return roots.reverse()
 }
 
+function buildMentionHandle(name: string) {
+  return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.+|\.+$/g, '')
+}
+
+function findActiveMention(text: string, caretIndex: number): ActiveMention | null {
+  const beforeCaret = text.slice(0, caretIndex)
+  const match = beforeCaret.match(/(^|\s)@([A-Za-z0-9_.-]*)$/)
+  if (!match) return null
+
+  const mentionText = match[0].trimStart()
+  const start = caretIndex - mentionText.length
+  return {
+    start,
+    end: caretIndex,
+    query: match[2] || '',
+  }
+}
+
+function renderMentionText(text: string, mentionLookup: Map<string, MentionOption>) {
+  const parts = text.split(/(@[A-Za-z0-9_.-]+)/g)
+  return parts.map((part, index) => {
+    if (/^@[A-Za-z0-9_.-]+$/.test(part)) {
+      const handle = part.slice(1).toLowerCase()
+      const label = mentionLookup.get(handle)?.name || part.slice(1)
+      return (
+        <span key={`${part}-${index}`} className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-700">
+          @{label}
+        </span>
+      )
+    }
+    return <Fragment key={`${part}-${index}`}>{part}</Fragment>
+  })
+}
+
 export function CastingCommunicationPanel({ casting }: CastingCommunicationPanelProps) {
   const [comments, setComments] = useState<Comment[]>([])
   const [activities, setActivities] = useState<CastingActivityItem[]>([])
@@ -103,7 +104,9 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
   const [draftNote, setDraftNote] = useState('')
   const [replyTo, setReplyTo] = useState<Comment | null>(null)
   const [posting, setPosting] = useState(false)
-  const [uploading, setUploading] = useState(false)
+  const [activeMention, setActiveMention] = useState<ActiveMention | null>(null)
+  const [selectedMentionIndex, setSelectedMentionIndex] = useState(0)
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
   useEffect(() => {
     let active = true
@@ -151,14 +154,76 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
   }, [casting.id])
 
   const threadTree = useMemo(() => buildThreads(comments), [comments])
-  const { telHref, whatsappHref } = buildPhoneActions(casting.client_contact || '', casting.project_name)
+
+  const mentionOptions = useMemo<MentionOption[]>(() => {
+    const assigned = Array.isArray(casting.assigned_to) ? casting.assigned_to : []
+    const seen = new Set<number>()
+    const options: MentionOption[] = []
+
+    assigned.forEach((member) => {
+      if (!member || typeof member !== 'object') return
+      const id = typeof member.id === 'number' ? member.id : Number(member.id)
+      const name = typeof member.name === 'string' ? member.name.trim() : ''
+      if (!id || !name || seen.has(id)) return
+      seen.add(id)
+      options.push({
+        id,
+        name,
+        role: typeof member.role === 'string' ? member.role : undefined,
+        handle: buildMentionHandle(name),
+      })
+    })
+
+    return options
+  }, [casting.assigned_to])
+
+  const mentionLookup = useMemo(() => new Map(mentionOptions.map((member) => [member.handle, member])), [mentionOptions])
+
+  const filteredMentionOptions = useMemo(() => {
+    if (!activeMention) return []
+    const query = activeMention.query.trim().toLowerCase()
+    return mentionOptions
+      .filter((member) => {
+        if (!query) return true
+        return member.name.toLowerCase().includes(query) || member.handle.includes(query)
+      })
+      .slice(0, 6)
+  }, [activeMention, mentionOptions])
+
+  useEffect(() => {
+    setSelectedMentionIndex(0)
+  }, [activeMention?.query])
+
+  const syncMentionState = (value: string, caretIndex: number) => {
+    const nextMention = findActiveMention(value, caretIndex)
+    setActiveMention(nextMention && mentionOptions.length > 0 ? nextMention : null)
+  }
+
+  const insertMention = (option: MentionOption) => {
+    if (!activeMention) return
+
+    const nextValue = `${draftNote.slice(0, activeMention.start)}@${option.handle} ${draftNote.slice(activeMention.end)}`
+    const nextCaret = activeMention.start + option.handle.length + 2
+
+    setDraftNote(nextValue)
+    setActiveMention(null)
+
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus()
+      textareaRef.current?.setSelectionRange(nextCaret, nextCaret)
+    })
+  }
 
   const submitNote = async () => {
     const text = draftNote.trim()
     if (!text || posting) return
 
     setPosting(true)
-    const mentions = extractMentions(text)
+    const mentions = Array.from(new Set(
+      Array.from(text.matchAll(/@([A-Za-z0-9_.-]+)/g))
+        .map((match) => match[1].toLowerCase())
+        .filter((handle) => mentionLookup.has(handle))
+    ))
 
     try {
       const createdComment = await api.post('/comments', {
@@ -186,6 +251,7 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
       ])
       setDraftNote('')
       setReplyTo(null)
+      setActiveMention(null)
     } catch (error) {
       console.error('Failed to post note', error)
       toast.error('Could not post the note.')
@@ -194,46 +260,46 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
     }
   }
 
-  const handleAttachmentUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file || uploading) return
+  const handleTextareaKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (activeMention && filteredMentionOptions.length > 0) {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault()
+        setSelectedMentionIndex((current) => (current + 1) % filteredMentionOptions.length)
+        return
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault()
+        setSelectedMentionIndex((current) => (current - 1 + filteredMentionOptions.length) % filteredMentionOptions.length)
+        return
+      }
+      if (event.key === 'Enter' || event.key === 'Tab') {
+        event.preventDefault()
+        insertMention(filteredMentionOptions[selectedMentionIndex])
+        return
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setActiveMention(null)
+        return
+      }
+    }
 
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('user_name', 'Team')
-
-    setUploading(true)
-    try {
-      const uploadedAttachment = await api.upload(`/castings/${casting.id}/attachments`, formData) as CastingAttachment
-      setAttachments((current) => [uploadedAttachment, ...current])
-      setActivities((current) => [
-        {
-          id: Number(uploadedAttachment.id),
-          casting_id: casting.id,
-          action: 'ATTACHMENT_ADDED',
-          details: `Uploaded attachment: ${uploadedAttachment.original_filename}`,
-          description: `Uploaded attachment: ${uploadedAttachment.original_filename}`,
-          user_name: 'Team',
-          created_at: uploadedAttachment.created_at,
-        },
-        ...current,
-      ])
-    } catch (error) {
-      console.error('Failed to upload attachment', error)
-      toast.error('Could not upload the attachment.')
-    } finally {
-      setUploading(false)
-      event.target.value = ''
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+      event.preventDefault()
+      void submitNote()
     }
   }
 
   const renderComment = (comment: Comment, nested = false) => (
     <article
       key={comment.id}
-      className={`rounded-2xl border border-slate-100 bg-slate-50 ${nested ? 'ml-5 mt-2' : ''}`}
+      className={cn(
+        'rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm',
+        nested && 'ml-5 mt-2 border-slate-100 bg-slate-50/80'
+      )}
     >
-      <div className="flex items-start gap-3 px-3 py-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-[11px] font-semibold text-white shadow-sm">
+      <div className="flex items-start gap-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-[10px] font-semibold text-white shadow-sm">
           {getInitials(comment.user_name || 'T')}
         </div>
         <div className="min-w-0 flex-1">
@@ -243,17 +309,20 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
             <span className="text-xs text-slate-300">•</span>
             <span className="text-xs text-slate-400">{formatDate(comment.created_at)}</span>
           </div>
-          <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
-            {renderMentionText(comment.text || comment.content || '')}
+          <div className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600">
+            {renderMentionText(comment.text || comment.content || '', mentionLookup)}
           </div>
           {(comment.mentions?.length ?? 0) > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {(comment.mentions || []).map((mention) => (
-                <span key={`${comment.id}-${mention}`} className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-700">
-                  <AtSign className="h-3 w-3" />
-                  {mention}
-                </span>
-              ))}
+              {(comment.mentions || []).map((mention) => {
+                const label = mentionLookup.get(mention.toLowerCase())?.name || mention
+                return (
+                  <span key={`${comment.id}-${mention}`} className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-700">
+                    <AtSign className="h-3 w-3" />
+                    {label}
+                  </span>
+                )
+              })}
             </div>
           )}
           {!nested && (
@@ -261,7 +330,8 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
               type="button"
               onClick={() => {
                 setReplyTo(comment)
-                setDraftNote((current) => current || `@${(comment.user_name || 'Team').split(' ')[0]} `)
+                setDraftNote((current) => current || '')
+                textareaRef.current?.focus()
               }}
               className="mt-3 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-100"
             >
@@ -276,42 +346,22 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
-      <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
-        {telHref && (
-          <a
-            href={telHref}
-            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
-          >
-            <PhoneCall className="h-3.5 w-3.5" />
-            Call client
-          </a>
-        )}
-        {whatsappHref && (
-          <a
-            href={whatsappHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100"
-          >
-            <Phone className="h-3.5 w-3.5" />
-            WhatsApp client
-          </a>
-        )}
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] xl:items-stretch">
-        <div className="rounded-3xl border border-white bg-white p-4 shadow-sm sm:p-5 xl:h-full xl:min-h-[760px] xl:flex xl:flex-col">
-          <div className="flex items-center gap-2">
-            <MessageCircle className="h-4 w-4 text-amber-500" />
-            <h4 className="text-sm font-semibold text-slate-900">Internal Chat</h4>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)] xl:items-start">
+        <div className="rounded-3xl border border-white bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4 text-amber-500" />
+              <h4 className="text-sm font-semibold text-slate-900">Internal Comments</h4>
+            </div>
+            <span className="text-xs text-slate-400">Team-only discussion</span>
           </div>
 
-          <div className="mt-4 rounded-3xl border border-slate-100 bg-slate-50 p-3 sm:p-4">
+          <div className="mt-4 rounded-3xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
             {replyTo && (
               <div className="mb-3 flex items-start justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                <div>
+                <div className="min-w-0">
                   <p className="font-semibold">Replying to {replyTo.user_name}</p>
-                  <p className="mt-0.5 max-w-xl truncate">{replyTo.text || replyTo.content}</p>
+                  <p className="mt-0.5 truncate">{replyTo.text || replyTo.content}</p>
                 </div>
                 <button type="button" onClick={() => setReplyTo(null)} className="font-medium text-amber-700 hover:text-amber-900">
                   Cancel
@@ -319,32 +369,72 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
               </div>
             )}
 
-            <label className="sr-only" htmlFor={`casting-note-${casting.id}`}>
-              Add a note for the casting team
-            </label>
-            <textarea
-              id={`casting-note-${casting.id}`}
-              value={draftNote}
-              onChange={(event) => setDraftNote(event.target.value)}
-              placeholder="Add a note for the casting team. Use @Name to mention someone..."
-              className="min-h-28 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-amber-300 focus:ring-2 focus:ring-amber-100"
-            />
-            <div className="mt-3 flex justify-end">
+            <div className="relative">
+              <label className="sr-only" htmlFor={`casting-note-${casting.id}`}>
+                Add a comment for the project team
+              </label>
+              <textarea
+                ref={textareaRef}
+                id={`casting-note-${casting.id}`}
+                value={draftNote}
+                onChange={(event) => {
+                  const value = event.target.value
+                  setDraftNote(value)
+                  syncMentionState(value, event.target.selectionStart ?? value.length)
+                }}
+                onClick={(event) => syncMentionState(draftNote, event.currentTarget.selectionStart ?? draftNote.length)}
+                onKeyUp={(event) => syncMentionState(event.currentTarget.value, event.currentTarget.selectionStart ?? event.currentTarget.value.length)}
+                onKeyDown={handleTextareaKeyDown}
+                placeholder={mentionOptions.length ? 'Write a comment… Type @ to mention project team members' : 'Write a comment…'}
+                className="min-h-[88px] w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-amber-300 focus:ring-2 focus:ring-amber-100"
+              />
+
+              {activeMention && filteredMentionOptions.length > 0 && (
+                <div className="absolute left-0 right-0 top-full z-10 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                  {filteredMentionOptions.map((option, index) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onMouseDown={(event) => {
+                        event.preventDefault()
+                        insertMention(option)
+                      }}
+                      className={cn(
+                        'flex w-full items-center gap-3 px-3 py-2.5 text-left transition',
+                        index === selectedMentionIndex ? 'bg-amber-50' : 'hover:bg-slate-50'
+                      )}
+                    >
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-semibold text-slate-600">
+                        {getInitials(option.name)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-slate-800">{option.name}</p>
+                        <p className="truncate text-xs text-slate-400">{option.role || 'Project team'}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <p className="text-xs text-slate-400">Only assigned project team members can be tagged.</p>
               <button
                 type="button"
                 onClick={() => void submitNote()}
                 disabled={posting || !draftNote.trim()}
-                className="rounded-full bg-slate-900 px-4 py-2 text-xs font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-4 py-2 text-xs font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {posting ? 'Posting...' : 'Post note'}
+                <SendHorizontal className="h-3.5 w-3.5" />
+                {posting ? 'Posting...' : 'Post comment'}
               </button>
             </div>
           </div>
 
-          <div className="mt-4 space-y-3 xl:flex-1 xl:overflow-y-auto xl:pr-1">
+          <div className="mt-4 max-h-[420px] space-y-3 overflow-y-auto pr-1">
             {threadTree.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
-                No internal notes yet.
+                No internal comments yet.
               </div>
             ) : (
               threadTree.map((thread) => (
@@ -357,25 +447,15 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
           </div>
         </div>
 
-        <div className="grid gap-4 xl:h-full xl:grid-rows-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-          <div className="rounded-3xl border border-white bg-white p-4 shadow-sm sm:p-5 xl:min-h-0">
+        <div className="space-y-4">
+          <div className="rounded-3xl border border-white bg-white p-4 shadow-sm sm:p-5">
             <div className="flex items-center gap-2">
               <Paperclip className="h-4 w-4 text-amber-500" />
               <h4 className="text-sm font-semibold text-slate-900">Attachments</h4>
             </div>
+            <p className="mt-1 text-xs text-slate-400">View existing files here. Uploads are available only in edit mode.</p>
 
-            <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-sm font-medium text-slate-600 transition hover:border-amber-300 hover:text-slate-900">
-              <Upload className="h-4 w-4" />
-              {uploading ? 'Uploading...' : 'Upload attachment'}
-              <input
-                type="file"
-                aria-label="Upload attachment"
-                className="sr-only"
-                onChange={(event) => void handleAttachmentUpload(event)}
-              />
-            </label>
-
-            <div className="mt-3 space-y-2 xl:max-h-[260px] xl:overflow-y-auto xl:pr-1">
+            <div className="mt-3 max-h-[220px] space-y-2 overflow-y-auto pr-1">
               {attachments.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
                   No attachments yet.
@@ -397,13 +477,13 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white bg-white p-4 shadow-sm sm:p-5 xl:min-h-0">
+          <div className="rounded-3xl border border-white bg-white p-4 shadow-sm sm:p-5">
             <div className="flex items-center gap-2">
               <Clock3 className="h-4 w-4 text-amber-500" />
               <h4 className="text-sm font-semibold text-slate-900">Activity</h4>
             </div>
 
-            <div className="mt-3 space-y-3 xl:max-h-[420px] xl:overflow-y-auto xl:pr-1">
+            <div className="mt-3 max-h-[280px] space-y-2.5 overflow-y-auto pr-1">
               {activities.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
                   No activity yet.
@@ -415,12 +495,12 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
                   const actor = activity.team_member_name || activity.user_name || 'Team'
 
                   return (
-                    <article key={`${activity.action}-${activity.id}-${createdAt}`} className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                    <article key={`${activity.action}-${activity.id}-${createdAt}`} className="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-medium text-slate-800">{actor}</p>
-                        <p className="text-xs text-slate-400">{formatRelativeTime(createdAt)}</p>
+                        <p className="truncate text-sm font-medium text-slate-800">{actor}</p>
+                        <p className="shrink-0 text-xs text-slate-400">{formatRelativeTime(createdAt)}</p>
                       </div>
-                      <p className="mt-2 text-sm text-slate-600">{body}</p>
+                      <p className="mt-1 text-sm leading-6 text-slate-600">{body}</p>
                     </article>
                   )
                 })
