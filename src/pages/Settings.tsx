@@ -10,6 +10,7 @@ import {
   Users,
   Mail,
   LayoutDashboard,
+  Tags,
 } from 'lucide-react'
 import { PipelineStages } from './settings/PipelineStages'
 import { LeadSources } from './settings/LeadSources'
@@ -18,12 +19,14 @@ import { RolesPermissions } from './settings/RolesPermissions'
 import { TeamManagement } from './settings/TeamManagement'
 import { DashboardSettings } from './settings/DashboardSettings'
 import { EmailAutomationHub } from './settings/EmailAutomationHub'
+import { ClientTags } from './settings/ClientTags'
 import { cn } from '@/lib/utils'
 
 const tabs = [
   { id: 'pipeline', label: 'Pipeline', icon: Workflow },
   { id: 'sources', label: 'Sources', icon: Radio },
   { id: 'custom-fields', label: 'Fields', icon: Rows3 },
+  { id: 'client-tags', label: 'Client Tags', icon: Tags },
   { id: 'roles', label: 'Roles', icon: ShieldCheck },
   { id: 'team', label: 'Team', icon: Users },
   { id: 'email', label: 'Email', icon: Mail },
@@ -143,6 +146,7 @@ export function Settings() {
               {activeTab === 'pipeline' && <PipelineStages />}
               {activeTab === 'sources' && <LeadSources />}
               {activeTab === 'custom-fields' && <CustomFields />}
+              {activeTab === 'client-tags' && <ClientTags />}
               {activeTab === 'roles' && <RolesPermissions />}
               {activeTab === 'team' && <TeamManagement />}
               {activeTab === 'email' && <EmailAutomationHub />}

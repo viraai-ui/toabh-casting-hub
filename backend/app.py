@@ -277,6 +277,24 @@ def init_db():
             name TEXT NOT NULL
         )
     ''')
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS settings_client_tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            color TEXT DEFAULT '#f59e0b',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS client_tag_assignments (
+            client_id INTEGER NOT NULL,
+            tag_id INTEGER NOT NULL,
+            PRIMARY KEY (client_id, tag_id),
+            FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES settings_client_tags(id) ON DELETE CASCADE
+        )
+    ''')
 
     # Seed pipeline stages if empty
     cursor = db.execute('SELECT COUNT(*) FROM settings_pipeline')
@@ -1106,16 +1124,187 @@ def serve_team_avatar(member_id):
 
 # ==================== CLIENTS ROUTES ====================
 
+def _normalize_client_tag_color(raw_color):
+    color = (raw_color or '').strip()
+    if re.fullmatch(r'#?[0-9a-fA-F]{6}', color):
+        return color if color.startswith('#') else f'#{color}'
+    return '#f59e0b'
+
+
+def _coerce_tag_ids(raw_tag_ids):
+    if not isinstance(raw_tag_ids, list):
+        return []
+
+    tag_ids = []
+    for value in raw_tag_ids:
+        try:
+            tag_id = int(value)
+        except (TypeError, ValueError):
+            continue
+        if tag_id not in tag_ids:
+            tag_ids.append(tag_id)
+    return tag_ids
+
+
+def _get_client_tags(db, client_id):
+    rows = db.execute(
+        '''
+        SELECT t.id, t.name, t.color
+        FROM settings_client_tags t
+        INNER JOIN client_tag_assignments cta ON cta.tag_id = t.id
+        WHERE cta.client_id = ?
+        ORDER BY t.name COLLATE NOCASE ASC
+        ''',
+        (client_id,),
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def _serialize_client_row(db, client_row):
+    if client_row is None:
+        return None
+
+    client = dict(client_row)
+    client['tags'] = _get_client_tags(db, client['id'])
+    return client
+
+
+def _get_client_or_404(db, client_id):
+    client = db.execute('SELECT * FROM clients WHERE id = ?', (client_id,)).fetchone()
+    if client is None:
+        return None, (jsonify({'error': 'Client not found'}), 404)
+    return client, None
+
+
+def _sync_client_tags(db, client_id, raw_tag_ids):
+    tag_ids = _coerce_tag_ids(raw_tag_ids)
+    if tag_ids:
+        placeholders = ','.join(['?'] * len(tag_ids))
+        valid_rows = db.execute(
+            f'SELECT id FROM settings_client_tags WHERE id IN ({placeholders})',
+            tag_ids,
+        ).fetchall()
+        valid_tag_ids = [row['id'] for row in valid_rows]
+    else:
+        valid_tag_ids = []
+
+    db.execute('DELETE FROM client_tag_assignments WHERE client_id = ?', (client_id,))
+    if valid_tag_ids:
+        db.executemany(
+            'INSERT OR IGNORE INTO client_tag_assignments (client_id, tag_id) VALUES (?, ?)',
+            [(client_id, tag_id) for tag_id in valid_tag_ids],
+        )
+
+
+@app.route('/api/settings/client-tags', methods=['GET'])
+def list_client_tags():
+    db = get_db()
+    rows = db.execute(
+        '''
+        SELECT
+            t.id,
+            t.name,
+            t.color,
+            COUNT(cta.client_id) AS usage_count
+        FROM settings_client_tags t
+        LEFT JOIN client_tag_assignments cta ON cta.tag_id = t.id
+        GROUP BY t.id
+        ORDER BY t.name COLLATE NOCASE ASC
+        '''
+    ).fetchall()
+    return jsonify([dict(row) for row in rows])
+
+
+@app.route('/api/settings/client-tags', methods=['POST'])
+def create_client_tag():
+    db = get_db()
+    data = request.json or {}
+    name = (data.get('name') or '').strip()
+
+    if not name:
+        return jsonify({'error': 'Tag name is required'}), 400
+
+    color = _normalize_client_tag_color(data.get('color'))
+
+    try:
+        cursor = db.execute(
+            'INSERT INTO settings_client_tags (name, color) VALUES (?, ?)',
+            (name, color),
+        )
+        db.commit()
+    except sqlite3.IntegrityError:
+        return jsonify({'error': 'A client tag with this name already exists'}), 400
+
+    row = db.execute(
+        '''
+        SELECT id, name, color, 0 AS usage_count
+        FROM settings_client_tags
+        WHERE id = ?
+        ''',
+        (cursor.lastrowid,),
+    ).fetchone()
+    return jsonify(dict(row)), 201
+
+
+@app.route('/api/settings/client-tags/<int:tag_id>', methods=['PUT'])
+def update_client_tag(tag_id):
+    db = get_db()
+    existing = db.execute('SELECT id FROM settings_client_tags WHERE id = ?', (tag_id,)).fetchone()
+    if existing is None:
+        return jsonify({'error': 'Client tag not found'}), 404
+
+    data = request.json or {}
+    name = (data.get('name') or '').strip()
+    if not name:
+        return jsonify({'error': 'Tag name is required'}), 400
+
+    color = _normalize_client_tag_color(data.get('color'))
+
+    try:
+        db.execute(
+            'UPDATE settings_client_tags SET name = ?, color = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            (name, color, tag_id),
+        )
+        db.commit()
+    except sqlite3.IntegrityError:
+        return jsonify({'error': 'A client tag with this name already exists'}), 400
+
+    row = db.execute(
+        '''
+        SELECT t.id, t.name, t.color, COUNT(cta.client_id) AS usage_count
+        FROM settings_client_tags t
+        LEFT JOIN client_tag_assignments cta ON cta.tag_id = t.id
+        WHERE t.id = ?
+        GROUP BY t.id
+        ''',
+        (tag_id,),
+    ).fetchone()
+    return jsonify(dict(row))
+
+
+@app.route('/api/settings/client-tags/<int:tag_id>', methods=['DELETE'])
+def delete_client_tag(tag_id):
+    db = get_db()
+    existing = db.execute('SELECT id FROM settings_client_tags WHERE id = ?', (tag_id,)).fetchone()
+    if existing is None:
+        return jsonify({'error': 'Client tag not found'}), 404
+
+    db.execute('DELETE FROM settings_client_tags WHERE id = ?', (tag_id,))
+    db.commit()
+    return jsonify({'message': 'Client tag deleted'})
+
+
 @app.route('/api/clients', methods=['GET'])
 def get_clients():
     db = get_db()
-    clients = db.execute('SELECT * FROM clients ORDER BY name').fetchall()
-    return jsonify([dict(c) for c in clients])
+    clients = db.execute('SELECT * FROM clients ORDER BY name COLLATE NOCASE ASC').fetchall()
+    return jsonify([_serialize_client_row(db, client) for client in clients])
+
 
 @app.route('/api/clients', methods=['POST'])
 def create_client():
-    data = request.json
-    name = data.get('name', '').strip()
+    data = request.json or {}
+    name = (data.get('name') or '').strip()
 
     if not name:
         return jsonify({'error': 'Client name is required'}), 400
@@ -1123,37 +1312,130 @@ def create_client():
     db = get_db()
     cursor = db.execute(
         'INSERT INTO clients (name, company, contact, email, phone, notes) VALUES (?, ?, ?, ?, ?, ?)',
-        (name, data.get('company'), data.get('contact'), data.get('email'), data.get('phone'), data.get('notes'))
+        (
+            name,
+            (data.get('company') or '').strip() or None,
+            (data.get('contact') or '').strip() or None,
+            (data.get('email') or '').strip() or None,
+            (data.get('phone') or '').strip() or None,
+            data.get('notes') or '',
+        ),
     )
+    client_id = cursor.lastrowid
+    _sync_client_tags(db, client_id, data.get('tag_ids'))
     db.commit()
 
-    client = db.execute('SELECT * FROM clients WHERE id = ?', (cursor.lastrowid,)).fetchone()
-    return jsonify(dict(client)), 201
+    client = db.execute('SELECT * FROM clients WHERE id = ?', (client_id,)).fetchone()
+    return jsonify(_serialize_client_row(db, client)), 201
+
 
 @app.route('/api/clients/<int:client_id>', methods=['PUT'])
 def update_client(client_id):
-    data = request.json
+    data = request.json or {}
     db = get_db()
 
-    name = data.get('name')
-    company = data.get('company')
-    contact = data.get('contact')
-    email = data.get('email')
-    phone = data.get('phone')
-    notes = data.get('notes')
+    existing, error = _get_client_or_404(db, client_id)
+    if error:
+        return error
+
+    name = (data.get('name') or '').strip()
+    if not name:
+        return jsonify({'error': 'Client name is required'}), 400
+
+    company = (data.get('company') or '').strip() or None
+    contact = ((data.get('contact') or '').strip() or None) if 'contact' in data else existing['contact']
+    email = (data.get('email') or '').strip() or None
+    phone = (data.get('phone') or '').strip() or None
+    notes = data.get('notes') or ''
 
     db.execute(
-        'UPDATE clients SET name=?, company=?, contact=?, email=?, phone=?, notes=?, updated_at=CURRENT_TIMESTAMP WHERE id=?',
-        (name, company, contact, email, phone, notes, client_id)
+        'UPDATE clients SET name = ?, company = ?, contact = ?, email = ?, phone = ?, notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        (
+            name,
+            company,
+            contact,
+            email,
+            phone,
+            notes,
+            client_id,
+        ),
+    )
+
+    old_name = (existing['name'] or '').strip()
+    if old_name and old_name.lower() != name.lower():
+        db.execute(
+            'UPDATE castings SET client_name = ?, client_company = ?, client_contact = ?, client_email = ? WHERE LOWER(client_name) = LOWER(?)',
+            (name, company, contact, email, old_name),
+        )
+
+    _sync_client_tags(db, client_id, data.get('tag_ids'))
+    db.commit()
+
+    client = db.execute('SELECT * FROM clients WHERE id = ?', (client_id,)).fetchone()
+    return jsonify(_serialize_client_row(db, client))
+
+
+@app.route('/api/clients/<int:client_id>/tags', methods=['POST'])
+def add_tag_to_client(client_id):
+    data = request.json or {}
+    db = get_db()
+
+    _, error = _get_client_or_404(db, client_id)
+    if error:
+        return error
+
+    tag_id = data.get('tag_id')
+    try:
+        tag_id = int(tag_id)
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Valid tag_id is required'}), 400
+
+    tag_exists = db.execute('SELECT id FROM settings_client_tags WHERE id = ?', (tag_id,)).fetchone()
+    if tag_exists is None:
+        return jsonify({'error': 'Client tag not found'}), 404
+
+    db.execute(
+        'INSERT OR IGNORE INTO client_tag_assignments (client_id, tag_id) VALUES (?, ?)',
+        (client_id, tag_id),
     )
     db.commit()
 
     client = db.execute('SELECT * FROM clients WHERE id = ?', (client_id,)).fetchone()
-    return jsonify(dict(client))
+    return jsonify(_serialize_client_row(db, client))
+
+
+@app.route('/api/clients/<int:client_id>/tags/<int:tag_id>', methods=['DELETE'])
+def remove_tag_from_client(client_id, tag_id):
+    db = get_db()
+
+    _, error = _get_client_or_404(db, client_id)
+    if error:
+        return error
+
+    db.execute(
+        'DELETE FROM client_tag_assignments WHERE client_id = ? AND tag_id = ?',
+        (client_id, tag_id),
+    )
+    db.commit()
+
+    client = db.execute('SELECT * FROM clients WHERE id = ?', (client_id,)).fetchone()
+    return jsonify(_serialize_client_row(db, client))
+
 
 @app.route('/api/clients/<int:client_id>', methods=['DELETE'])
 def delete_client(client_id):
     db = get_db()
+    client, error = _get_client_or_404(db, client_id)
+    if error:
+        return error
+
+    casting_count = db.execute(
+        'SELECT COUNT(*) AS count FROM castings WHERE LOWER(client_name) = LOWER(?)',
+        ((client['name'] or '').strip(),),
+    ).fetchone()['count']
+    if casting_count > 0:
+        return jsonify({'error': 'Cannot delete client with castings. Remove or reassign castings first.'}), 400
+
     db.execute('DELETE FROM clients WHERE id = ?', (client_id,))
     db.commit()
     return jsonify({'message': 'Client deleted'})
