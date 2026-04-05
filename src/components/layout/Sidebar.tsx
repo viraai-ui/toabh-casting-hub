@@ -71,33 +71,33 @@ export function Sidebar() {
                 key={item.path}
                 onClick={() => navigate(item.path)}
                 className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all duration-200',
                   isActive
-                    ? 'bg-amber-500/10 text-amber-600 border-l-4 border-amber-500 -ml-1 pl-4'
+                    ? 'bg-amber-50 text-amber-700 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.14)]'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
                   sidebarCollapsed && 'justify-center px-0'
                 )}
               >
-                <item.icon className={cn('w-5 h-5 flex-shrink-0', isActive && 'text-amber-500')} />
-                {!sidebarCollapsed && <span className="font-medium">{item.label}</span>}
+                <item.icon className={cn('w-5 h-5 flex-shrink-0', isActive && 'text-amber-600')} />
+                {!sidebarCollapsed && <span className={cn('font-medium', isActive && 'font-semibold')}>{item.label}</span>}
               </button>
             )
           })}
         </nav>
 
         {/* Bottom section */}
-        <div className="border-t border-white/10 p-3 space-y-2">
+        <div className="border-t border-white/10 p-3 space-y-3">
           {/* Collapse toggle */}
           <button
             onClick={toggleSidebar}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
+            className="w-full flex items-center justify-center gap-2 rounded-2xl border border-slate-200/70 bg-white/70 px-3 py-2 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700"
           >
             {sidebarCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-            {!sidebarCollapsed && <span className="text-sm">Collapse</span>}
+            {!sidebarCollapsed && <span className="text-sm font-medium">Collapse</span>}
           </button>
 
           {/* User */}
-          <div className={cn('flex items-center gap-3 px-3 py-2', sidebarCollapsed && 'justify-center')}>
+          <div className={cn('flex items-center gap-3 rounded-2xl bg-white/70 px-3 py-3', sidebarCollapsed && 'justify-center')}>
             {currentUser?.avatar ? (
               <img
                 src={toApiUrl(currentUser.avatar)}
@@ -122,10 +122,10 @@ export function Sidebar() {
           {!sidebarCollapsed && (
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-2 px-3 py-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className="w-full flex items-center gap-2 rounded-2xl px-3 py-2 text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
             >
               <LogOut className="w-4 h-4" />
-              <span className="text-sm">Logout</span>
+              <span className="text-sm font-medium">Logout</span>
             </button>
           )}
         </div>

@@ -251,13 +251,13 @@ export function CastingAssistant() {
         whileHover={{ y: -2, scale: 1.01 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => setOpen((value) => !value)}
-        className="fixed bottom-24 right-4 z-40 flex items-center gap-3 rounded-full border border-white/60 bg-[linear-gradient(135deg,rgba(15,23,42,0.96),rgba(30,41,59,0.92))] px-4 py-3 text-left text-white shadow-[0_20px_60px_rgba(15,23,42,0.32)] ring-1 ring-black/5 backdrop-blur-xl lg:bottom-6 lg:right-6"
+        className="fixed bottom-24 right-4 z-40 flex items-center gap-3 rounded-full border border-white/60 bg-[linear-gradient(135deg,rgba(15,23,42,0.96),rgba(30,41,59,0.92))] px-4 py-3 text-left text-white shadow-[0_20px_60px_rgba(15,23,42,0.32)] ring-1 ring-black/5 backdrop-blur-xl lg:bottom-4 lg:right-4 lg:px-2.5"
         aria-label={open ? 'Hide assistant' : 'Open assistant'}
       >
         <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-amber-500 text-slate-950 shadow-inner shadow-white/20">
           <Sparkles className="h-5 w-5" />
         </span>
-        <span className="hidden min-w-0 sm:block">
+        <span className="hidden min-w-0 sm:block lg:hidden">
           <span className="block text-xs uppercase tracking-[0.24em] text-amber-200/80">AI assistant</span>
           <span className="mt-0.5 block text-sm font-semibold">Ask the Casting Hub</span>
         </span>
