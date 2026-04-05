@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Users,
   Mail,
+  BellRing,
   LayoutDashboard,
   Tags,
 } from 'lucide-react'
@@ -19,6 +20,7 @@ import { RolesPermissions } from './settings/RolesPermissions'
 import { TeamManagement } from './settings/TeamManagement'
 import { DashboardSettings } from './settings/DashboardSettings'
 import { EmailAutomationHub } from './settings/EmailAutomationHub'
+import { NotificationsSettings } from './settings/NotificationsSettings'
 import { ClientTags } from './settings/ClientTags'
 import { cn } from '@/lib/utils'
 
@@ -30,6 +32,7 @@ const tabs = [
   { id: 'roles', label: 'Roles', icon: ShieldCheck },
   { id: 'team', label: 'Team', icon: Users },
   { id: 'email', label: 'Email', icon: Mail },
+  { id: 'notifications', label: 'Notifications', icon: BellRing },
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
 ] as const
 
@@ -150,6 +153,7 @@ export function Settings() {
               {activeTab === 'roles' && <RolesPermissions />}
               {activeTab === 'team' && <TeamManagement />}
               {activeTab === 'email' && <EmailAutomationHub />}
+              {activeTab === 'notifications' && <NotificationsSettings />}
               {activeTab === 'dashboard' && <DashboardSettings />}
             </motion.div>
           </div>
