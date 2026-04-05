@@ -202,17 +202,17 @@ export function ProfileDashboard({ open, onClose }: ProfileDashboardProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[90] bg-slate-900/40 backdrop-blur-sm"
+            className="fixed inset-0 z-[110] bg-slate-900/45 backdrop-blur-sm"
           />
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 20, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.98 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="fixed inset-0 z-[100] flex items-end justify-center p-0 sm:items-center sm:p-6"
+            className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6"
           >
-            <div className="flex h-[100dvh] w-full flex-col overflow-hidden rounded-none bg-white shadow-2xl sm:h-[min(88vh,760px)] sm:max-w-5xl sm:rounded-[28px]">
+            <div className="flex w-full max-w-[600px] flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl max-h-[min(90vh,760px)]">
               <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Profile</p>
@@ -224,11 +224,11 @@ export function ProfileDashboard({ open, onClose }: ProfileDashboardProps) {
               </div>
 
               {loading ? (
-                <div className="flex flex-1 items-center justify-center">
+                <div className="flex flex-1 items-center justify-center px-6 py-10">
                   <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
                 </div>
               ) : (
-                <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+                <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
                   <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
                     <div className="space-y-5">
                       <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
@@ -257,7 +257,7 @@ export function ProfileDashboard({ open, onClose }: ProfileDashboardProps) {
                           <User className="h-4 w-4 text-amber-500" />
                           <h3 className="text-sm font-semibold text-slate-900">Basic Info</h3>
                         </div>
-                        <div className="mt-4 space-y-3">
+                        <div className="mt-4 space-y-4">
                           <div>
                             <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">Name</label>
                             <input value={form.name} onChange={(e) => setForm((current) => ({ ...current, name: e.target.value }))} className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-100" />
