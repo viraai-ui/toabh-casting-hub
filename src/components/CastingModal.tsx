@@ -1,6 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, type ChangeEvent, type DragEvent } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Loader2, AlertCircle, Check } from 'lucide-react'
+import {
+  X,
+  Loader2,
+  AlertCircle,
+  Check,
+  Paperclip,
+  Upload,
+  FileText,
+  FileImage,
+  Presentation,
+  FileSpreadsheet,
+} from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import type { Casting, Client, TeamMember, PipelineStage, LeadSource } from '@/types'
@@ -15,6 +26,36 @@ interface CastingModalProps {
 const TABS = ['Overview', 'Team', 'Budget'] as const
 type Tab = typeof TABS[number]
 
+type PendingAttachment = {
+  id: string
+  file: File
+  status: 'pending' | 'uploading' | 'uploaded' | 'error'
+  error?: string
+}
+
+type UploadNotice = {
+  tone: 'success' | 'error' | 'info'
+  message: string
+}
+
+const ATTACHMENT_ACCEPT = '.pdf,.png,.jpg,.jpeg,.webp,.gif,.ppt,.pptx,.xls,.xlsx,.csv,.doc,.docx,.txt,.zip,.rar'
+
+function formatFileSize(size: number) {
+  if (size < 1024) return `${size} B`
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function attachmentIconForFile(file: File) {
+  const name = file.name.toLowerCase()
+  const mime = file.type.toLowerCase()
+
+  if (mime.startsWith('image/') || /\.(png|jpe?g|webp|gif|svg)$/.test(name)) return FileImage
+  if (/\.(ppt|pptx|key)$/.test(name)) return Presentation
+  if (/\.(xls|xlsx|csv)$/.test(name)) return FileSpreadsheet
+  return FileText
+}
+
 export function CastingModal({ open, onClose, casting, onSave }: CastingModalProps) {
   const [activeTab, setActiveTab] = useState<Tab>('Overview')
   const [loading, setLoading] = useState(false)
@@ -28,6 +69,11 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
   const [showClientModal, setShowClientModal] = useState(false)
   const [newClient, setNewClient] = useState({ name: '', phone: '', email: '', company: '' })
   const [creatingClient, setCreatingClient] = useState(false)
+  const [queuedAttachments, setQueuedAttachments] = useState<PendingAttachment[]>([])
+  const [isDragActive, setIsDragActive] = useState(false)
+  const [uploadNotice, setUploadNotice] = useState<UploadNotice | null>(null)
+  const [draftCastingId, setDraftCastingId] = useState<number | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [form, setForm] = useState({
     project_name: '',
@@ -55,6 +101,10 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
       setValidationErrors({})
       setTeamError('')
       setActiveTab('Overview')
+      setQueuedAttachments([])
+      setIsDragActive(false)
+      setUploadNotice(null)
+      setDraftCastingId(casting?.id ?? null)
       fetchData()
       if (casting) {
         let customFieldsData: { [key: string]: string } = {}
@@ -181,6 +231,105 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
     }
   }
 
+  const enqueueFiles = (fileList: FileList | File[]) => {
+    const incomingFiles = Array.from(fileList)
+    if (!incomingFiles.length) return
+
+    setUploadNotice(null)
+    setQueuedAttachments((current) => {
+      const existingKeys = new Set(current.map(({ file }) => `${file.name}-${file.size}-${file.lastModified}`))
+      const nextItems = incomingFiles
+        .filter((file) => {
+          const key = `${file.name}-${file.size}-${file.lastModified}`
+          if (existingKeys.has(key)) return false
+          existingKeys.add(key)
+          return true
+        })
+        .map((file) => ({
+          id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2, 8)}`,
+          file,
+          status: 'pending' as const,
+        }))
+
+      if (!nextItems.length) {
+        setUploadNotice({ tone: 'info', message: 'Those files are already added.' })
+        return current
+      }
+
+      return [...current, ...nextItems]
+    })
+  }
+
+  const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.length) {
+      enqueueFiles(e.target.files)
+      e.target.value = ''
+    }
+  }
+
+  const removeQueuedAttachment = (attachmentId: string) => {
+    setQueuedAttachments((current) => current.filter((attachment) => attachment.id !== attachmentId))
+    setUploadNotice(null)
+  }
+
+  const uploadQueuedAttachments = async (castingId: number) => {
+    if (!queuedAttachments.length) return
+
+    setQueuedAttachments((current) =>
+      current.map((attachment) => ({
+        ...attachment,
+        status: 'uploading' as const,
+        error: undefined,
+      }))
+    )
+
+    const results = await Promise.allSettled(
+      queuedAttachments.map(async (attachment) => {
+        const formData = new FormData()
+        formData.append('file', attachment.file)
+        await api.upload(`/castings/${castingId}/attachments`, formData)
+        return attachment.id
+      })
+    )
+
+    const failed = new Map<string, string>()
+    const uploadedIds = new Set<string>()
+
+    results.forEach((result, index) => {
+      const attachmentId = queuedAttachments[index]?.id
+      if (!attachmentId) return
+
+      if (result.status === 'fulfilled') {
+        uploadedIds.add(attachmentId)
+        return
+      }
+
+      failed.set(attachmentId, result.reason instanceof Error ? result.reason.message : 'Upload failed')
+    })
+
+    setQueuedAttachments((current) =>
+      current
+        .map((attachment) => {
+          if (uploadedIds.has(attachment.id)) {
+            return { ...attachment, status: 'uploaded' as const, error: undefined }
+          }
+          if (failed.has(attachment.id)) {
+            return { ...attachment, status: 'error' as const, error: failed.get(attachment.id) }
+          }
+          return attachment
+        })
+        .filter((attachment) => !uploadedIds.has(attachment.id))
+    )
+
+    if (failed.size) {
+      throw new Error(
+        failed.size === queuedAttachments.length
+          ? 'Attachments could not be uploaded.'
+          : `${failed.size} attachment${failed.size > 1 ? 's' : ''} could not be uploaded.`
+      )
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -202,13 +351,15 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
     }
 
     setSaving(true)
+    setUploadNotice(null)
+
     try {
       const payload = {
         project_name: form.project_name.trim(),
         client_name: form.client_name.trim(),
         client_company: form.client_company.trim(),
         client_contact: form.client_contact.trim(),
-        description: form.description.trim(),
+        requirements: form.description.trim(),
         shoot_date_start: form.shoot_date_start,
         shoot_date_end: form.shoot_date_end,
         location: form.location.trim(),
@@ -219,15 +370,36 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
         budget_max: form.budget_max ? Number(form.budget_max) : null,
         custom_fields: JSON.stringify(form.custom_fields),
       }
-      if (casting) {
-        await api.put(`/castings/${casting.id}`, payload)
+
+      let castingId = casting?.id ?? draftCastingId ?? null
+
+      if (castingId) {
+        await api.put(`/castings/${castingId}`, payload)
       } else {
-        await api.post('/castings', payload)
+        const response = (await api.post('/castings', payload)) as { id?: number }
+        castingId = response?.id ?? null
+        setDraftCastingId(castingId)
       }
+
+      if (castingId && queuedAttachments.length) {
+        await uploadQueuedAttachments(castingId)
+      }
+
+      if (queuedAttachments.length) {
+        setUploadNotice({
+          tone: 'success',
+          message: `Saved casting with ${queuedAttachments.length} attachment${queuedAttachments.length > 1 ? 's' : ''}.`,
+        })
+      }
+
       onSave()
       onClose()
     } catch (err) {
       console.error('Failed to save:', err)
+      setUploadNotice({
+        tone: 'error',
+        message: err instanceof Error ? err.message : 'Failed to save casting.',
+      })
     } finally {
       setSaving(false)
     }
@@ -494,73 +666,217 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
                         </div>
                       </div>
 
-                      {/* ======= DYNAMIC CUSTOM FIELDS ======= */}
-                      {customFields.length > 0 && (
-                        <div className="border-t border-slate-200 pt-3 sm:pt-4 mt-2">
+                      <div className="border-t border-slate-200 pt-3 sm:pt-4 mt-2 space-y-3 sm:space-y-4">
+                        <div>
                           <p className="text-[11px] sm:text-xs font-medium text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">
-                            Additional Information
+                            Attachments
                           </p>
-                          <div className="space-y-3 sm:space-y-4">
-                            {customFields.map((field) => (
-                              <div key={field.id}>
-                                <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
-                                  {field.name}
-                                </label>
-                                {field.type === 'text' && (
-                                  <input
-                                    type="text"
-                                    value={form.custom_fields?.[field.id] || ''}
-                                    onChange={(e) => setForm({
-                                      ...form,
-                                      custom_fields: { ...form.custom_fields, [field.id]: e.target.value }
-                                    })}
-                                    className="w-full px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                                    placeholder={`Enter ${field.name.toLowerCase()}`}
-                                  />
-                                )}
-                                {field.type === 'number' && (
-                                  <input
-                                    type="number"
-                                    value={form.custom_fields?.[field.id] || ''}
-                                    onChange={(e) => setForm({
-                                      ...form,
-                                      custom_fields: { ...form.custom_fields, [field.id]: e.target.value }
-                                    })}
-                                    className="w-full px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                                    placeholder={`Enter ${field.name.toLowerCase()}`}
-                                  />
-                                )}
-                                {field.type === 'date' && (
-                                  <input
-                                    type="date"
-                                    value={form.custom_fields?.[field.id] || ''}
-                                    onChange={(e) => setForm({
-                                      ...form,
-                                      custom_fields: { ...form.custom_fields, [field.id]: e.target.value }
-                                    })}
-                                    className="w-full px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                                  />
-                                )}
-                                {field.type === 'dropdown' && (
-                                  <select
-                                    value={form.custom_fields?.[field.id] || ''}
-                                    onChange={(e) => setForm({
-                                      ...form,
-                                      custom_fields: { ...form.custom_fields, [field.id]: e.target.value }
-                                    })}
-                                    className="w-full px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50 truncate"
-                                  >
-                                    <option value="">Select...</option>
-                                    {(Array.isArray(field.options) ? field.options : (field.options || '').split(',')).map((opt: string, i: number) => (
-                                      <option key={i} value={opt.trim()}>{opt.trim()}</option>
-                                    ))}
-                                  </select>
-                                )}
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 sm:p-4">
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              multiple
+                              accept={ATTACHMENT_ACCEPT}
+                              onChange={handleFileSelection}
+                              className="hidden"
+                            />
+
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => fileInputRef.current?.click()}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                  event.preventDefault()
+                                  fileInputRef.current?.click()
+                                }
+                              }}
+                              onDragEnter={(event) => {
+                                event.preventDefault()
+                                setIsDragActive(true)
+                              }}
+                              onDragOver={(event) => {
+                                event.preventDefault()
+                                setIsDragActive(true)
+                              }}
+                              onDragLeave={(event) => {
+                                event.preventDefault()
+                                const relatedTarget = event.relatedTarget as Node | null
+                                if (!relatedTarget || !event.currentTarget.contains(relatedTarget)) {
+                                  setIsDragActive(false)
+                                }
+                              }}
+                              onDrop={(event) => {
+                                event.preventDefault()
+                                setIsDragActive(false)
+                                if (event.dataTransfer.files?.length) {
+                                  enqueueFiles(event.dataTransfer.files)
+                                }
+                              }}
+                              className={cn(
+                                'flex min-h-[148px] flex-col items-center justify-center rounded-2xl border border-dashed px-4 py-5 text-center transition-all',
+                                isDragActive
+                                  ? 'border-amber-400 bg-amber-50 text-amber-700'
+                                  : 'border-slate-300 bg-white text-slate-600 hover:border-amber-300 hover:bg-amber-50/40 hover:text-slate-900'
+                              )}
+                            >
+                              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+                                <Paperclip className="h-5 w-5" />
                               </div>
-                            ))}
+                              <p className="text-sm font-semibold text-slate-900">Drag and drop files here</p>
+                              <p className="mt-1 text-xs sm:text-sm text-slate-500">
+                                PDF, images, PPT, Excel, Word, text, ZIP and more
+                              </p>
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  fileInputRef.current?.click()
+                                }}
+                                className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+                              >
+                                <Upload className="h-4 w-4" />
+                                Browse Files
+                              </button>
+                            </div>
+
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <span className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500 ring-1 ring-slate-200">
+                                Multiple files supported
+                              </span>
+                              <span className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500 ring-1 ring-slate-200">
+                                Files upload when you save the casting
+                              </span>
+                            </div>
+
+                            {uploadNotice && (
+                              <div
+                                className={cn(
+                                  'mt-3 rounded-xl border px-3 py-2 text-xs sm:text-sm',
+                                  uploadNotice.tone === 'error'
+                                    ? 'border-red-200 bg-red-50 text-red-600'
+                                    : uploadNotice.tone === 'success'
+                                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                      : 'border-slate-200 bg-white text-slate-600'
+                                )}
+                              >
+                                {uploadNotice.message}
+                              </div>
+                            )}
+
+                            {queuedAttachments.length > 0 && (
+                              <div className="mt-4 space-y-2">
+                                {queuedAttachments.map((attachment) => {
+                                  const AttachmentIcon = attachmentIconForFile(attachment.file)
+                                  return (
+                                    <div
+                                      key={attachment.id}
+                                      className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3"
+                                    >
+                                      <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                                        <AttachmentIcon className="h-4 w-4" />
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-medium text-slate-900">{attachment.file.name}</p>
+                                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                                          <span>{formatFileSize(attachment.file.size)}</span>
+                                          <span className="text-slate-300">•</span>
+                                          <span>
+                                            {attachment.status === 'uploading'
+                                              ? 'Uploading…'
+                                              : attachment.status === 'error'
+                                                ? 'Needs retry'
+                                                : 'Ready to upload'}
+                                          </span>
+                                        </div>
+                                        {attachment.error && (
+                                          <p className="mt-1 text-xs text-red-500">{attachment.error}</p>
+                                        )}
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={() => removeQueuedAttachment(attachment.id)}
+                                        disabled={saving || attachment.status === 'uploading'}
+                                        className="inline-flex min-h-[36px] items-center justify-center rounded-xl px-2 py-1 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                                      >
+                                        Remove
+                                      </button>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )}
                           </div>
                         </div>
-                      )}
+
+                        {/* ======= DYNAMIC CUSTOM FIELDS ======= */}
+                        {customFields.length > 0 && (
+                          <div>
+                            <p className="text-[11px] sm:text-xs font-medium text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">
+                              Additional Information
+                            </p>
+                            <div className="space-y-3 sm:space-y-4">
+                              {customFields.map((field) => (
+                                <div key={field.id}>
+                                  <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
+                                    {field.name}
+                                  </label>
+                                  {field.type === 'text' && (
+                                    <input
+                                      type="text"
+                                      value={form.custom_fields?.[field.id] || ''}
+                                      onChange={(e) => setForm({
+                                        ...form,
+                                        custom_fields: { ...form.custom_fields, [field.id]: e.target.value }
+                                      })}
+                                      className="w-full px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                                      placeholder={`Enter ${field.name.toLowerCase()}`}
+                                    />
+                                  )}
+                                  {field.type === 'number' && (
+                                    <input
+                                      type="number"
+                                      value={form.custom_fields?.[field.id] || ''}
+                                      onChange={(e) => setForm({
+                                        ...form,
+                                        custom_fields: { ...form.custom_fields, [field.id]: e.target.value }
+                                      })}
+                                      className="w-full px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                                      placeholder={`Enter ${field.name.toLowerCase()}`}
+                                    />
+                                  )}
+                                  {field.type === 'date' && (
+                                    <input
+                                      type="date"
+                                      value={form.custom_fields?.[field.id] || ''}
+                                      onChange={(e) => setForm({
+                                        ...form,
+                                        custom_fields: { ...form.custom_fields, [field.id]: e.target.value }
+                                      })}
+                                      className="w-full px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                                    />
+                                  )}
+                                  {field.type === 'dropdown' && (
+                                    <select
+                                      value={form.custom_fields?.[field.id] || ''}
+                                      onChange={(e) => setForm({
+                                        ...form,
+                                        custom_fields: { ...form.custom_fields, [field.id]: e.target.value }
+                                      })}
+                                      className="w-full px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50 truncate"
+                                    >
+                                      <option value="">Select...</option>
+                                      {(Array.isArray(field.options) ? field.options : (field.options || '').split(',')).map((opt: string, i: number) => (
+                                        <option key={i} value={opt.trim()}>{opt.trim()}</option>
+                                      ))}
+                                    </select>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
