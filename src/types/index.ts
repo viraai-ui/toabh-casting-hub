@@ -113,6 +113,7 @@ export interface CustomField {
   name: string
   type: 'text' | 'dropdown' | 'date' | 'number' | 'file'
   tab: string
+  entity?: 'clients' | 'jobs' | 'tasks'
   options?: string | string[]
   required: boolean
 }
@@ -126,6 +127,25 @@ export interface Role {
 export interface Permission {
   id: string
   name: string
+}
+
+export interface Task {
+  id: number
+  title: string
+  description?: string
+  status: string
+  due_date?: string | null
+  custom_fields?: string
+  created_at: string
+  updated_at: string
+  assigned_to: Array<{ id: number; name: string; role?: string; email?: string; avatar_url?: string }>
+}
+
+export interface TaskStage {
+  id: number
+  name: string
+  color: string
+  sort_order?: number
 }
 
 export interface DashboardStats {
