@@ -11,7 +11,7 @@ from email.mime.multipart import MIMEMultipart
 from flask import Flask, request, jsonify, g, send_from_directory, send_file
 from werkzeug.serving import make_server
 from dotenv import load_dotenv
-from utils.assistant import query_casting_assistant
+from backend.utils.assistant import query_casting_assistant
 import threading
 
 BASE_DIR = os.path.dirname(__file__)
@@ -1271,10 +1271,7 @@ def dashboard():
 
 @app.route('/api/parse', methods=['POST'])
 def parse_message():
-    import sys
-    import os
-    sys.path.insert(0, os.path.dirname(__file__))
-    from utils.parser import parse_casting_message
+    from backend.utils.parser import parse_casting_message
     data = request.json
     raw_text = data.get('text', '')
 
