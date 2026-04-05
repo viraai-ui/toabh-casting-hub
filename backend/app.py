@@ -1781,7 +1781,7 @@ def update_dashboard_modules():
         json.dump(data, f)
     return jsonify(data)
 
-# Workflow automation settings (Phase 5 ready foundation)
+# Notification preferences
 @app.route('/api/settings/automation-rules', methods=['GET'])
 def get_automation_rules():
     os.makedirs(SETTINGS_DIR, exist_ok=True)
@@ -1790,28 +1790,28 @@ def get_automation_rules():
             {
                 'id': 'note_mention',
                 'label': 'Note mentions',
-                'description': 'Prepare alerts when a teammate is mentioned in an internal note.',
+                'description': 'Get notified when someone mentions you in an internal note.',
                 'channels': ['in_app', 'email'],
                 'enabled': True,
             },
             {
                 'id': 'attachment_uploaded',
                 'label': 'Attachment uploaded',
-                'description': 'Queue notifications when a new brief, deck, or document is added.',
+                'description': 'Stay updated when a new brief, deck, or file is added.',
                 'channels': ['in_app'],
                 'enabled': True,
             },
             {
                 'id': 'status_changed',
                 'label': 'Status changed',
-                'description': 'Keep the team informed when a casting moves across the pipeline.',
+                'description': 'Get an update when a job moves to a new stage.',
                 'channels': ['in_app', 'email'],
                 'enabled': True,
             },
             {
                 'id': 'assignment_changed',
                 'label': 'Assignment changed',
-                'description': 'Trigger future handoff alerts when owners are updated.',
+                'description': 'Know when a job is assigned or reassigned.',
                 'channels': ['in_app', 'email'],
                 'enabled': True,
             },
@@ -1830,7 +1830,7 @@ def update_automation_rules():
     os.makedirs(SETTINGS_DIR, exist_ok=True)
     with open(os.path.join(SETTINGS_DIR, 'automation_rules.json'), 'w') as f:
         json.dump(payload, f)
-    return jsonify({'message': 'Automation rules saved', 'rules': payload['rules']})
+    return jsonify({'message': 'Notification settings saved', 'rules': payload['rules']})
 
 # Email config (store SMTP settings - basic)
 @app.route('/api/settings/email-config', methods=['GET'])
