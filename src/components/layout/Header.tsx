@@ -7,7 +7,7 @@ import { useOverlay } from '@/hooks/useOverlayManager'
 import { api, toApiUrl } from '@/lib/api'
 import { getInitials } from '@/lib/utils'
 import type { Activity } from '@/types'
-import { logout } from '@/lib/auth'
+import { logout } from '@/lib/api'
 
 const pageTitles: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
