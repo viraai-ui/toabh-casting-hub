@@ -30,6 +30,7 @@ export function ClientTagPill({
         className,
       )}
       style={getClientTagStyles(tag.color)}
+      onClick={(event) => event.stopPropagation()}
     >
       <span className="truncate max-w-[120px]">{tag.name}</span>
       {onRemove && (
