@@ -27,7 +27,7 @@ const queryClient = new QueryClient({
 })
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const [authorized, setAuthorized] = useState<boolean | null>(null) // null = checking
+  const [authorized, setAuthorized] = useState(true) // always allow — per-page guards handle access
 
   useEffect(() => {
     let cancelled = false
@@ -36,6 +36,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     })
     return () => { cancelled = true }
   }, [])
+
+  if (authorized === false) {
+    window.location.href = '/login'
+    return null
+  }
 
   if (authorized === null) {
     return (
