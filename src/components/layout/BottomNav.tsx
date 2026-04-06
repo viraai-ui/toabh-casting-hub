@@ -7,6 +7,7 @@ import {
   Plus,
   Users,
   Calendar,
+  CheckSquare,
   MoreHorizontal,
   X,
   Activity,
@@ -28,6 +29,7 @@ const mainItems = [
 
 // More sheet: Calendar, Activity, Reports, Settings
 const moreItems = [
+  { icon: CheckSquare, label: 'Tasks', path: '/tasks' },
   { icon: Calendar, label: 'Calendar', path: '/calendar' },
   { icon: Activity, label: 'Activity', path: '/activity' },
   { icon: BarChart3, label: 'Reports', path: '/reports' },

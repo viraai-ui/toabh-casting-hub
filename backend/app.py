@@ -194,6 +194,48 @@ def init_db():
             created_at TEXT DEFAULT (datetime('now')),
             FOREIGN KEY (casting_id) REFERENCES castings(id) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT DEFAULT '',
+            status TEXT DEFAULT 'Not Started',
+            due_date TEXT,
+            priority TEXT DEFAULT 'NORMAL',
+            custom_fields TEXT DEFAULT '{}',
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS task_assignments (
+            task_id INTEGER,
+            team_member_id INTEGER,
+            PRIMARY KEY (task_id, team_member_id),
+            FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+            FOREIGN KEY (team_member_id) REFERENCES team_members(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS task_comments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id INTEGER NOT NULL,
+            user_name TEXT,
+            text TEXT,
+            parent_id INTEGER,
+            mentions TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS task_activities (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id INTEGER NOT NULL,
+            team_member_id INTEGER,
+            action TEXT,
+            details TEXT,
+            timestamp TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+            FOREIGN KEY (team_member_id) REFERENCES team_members(id) ON DELETE SET NULL
+        );
     ''')
 
     # Add custom_fields column if it doesn't exist (for existing databases)
@@ -243,6 +285,52 @@ def init_db():
             file_ext TEXT,
             created_at TEXT DEFAULT (datetime('now')),
             FOREIGN KEY (casting_id) REFERENCES castings(id) ON DELETE CASCADE
+        )
+    ''')
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT DEFAULT '',
+            status TEXT DEFAULT 'Not Started',
+            due_date TEXT,
+            priority TEXT DEFAULT 'NORMAL',
+            custom_fields TEXT DEFAULT '{}',
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        )
+    ''')
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS task_assignments (
+            task_id INTEGER,
+            team_member_id INTEGER,
+            PRIMARY KEY (task_id, team_member_id),
+            FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+            FOREIGN KEY (team_member_id) REFERENCES team_members(id) ON DELETE CASCADE
+        )
+    ''')
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS task_comments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id INTEGER NOT NULL,
+            user_name TEXT,
+            text TEXT,
+            parent_id INTEGER,
+            mentions TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+        )
+    ''')
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS task_activities (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id INTEGER NOT NULL,
+            team_member_id INTEGER,
+            action TEXT,
+            details TEXT,
+            timestamp TEXT DEFAULT (datetime('now')),
+            FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+            FOREIGN KEY (team_member_id) REFERENCES team_members(id) ON DELETE SET NULL
         )
     ''')
 
@@ -326,6 +414,9 @@ def init_db():
 
     db.commit()
 
+with app.app_context():
+    init_db()
+
 # ==================== ACTIVITIES ROUTES ====================
 
 @app.route('/api/health', methods=['GET'])
@@ -359,6 +450,335 @@ def list_activities():
 
     rows = db.execute(query, params).fetchall()
     return jsonify({'activities': [_activity_row_to_dict(row) for row in rows]})
+
+
+def _load_task_stages():
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
+    default_stages = [
+        {'id': 1, 'name': 'Not Started', 'color': '#94a3b8', 'sort_order': 0},
+        {'id': 2, 'name': 'In Progress', 'color': '#f59e0b', 'sort_order': 1},
+        {'id': 3, 'name': 'Completed', 'color': '#22c55e', 'sort_order': 2},
+    ]
+    try:
+        with open(os.path.join(SETTINGS_DIR, 'task_stages.json')) as f:
+            stages = json.load(f)
+            return stages if isinstance(stages, list) and stages else default_stages
+    except Exception:
+        return default_stages
+
+
+def _save_task_stages(stages):
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
+    with open(os.path.join(SETTINGS_DIR, 'task_stages.json'), 'w') as f:
+        json.dump(stages, f)
+
+
+def _load_notification_rules():
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
+    try:
+        with open(os.path.join(SETTINGS_DIR, 'automation_rules.json')) as f:
+            payload = json.load(f)
+            return payload.get('rules', []) if isinstance(payload, dict) else []
+    except Exception:
+        return []
+
+
+def _notification_channels(rule_id):
+    for rule in _load_notification_rules():
+        if rule.get('id') == rule_id and rule.get('enabled', True):
+            return rule.get('channels', []) or []
+    return []
+
+
+def _send_email_notification(recipient, subject, message):
+    if not recipient:
+        return
+    try:
+        with open(os.path.join(SETTINGS_DIR, 'email_config.json')) as f:
+            config = json.load(f)
+    except Exception:
+        return
+
+    host = config.get('smtp_host') or ''
+    username = config.get('smtp_username') or ''
+    password = config.get('smtp_password') or ''
+    from_email = config.get('from_email') or config.get('from_address') or username
+    from_name = config.get('from_name') or 'TOABH'
+    port = int(config.get('smtp_port') or 587)
+    if not host or not username or not password or not from_email:
+        return
+
+    msg = MIMEMultipart()
+    msg['From'] = f'{from_name} <{from_email}>'
+    msg['To'] = recipient
+    msg['Subject'] = subject
+    msg.attach(MIMEText(message, 'plain'))
+
+    server = smtplib.SMTP(host, port, timeout=10)
+    server.ehlo()
+    server.starttls()
+    server.login(username, password)
+    server.sendmail(from_email, [recipient], msg.as_string())
+    server.quit()
+
+
+def _serialize_task_row(db, row):
+    task = dict(row)
+    task['assigned_to'] = [dict(item) for item in db.execute(
+        '''
+        SELECT tm.id, tm.name, COALESCE(tm.role, '') as role, COALESCE(tm.email, '') as email, COALESCE(tm.avatar_url, '') as avatar_url
+        FROM task_assignments ta
+        INNER JOIN team_members tm ON tm.id = ta.team_member_id
+        WHERE ta.task_id = ?
+        ORDER BY tm.name COLLATE NOCASE ASC
+        ''',
+        (row['id'],)
+    ).fetchall()]
+    return task
+
+
+def _create_task_activity(db, task_id, action, details, team_member_id=None):
+    db.execute(
+        'INSERT INTO task_activities (task_id, team_member_id, action, details) VALUES (?, ?, ?, ?)',
+        (task_id, team_member_id, action, details),
+    )
+
+
+@app.route('/api/tasks', methods=['GET', 'POST'])
+def tasks():
+    db = get_db()
+
+    if request.method == 'POST':
+        data = request.get_json() or {}
+        title = (data.get('title') or '').strip()
+        if not title:
+            return jsonify({'error': 'Task title is required'}), 400
+
+        stage_names = {stage['name'] for stage in _load_task_stages()}
+        status = (data.get('status') or 'Not Started').strip()
+        if status not in stage_names:
+            status = 'Not Started'
+
+        description = (data.get('description') or '').strip()
+        due_date = (data.get('due_date') or '').strip() or None
+        priority = (data.get('priority') or 'NORMAL').strip() or 'NORMAL'
+        custom_fields = json.dumps(data.get('custom_fields') or {})
+        assignee_ids = [int(item) for item in data.get('assignee_ids', []) if str(item).isdigit()]
+
+        cursor = db.execute(
+            'INSERT INTO tasks (title, description, status, due_date, priority, custom_fields) VALUES (?, ?, ?, ?, ?, ?)',
+            (title, description, status, due_date, priority, custom_fields),
+        )
+        task_id = cursor.lastrowid
+        for member_id in assignee_ids:
+            db.execute('INSERT OR IGNORE INTO task_assignments (task_id, team_member_id) VALUES (?, ?)', (task_id, member_id))
+
+        _create_task_activity(db, task_id, 'CREATED', f'Task created: {title}')
+        if assignee_ids:
+            _create_task_activity(db, task_id, 'ASSIGNED', 'Task assigned')
+            if 'email' in _notification_channels('assignment_changed'):
+                members = db.execute(
+                    f"SELECT name, email FROM team_members WHERE id IN ({','.join('?' for _ in assignee_ids)})",
+                    assignee_ids,
+                ).fetchall()
+                for member in members:
+                    try:
+                        _send_email_notification(member['email'], f'New task assigned: {title}', f'Hi {member["name"]},\n\nA new task has been assigned to you: {title}.')
+                    except Exception:
+                        pass
+
+        db.commit()
+        created = db.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
+        return jsonify(_serialize_task_row(db, created)), 201
+
+    query = 'SELECT DISTINCT t.* FROM tasks t LEFT JOIN task_assignments ta ON ta.task_id = t.id'
+    conditions = []
+    params = []
+
+    team_member_id = request.args.get('team_member_id')
+    if team_member_id:
+        conditions.append('ta.team_member_id = ?')
+        params.append(int(team_member_id))
+
+    filter_name = (request.args.get('filter') or '').strip().lower()
+    if filter_name == 'completed':
+        conditions.append('LOWER(t.status) = LOWER(?)')
+        params.append('Completed')
+    elif filter_name == 'overdue':
+        conditions.append("t.due_date IS NOT NULL AND t.due_date != '' AND date(t.due_date) < date('now') AND LOWER(t.status) != LOWER('Completed')")
+
+    if conditions:
+        query += ' WHERE ' + ' AND '.join(conditions)
+
+    query += ' ORDER BY CASE WHEN LOWER(t.status)=LOWER(\'Completed\') THEN 1 ELSE 0 END, COALESCE(t.due_date, "9999-12-31") ASC, t.created_at DESC'
+    rows = db.execute(query, params).fetchall()
+    return jsonify([_serialize_task_row(db, row) for row in rows])
+
+
+@app.route('/api/tasks/<int:task_id>', methods=['GET', 'PUT', 'DELETE'])
+def task_detail(task_id):
+    db = get_db()
+    row = db.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
+    if row is None:
+        return jsonify({'error': 'Task not found'}), 404
+
+    if request.method == 'GET':
+        return jsonify(_serialize_task_row(db, row))
+
+    if request.method == 'DELETE':
+        db.execute('DELETE FROM tasks WHERE id = ?', (task_id,))
+        db.commit()
+        return jsonify({'success': True})
+
+    data = request.get_json() or {}
+    title = (data.get('title') or row['title'] or '').strip()
+    if not title:
+        return jsonify({'error': 'Task title is required'}), 400
+    description = (data.get('description') if data.get('description') is not None else row['description'] or '').strip()
+    due_date = (data.get('due_date') if data.get('due_date') is not None else row['due_date'] or '').strip() or None
+    status = (data.get('status') if data.get('status') is not None else row['status'] or 'Not Started').strip()
+    priority = (data.get('priority') if data.get('priority') is not None else row['priority'] or 'NORMAL').strip() or 'NORMAL'
+    custom_fields = json.dumps(data.get('custom_fields') if data.get('custom_fields') is not None else json.loads(row['custom_fields'] or '{}'))
+
+    db.execute(
+        'UPDATE tasks SET title = ?, description = ?, status = ?, due_date = ?, priority = ?, custom_fields = ?, updated_at = datetime(\'now\') WHERE id = ?',
+        (title, description, status, due_date, priority, custom_fields, task_id),
+    )
+    if 'assignee_ids' in data:
+        assignee_ids = [int(item) for item in data.get('assignee_ids', []) if str(item).isdigit()]
+        db.execute('DELETE FROM task_assignments WHERE task_id = ?', (task_id,))
+        for member_id in assignee_ids:
+            db.execute('INSERT OR IGNORE INTO task_assignments (task_id, team_member_id) VALUES (?, ?)', (task_id, member_id))
+        _create_task_activity(db, task_id, 'ASSIGNED', 'Task assignment updated')
+
+    _create_task_activity(db, task_id, 'UPDATED', f'Task updated: {title}')
+    db.commit()
+    updated = db.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
+    return jsonify(_serialize_task_row(db, updated))
+
+
+@app.route('/api/tasks/<int:task_id>/status', methods=['PUT'])
+def update_task_status(task_id):
+    db = get_db()
+    row = db.execute('SELECT id, status FROM tasks WHERE id = ?', (task_id,)).fetchone()
+    if row is None:
+        return jsonify({'error': 'Task not found'}), 404
+    data = request.get_json() or {}
+    status = (data.get('status') or '').strip()
+    if not status:
+        return jsonify({'error': 'Status is required'}), 400
+    db.execute('UPDATE tasks SET status = ?, updated_at = datetime(\'now\') WHERE id = ?', (status, task_id))
+    _create_task_activity(db, task_id, 'STATUS_CHANGED', f'Status changed from {row["status"]} to {status}')
+    db.commit()
+    updated = db.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
+    return jsonify(_serialize_task_row(db, updated))
+
+
+@app.route('/api/tasks/<int:task_id>/comments', methods=['GET', 'POST'])
+def task_comments(task_id):
+    db = get_db()
+    task = db.execute('SELECT id, title FROM tasks WHERE id = ?', (task_id,)).fetchone()
+    if task is None:
+        return jsonify({'error': 'Task not found'}), 404
+
+    if request.method == 'GET':
+        rows = db.execute('SELECT * FROM task_comments WHERE task_id = ? ORDER BY created_at ASC, id ASC', (task_id,)).fetchall()
+        comments = []
+        for row in rows:
+            comments.append({
+                'id': row['id'],
+                'task_id': row['task_id'],
+                'user_name': row['user_name'] or 'Team',
+                'text': row['text'] or '',
+                'parent_id': row['parent_id'],
+                'mentions': json.loads(row['mentions'] or '[]'),
+                'created_at': row['created_at'],
+            })
+        return jsonify(comments)
+
+    data = request.get_json() or {}
+    text = (data.get('text') or '').strip()
+    if not text:
+        return jsonify({'error': 'Comment text is required'}), 400
+    user_name = (data.get('user_name') or 'Team').strip() or 'Team'
+    parent_id = data.get('parent_id')
+    mentions = data.get('mentions') if isinstance(data.get('mentions'), list) else _extract_mentions(text)
+    cursor = db.execute(
+        'INSERT INTO task_comments (task_id, user_name, text, parent_id, mentions) VALUES (?, ?, ?, ?, ?)',
+        (task_id, user_name, text, parent_id, json.dumps(mentions)),
+    )
+    _create_task_activity(db, task_id, 'COMMENT', f'Comment added by {user_name}')
+    if mentions and 'email' in _notification_channels('note_mention'):
+        members = db.execute(
+            'SELECT name, email FROM team_members WHERE LOWER(name) IN (' + ','.join('?' for _ in mentions) + ')',
+            [mention.replace('.', ' ').lower() for mention in mentions],
+        ).fetchall()
+        for member in members:
+            try:
+                _send_email_notification(member['email'], f'Mentioned in task: {task["title"]}', f'Hi {member["name"]},\n\nYou were mentioned in task "{task["title"]}".')
+            except Exception:
+                pass
+    db.commit()
+    return jsonify({
+        'id': cursor.lastrowid,
+        'task_id': task_id,
+        'user_name': user_name,
+        'text': text,
+        'parent_id': parent_id,
+        'mentions': mentions,
+        'created_at': datetime.now().isoformat(),
+    }), 201
+
+
+@app.route('/api/tasks/<int:task_id>/activities', methods=['GET'])
+def task_activities(task_id):
+    db = get_db()
+    rows = db.execute(
+        '''
+        SELECT ta.id, ta.task_id, ta.action, ta.details as description,
+               COALESCE(tm.name, ta.details) as user_name, ta.timestamp as created_at
+        FROM task_activities ta
+        LEFT JOIN team_members tm ON ta.team_member_id = tm.id
+        WHERE ta.task_id = ?
+        ORDER BY ta.timestamp DESC, ta.id DESC
+        ''',
+        (task_id,),
+    ).fetchall()
+    return jsonify([dict(row) for row in rows])
+
+
+@app.route('/api/settings/task-stages', methods=['GET', 'PUT', 'POST'])
+def task_stages():
+    if request.method == 'GET':
+        return jsonify(_load_task_stages())
+
+    data = request.get_json() or {}
+    if request.method == 'POST':
+        stages = _load_task_stages()
+        next_id = max([int(stage.get('id', 0)) for stage in stages] + [0]) + 1
+        new_stage = {
+            'id': next_id,
+            'name': (data.get('name') or '').strip() or f'Stage {next_id}',
+            'color': (data.get('color') or '#6366f1').strip(),
+            'sort_order': len(stages),
+        }
+        stages.append(new_stage)
+        _save_task_stages(stages)
+        return jsonify(new_stage), 201
+
+    stages = data.get('stages') if isinstance(data.get('stages'), list) else data
+    if not isinstance(stages, list):
+        return jsonify({'error': 'Stages payload is required'}), 400
+    normalized = []
+    for index, stage in enumerate(stages):
+        normalized.append({
+            'id': int(stage.get('id', index + 1)),
+            'name': (stage.get('name') or '').strip() or f'Stage {index + 1}',
+            'color': (stage.get('color') or '#6366f1').strip(),
+            'sort_order': int(stage.get('sort_order', index)),
+        })
+    _save_task_stages(normalized)
+    return jsonify(normalized)
 
 
 @app.route('/api/notifications', methods=['GET'])
