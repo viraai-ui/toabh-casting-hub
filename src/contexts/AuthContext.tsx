@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { api } from '@/lib/api'
-import { setSession, getSession, clearSession } from '@/lib/session'
+import { getSessionUser, clearSession } from '@/lib/session'
 
 interface User {
   id: number
@@ -60,14 +60,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     (async () => {
       const sess = getSession()
-      if (!sess?.token) {
+      if (!sessionStorage.getItem("toabh_session")) {
         setLoading(false)
         return
       }
 
       try {
         // Set token for all API calls
-        api.setToken(sess.token)
         const userData = await api.get('/auth/me') as User
         setUser(userData)
         const perms = await fetchPermissions(userData.role)
