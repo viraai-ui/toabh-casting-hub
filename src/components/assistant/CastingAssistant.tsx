@@ -86,9 +86,9 @@ export function CastingAssistant() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.96 }}
             transition={{ duration: 0.18 }}
-            className="fixed bottom-24 right-4 z-50 w-[calc(100vw-2rem)] max-w-[420px] overflow-hidden rounded-[28px] border border-white/60 bg-slate-950 text-white shadow-[0_25px_80px_rgba(15,23,42,0.35)] backdrop-blur-2xl lg:bottom-6 lg:right-6"
+            className="fixed bottom-24 right-4 z-50 flex flex-col w-[calc(100vw-2rem)] max-w-[420px] max-h-[85vh] overflow-hidden rounded-[28px] border border-white/60 bg-slate-950 text-white shadow-[0_25px_80px_rgba(15,23,42,0.35)] backdrop-blur-2xl lg:bottom-6 lg:right-6"
           >
-            <div className="relative overflow-hidden border-b border-white/10 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.25),_transparent_55%),linear-gradient(135deg,rgba(15,23,42,0.96),rgba(30,41,59,0.94))] p-5">
+            <div className="relative shrink-0 overflow-hidden border-b border-white/10 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.25),_transparent_55%),linear-gradient(135deg,rgba(15,23,42,0.96),rgba(30,41,59,0.94))] p-5">
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/80 to-transparent" />
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
@@ -122,7 +122,7 @@ export function CastingAssistant() {
               </div>
             </div>
 
-            <div ref={scrollRef} className="max-h-[60vh] space-y-4 overflow-y-auto bg-slate-950/95 px-4 py-4">
+            <div ref={scrollRef} className="flex-1 min-h-0 space-y-4 overflow-y-auto bg-slate-950/95 px-4 py-4">
               {messages.map((message) => (
                 <div key={message.id} className={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}>
                   <div className={cn(
@@ -178,7 +178,7 @@ export function CastingAssistant() {
               )}
             </div>
 
-            <div className="border-t border-white/10 bg-slate-950/95 p-4">
+            <div className="shrink-0 border-t border-white/10 bg-slate-950/95 p-4">
               <div className="mb-3 flex flex-wrap gap-2">
                 {(latestResponse?.suggestions?.length ? latestResponse.suggestions : ASSISTANT_SUGGESTIONS).slice(0, 4).map((suggestion) => (
                   <button
