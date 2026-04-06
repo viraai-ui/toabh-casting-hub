@@ -8,10 +8,10 @@ import { Clients } from './pages/Clients'
 import { Calendar } from './pages/Calendar'
 import { Team } from './pages/Team'
 import { ActivityLog } from './pages/ActivityLog'
+import { Tasks } from './pages/Tasks'
 import { Reports } from './pages/Reports'
 import { Settings } from './pages/Settings'
 import { Profile } from './pages/Profile'
-import { Tasks } from './pages/Tasks'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
 const queryClient = new QueryClient({

@@ -21,6 +21,7 @@ interface CastingModalProps {
   onClose: () => void
   casting: Casting | null
   onSave: () => void
+  readOnly?: boolean
 }
 
 const TABS = ['Overview', 'Team', 'Budget'] as const
@@ -89,8 +90,9 @@ function attachmentStatusMeta(status: PendingAttachment['status']) {
   }
 }
 
-export function CastingModal({ open, onClose, casting, onSave }: CastingModalProps) {
+export function CastingModal({ open, onClose, casting, onSave, readOnly = false }: CastingModalProps) {
   const [activeTab, setActiveTab] = useState<Tab>('Overview')
+  const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [clients, setClients] = useState<Client[]>([])
@@ -138,6 +140,7 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
       setIsDragActive(false)
       setUploadNotice(null)
       setDraftCastingId(casting?.id ?? null)
+      setIsEditing(!readOnly)
       fetchData()
       if (casting) {
         let customFieldsData: { [key: string]: string } = {}
@@ -501,7 +504,7 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-slate-200 bg-slate-50">
               <h2 className="text-base sm:text-lg font-semibold text-slate-900">
-                {casting ? 'Edit Casting' : 'New Casting'}
+                {!casting ? 'New Casting' : isEditing ? 'Edit Casting' : 'Casting Details'}
               </h2>
               <button
                 onClick={onClose}
