@@ -89,12 +89,10 @@ export function CustomFields() {
           f.id === editingField.id ? { ...f, ...payload } : f
         )
         await api.put('/settings/custom-fields', { fields: updated })
-        setFields(updated)
+        await fetchFields()
       } else {
-        const maxId = Math.max(...fields.map((f) => Number(f.id) || 0), 0)
-        const created = { ...payload, id: String(maxId + 1) }
-        await api.post('/settings/custom-fields', created)
-        setFields([...fields, created as unknown as CustomField])
+        await api.post('/settings/custom-fields', payload)
+        await fetchFields()
       }
       resetForm()
     } catch (err) {

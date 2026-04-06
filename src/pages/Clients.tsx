@@ -344,7 +344,7 @@ export function Clients() {
               expanded={expandedClient === client.id}
               quickAddOpen={quickAddClientId === client.id}
               savingTag={savingTagClientId === client.id}
-              _onToggleExpand={() => setExpandedClient((prev) => (prev === client.id ? null : client.id))}
+              onToggleExpand={() => setExpandedClient((prev) => (prev === client.id ? null : client.id))}
               onToggleQuickAdd={() => setQuickAddClientId((prev) => (prev === client.id ? null : client.id))}
               onClick={() => {
                 openDetail(client)
@@ -431,7 +431,7 @@ function ClientGridCard({
   expanded,
   quickAddOpen,
   savingTag,
-  onToggleExpand,
+  _onToggleExpand,
   onToggleQuickAdd,
   onClick,
   onAddTag,
@@ -798,7 +798,7 @@ function ClientExpandedPanel({
   )
 }
 
-function _ClientPrimaryActions({
+export function ClientPrimaryActions({
   client,
   expanded,
   onEdit,

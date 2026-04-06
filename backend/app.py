@@ -424,6 +424,34 @@ def health():
     return jsonify({'ok': True}), 200
 
 
+@app.route('/api/search', methods=['GET'])
+def global_search():
+    db = get_db()
+    q = request.args.get('q', '').strip()
+    if not q:
+        return jsonify({'projects': [], 'clients': [], 'team': []})
+
+    like = f'%{q}%'
+    projects = db.execute(
+        'SELECT id, project_name, client_name, status FROM castings WHERE project_name LIKE ? OR client_name LIKE ? LIMIT 20',
+        (like, like)
+    ).fetchall()
+    clients = db.execute(
+        'SELECT id, name, company, email FROM clients WHERE name LIKE ? OR company LIKE ? OR email LIKE ? LIMIT 20',
+        (like, like, like)
+    ).fetchall()
+    team = db.execute(
+        'SELECT id, name, role, email FROM team_members WHERE name LIKE ? OR role LIKE ? OR email LIKE ? LIMIT 20',
+        (like, like, like)
+    ).fetchall()
+
+    return jsonify({
+        'projects': [dict(row) for row in projects],
+        'clients': [dict(row) for row in clients],
+        'team': [dict(row) for row in team],
+    })
+
+
 @app.route('/api/activities', methods=['GET'])
 def list_activities():
     db = get_db()
