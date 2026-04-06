@@ -108,7 +108,7 @@ export async function login(identifier: string, password: string, remember = fal
   return data
 }
 
-export async function loginAndSetSession(remember = false) {
+export async function loginAndSetSession(_remember = false) {
   // Backwards compat — login() already does this
 }
 

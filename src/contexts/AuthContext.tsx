@@ -112,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: User
     }
     setSession(result.token, result.user, remember)
-    api.setToken(result.token)
+    
     setUser(result.user)
     const perms = await fetchPermissions(result.user.role)
     setPermissions(perms)
@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     clearSession()
-    api.setToken(null)
+    
     setUser(null)
     navigate('/login', { replace: true })
   }

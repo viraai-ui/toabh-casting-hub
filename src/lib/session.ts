@@ -4,8 +4,7 @@
  */
 const TOKEN_KEY = 'toabh_session'
 const USER_KEY = 'toabh_user'
-const SESSION_TTL = 24 * 60 * 60 * 1000 // 1 day
-const REMEMBER_TTL = 30 * 24 * 60 * 60 * 1000 // 30 days
+const REMEMBER_TTL = 2592000 // 30d
 
 export interface SessionUser {
   id: number

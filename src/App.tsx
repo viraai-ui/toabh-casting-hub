@@ -15,7 +15,7 @@ import { Reports } from './pages/Reports'
 import { Settings } from './pages/Settings'
 import { Profile } from './pages/Profile'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { checkSession } from './lib/auth'
+import { checkSession } from './lib/api'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,7 +31,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false
-    checkSession().then(ok => {
+    checkSession().then((ok: boolean) => {
       if (!cancelled) setAuthorized(ok)
     })
     return () => { cancelled = true }

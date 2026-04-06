@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useOverlay } from '@/hooks/useOverlayManager'
-import { logout } from '@/lib/auth'
+import { logout } from '@/lib/api'
 
 // Main bottom nav: Home, Jobs, + (FAB), Clients, More
 const mainItems = [
