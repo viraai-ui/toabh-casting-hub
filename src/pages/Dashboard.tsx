@@ -256,7 +256,7 @@ export function Dashboard() {
               title="No recent activity yet"
               description="New casting updates, assignments, and status changes will appear here as your team starts using the hub."
               ctaLabel="Create a casting"
-              onClick={() => navigate('/castings?new=true')}
+              onClick={() => window.dispatchEvent(new CustomEvent('toabh-global-action', { detail: { action: 'open-casting-modal' } }))}
             />
           ) : (
             <>
@@ -310,7 +310,7 @@ export function Dashboard() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
             <button
-              onClick={() => navigate('/castings?new=true')}
+              onClick={() => window.dispatchEvent(new CustomEvent('toabh-global-action', { detail: { action: 'open-casting-modal' } }))}
               className="w-full rounded-2xl border border-amber-200/60 bg-gradient-to-br from-amber-50 to-amber-100/70 p-3.5 text-left text-amber-900 transition hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(245,158,11,0.14)]"
             >
               <div className="flex items-start gap-3">
