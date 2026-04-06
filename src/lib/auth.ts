@@ -1,110 +1,181 @@
-const TOKEN_NAME = 'toabh_session'
-const REMEMBER_ME_NAME = 'toabh_remember'
-const SESSION_TTL = 24 * 60 * 60 * 1000       // 1 day (session)
-const REMEMBER_TTL = 30 * 24 * 60 * 60 * 1000  // 30 days (remember me)
+const TOKEN_KEY = 'toabh_session'
 
-// Simple token: base64(payload).signature using a client-side secret
-// This is sufficient for a single-admin app (not multi-user)
-function getSecret(): string {
-  return import.meta.env.VITE_AUTH_SECRET || 'toabh-auth-secret-2026'
+export interface User {
+  id: number
+  email: string
+  name: string
+  role: string
+  must_reset_password?: boolean
 }
 
-async function hmacSha256(message: string, key: string): Promise<string> {
-  const enc = new TextEncoder()
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-  )
-  const sig = await crypto.subtle.sign('HMAC', cryptoKey, enc.encode(message))
-  return btoa(String.fromCharCode(...new Uint8Array(sig)))
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-}
-
-export async function createSession(remember: boolean): Promise<string> {
-  const now = Date.now()
-  const ttl = remember ? REMEMBER_TTL : SESSION_TTL
-  const payload = {
-    v: true,                        // verified
-    t: now,                         // issued at
-    e: now + ttl,                   // expires
-    r: remember,                    // remember me flag
-  }
-  const payloadB64 = btoa(JSON.stringify(payload))
-  const sig = await hmacSha256(payloadB64, getSecret())
-  return `${payloadB64}.${sig}`
-}
-
-export async function verifySession(token: string): Promise<boolean> {
-  if (!token) return false
+function _parseToken(token: string) {
   try {
-    const [payloadB64, sig] = token.split('.')
-    if (!payloadB64 || !sig) return false
-
-    // Verify signature
-    const expectedSig = await hmacSha256(payloadB64, getSecret())
-    if (sig !== expectedSig) return false
-
-    // Check expiry
-    const payload = JSON.parse(atob(payloadB64))
-    if (!payload.v || Date.now() > payload.e) return false
-
-    return true
+    const [b64] = token.split('.')
+    if (!b64) return null
+    const padding = 4 - (b64.length % 4)
+    const payload = b64 + '='.repeat(padding === 4 ? 0 : padding)
+    return JSON.parse(atob(payload))
   } catch {
-    return false
+    return null
   }
 }
 
-// Cookie helpers
-function setCookie(name: string, value: string, maxAgeMs?: number) {
-  const parts = [
-    `${name}=${encodeURIComponent(value)}`,
-    'path=/',
-    'SameSite=Lax',
-  ]
-  if (maxAgeMs !== undefined) {
-    parts.push(`max-age=${Math.floor(maxAgeMs / 1000)}`)
+export function saveSession(token: string, user: User, remember = false) {
+  const store = remember ? localStorage : sessionStorage
+  store.setItem(TOKEN_KEY, JSON.stringify({ token, user, ts: Date.now() }))
+}
+
+export function getSession(): { token: string; user: User } | null {
+  for (const store of [sessionStorage, localStorage]) {
+    const raw = store.getItem(TOKEN_KEY)
+    if (!raw) continue
+    try {
+      const data = JSON.parse(raw)
+      // 24h session, 30d remember
+      const ttl = store === localStorage ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000
+      if (Date.now() - data.ts > ttl) {
+        store.removeItem(TOKEN_KEY)
+        continue
+      }
+      const payload = _parseToken(data.token)
+      if (!payload || payload.exp < Date.now() / 1000) {
+        store.removeItem(TOKEN_KEY)
+        continue
+      }
+      return { token: data.token, user: data.user }
+    } catch {
+      store.removeItem(TOKEN_KEY)
+    }
   }
-  document.cookie = parts.join('; ')
+  return null
 }
 
-function getCookie(name: string): string | null {
-  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'))
-  return match ? decodeURIComponent(match[1]) : null
+export function clearSession() {
+  sessionStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(TOKEN_KEY)
 }
 
-function deleteCookie(name: string) {
-  document.cookie = `${name}=; path=/; max-age=0`
+export function isLoggedIn(): boolean {
+  return getSession() !== null
 }
 
-export async function loginAndSetSession(remember: boolean): Promise<boolean> {
-  const token = await createSession(remember)
-  if (remember) {
-    setCookie(TOKEN_NAME, token, REMEMBER_TTL)
-    setCookie(REMEMBER_ME_NAME, '1', REMEMBER_TTL)
-  } else {
-    // Session cookie (expires when browser closes)
-    setCookie(TOKEN_NAME, token)
-    deleteCookie(REMEMBER_ME_NAME)
-  }
-  return true
-}
+export const api = {
+  async login(identifier: string, password: string, remember = false) {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: identifier, password, remember }),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Login failed' }))
+      throw new Error(err.error || 'Login failed')
+    }
+    const data = await res.json()
+    saveSession(data.token, data.user, remember)
+    return data
+  },
 
-export async function checkSession(): Promise<boolean> {
-  const token = getCookie(TOKEN_NAME)
-  if (!token) return false
-  const valid = await verifySession(token)
-  if (!valid) {
-    logout()
-    return false
-  }
-  return true
-}
+  async logout() {
+    try {
+      const s = getSession()
+      if (s?.token) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${s.token}` },
+        })
+      }
+    } catch {
+      // ignore
+    }
+    clearSession()
+  },
 
-export function isRememberMe(): boolean {
-  return getCookie(REMEMBER_ME_NAME) === '1'
-}
+  async forgotPassword(email: string) {
+    const res = await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    })
+    return res.json()
+  },
 
-export function logout() {
-  deleteCookie(TOKEN_NAME)
-  deleteCookie(REMEMBER_ME_NAME)
-  sessionStorage.removeItem('admin_verified')
+  async resetPassword(token: string, password: string) {
+    const res = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password }),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Reset failed' }))
+      throw new Error(err.error || 'Reset failed')
+    }
+    return res.json()
+  },
+
+  async changePassword(current_password: string, new_password: string) {
+    const s = getSession()
+    if (!s) throw new Error('Not logged in')
+    const res = await fetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${s.token}`,
+      },
+      body: JSON.stringify({ current_password, new_password }),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Failed' }))
+      throw new Error(err.error || 'Failed')
+    }
+    return res.json()
+  },
+
+  async getPermissions() {
+    const s = getSession()
+    if (!s?.token) return {}
+    const res = await fetch('/api/settings/permissions', {
+      headers: { Authorization: `Bearer ${s.token}` },
+    })
+    if (!res.ok) return {}
+    return res.json()
+  },
+
+  async resendInvite(memberId: number) {
+    const s = getSession()
+    if (!s?.token) throw new Error('Not logged in')
+    const res = await fetch(`/api/team/${memberId}/resend-invite`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${s.token}` },
+    })
+    return res.json()
+  },
+
+  async toggleMemberStatus(memberId: number) {
+    const s = getSession()
+    if (!s?.token) throw new Error('Not logged in')
+    const res = await fetch(`/api/team/${memberId}/toggle-status`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${s.token}` },
+    })
+    return res.json()
+  },
+
+  // Generic authenticated fetch
+  async fetch(path: string, opts: RequestInit = {}) {
+    const s = getSession()
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(s?.token ? { Authorization: `Bearer ${s.token}` } : {}),
+      ...((opts.headers as Record<string, string>) || {}),
+    }
+    const res = await fetch(path.startsWith('http') ? path : `/api${path}`, { ...opts, headers })
+    if (res.status === 401) {
+      clearSession()
+      window.location.href = '/login'
+      throw new Error('Unauthorized')
+    }
+    const text = await res.text()
+    if (!text) return null
+    try { return JSON.parse(text) } catch { return text }
+  },
 }
