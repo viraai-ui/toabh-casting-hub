@@ -69,7 +69,7 @@ export function AdvancedFilters({
 
   const activePresetId = useMemo(() => {
     if (myCastingsFilters && areCastingFiltersEqual(normalizedAppliedFilters, myCastingsFilters)) {
-      return 'my-castings'
+      return 'my-jobs'
     }
 
     const matchingPreset = presets.find((preset) =>
@@ -156,7 +156,7 @@ export function AdvancedFilters({
 
   const handleMyCastings = () => {
     if (!myCastingsFilters) {
-      toast.error('Could not match the current user to a team member for My Castings.')
+      toast.error('Could not match the current user to a team member for My Jobs.')
       return
     }
 
@@ -177,14 +177,14 @@ export function AdvancedFilters({
             onClick={handleMyCastings}
             disabled={loadingTeam || !myCastingsFilters}
             className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${
-              activePresetId === 'my-castings'
+              activePresetId === 'my-jobs'
                 ? 'border-amber-500 bg-amber-50 text-amber-700'
                 : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
             } disabled:cursor-not-allowed disabled:opacity-60`}
           >
             {loadingTeam ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserRound className="h-4 w-4" />}
-            My Castings
-            {activePresetId === 'my-castings' && <Check className="h-4 w-4" />}
+            My Jobs
+            {activePresetId === 'my-jobs' && <Check className="h-4 w-4" />}
           </button>
 
           {presets.map((preset) => (

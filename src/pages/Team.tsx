@@ -193,7 +193,7 @@ export function Team() {
                 <div className="mb-3">
                   <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
                     <span>Workload</span>
-                    <span>{assignments} casting{assignments !== 1 ? 's' : ''}</span>
+                    <span>{assignments} job{assignments !== 1 ? 's' : ''}</span>
                   </div>
                   <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                     <div
@@ -423,13 +423,13 @@ function MemberViewModal({
           )}
         </div>
 
-        {/* Assigned castings */}
+        {/* Assigned jobs */}
         <div>
           <p className="text-xs font-medium text-slate-500 uppercase mb-2">
-            Assigned Castings ({assignedCastings.length})
+            Assigned Jobs ({assignedCastings.length})
           </p>
           {assignedCastings.length === 0 ? (
-            <p className="text-sm text-slate-400 italic">No castings assigned</p>
+            <p className="text-sm text-slate-400 italic">No jobs assigned</p>
           ) : (
             <div className="space-y-2">
               {assignedCastings.slice(0, 5).map((c) => (

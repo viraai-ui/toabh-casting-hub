@@ -62,7 +62,7 @@ export function Reports() {
     return true
   })
 
-  // Casting Performance - Created vs Closed per week
+  // Job Performance - Created vs Closed per week
   const getWeeklyData = () => {
     const weeks: { [key: string]: { created: number; closed: number } } = {}
     filteredCastings.forEach((c) => {
@@ -141,7 +141,7 @@ export function Reports() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `castings-report-${new Date().toISOString().split('T')[0]}.csv`
+    a.download = `jobs-report-${new Date().toISOString().split('T')[0]}.csv`
     a.click()
   }
 
@@ -159,7 +159,7 @@ export function Reports() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-semibold text-slate-900">Reports</h2>
-          <p className="text-sm text-slate-500">Analytics and insights for your castings</p>
+          <p className="text-sm text-slate-500">Analytics and insights for your jobs</p>
         </div>
         <button
           onClick={exportCSV}
@@ -215,13 +215,13 @@ export function Reports() {
 
       {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Casting Performance */}
+        {/* Job Performance */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="card p-5"
         >
-          <h3 className="font-semibold text-slate-900 mb-4">Casting Performance</h3>
+          <h3 className="font-semibold text-slate-900 mb-4">Job Performance</h3>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={getWeeklyData()}>
@@ -299,7 +299,7 @@ export function Reports() {
                     borderRadius: 12,
                   }}
                 />
-                <Bar dataKey="count" name="Castings" fill="#f59e0b" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="count" name="Jobs" fill="#f59e0b" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

@@ -49,7 +49,7 @@ const getCastingSubtitle = (casting: Casting) => {
     .filter(Boolean)
     .slice(0, 3)
 
-  return parts.length > 0 ? parts.join(' • ') : 'Casting'
+  return parts.length > 0 ? parts.join(' • ') : 'Job'
 }
 
 const getClientSubtitle = (client: Client) => {
@@ -164,7 +164,7 @@ export function GlobalSearch() {
   const openResult = (item: SearchItem) => {
     saveSearch(query)
 
-    if (item.type === 'casting') navigate(`/castings?id=${item.data.id}`)
+    if (item.type === 'casting') navigate(`/jobs?id=${item.data.id}`)
     if (item.type === 'client') navigate(`/clients?id=${item.data.id}`)
     if (item.type === 'team') navigate(`/team?id=${item.data.id}`)
 
@@ -231,7 +231,7 @@ export function GlobalSearch() {
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold tracking-tight text-slate-900">Universal search</p>
-                <p className="mt-1 text-xs text-slate-500">Search castings, clients, phone numbers, emails, and team.</p>
+                <p className="mt-1 text-xs text-slate-500">Search jobs, clients, phone numbers, emails, and team.</p>
               </div>
               <button
                 onClick={closeSearch}
@@ -286,7 +286,7 @@ export function GlobalSearch() {
                 </div>
                 <div className="max-w-sm">
                   <p className="text-base font-semibold tracking-tight text-slate-900">Search everything instantly</p>
-                  <p className="mt-1.5 text-sm leading-6 text-slate-500">Find castings, clients, phone numbers, emails, and team members in one place.</p>
+                  <p className="mt-1.5 text-sm leading-6 text-slate-500">Find jobs, clients, phone numbers, emails, and team members in one place.</p>
                 </div>
               </div>
             )}
@@ -307,7 +307,7 @@ export function GlobalSearch() {
               <div className="space-y-4">
                 {results.castings.length > 0 && (
                   <div className="rounded-[22px] border border-slate-100 bg-slate-50/70 p-2.5 shadow-[0_16px_35px_-30px_rgba(15,23,42,0.28)]">
-                    {renderSectionHeader('Castings')}
+                    {renderSectionHeader('Jobs')}
                     <div className="space-y-1">
                       {results.castings.slice(0, 6).map((casting) => {
                         const rowIndex = currentIndex++
@@ -325,7 +325,7 @@ export function GlobalSearch() {
                               <Briefcase className="h-4 w-4" />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-semibold text-slate-900">{safeText(casting.project_name) || 'Untitled project'}</p>
+                              <p className="truncate text-sm font-semibold text-slate-900">{safeText(casting.project_name) || 'Untitled job'}</p>
                               <p className="mt-0.5 text-sm text-slate-500">{getCastingSubtitle(casting)}</p>
                             </div>
                           </button>

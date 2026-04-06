@@ -441,7 +441,7 @@ function DayView({
         {format(currentDate, 'EEE, MMM d')}
       </h3>
       {dayCastings.length === 0 ? (
-        <p className="text-slate-400 text-sm py-8 text-center">No castings scheduled</p>
+        <p className="text-slate-400 text-sm py-8 text-center">No jobs scheduled</p>
       ) : (
         <div className="space-y-2">
           {dayCastings.map((casting) => (

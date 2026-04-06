@@ -66,7 +66,7 @@ export function KanbanColumn({ stage, castings, onCastingClick }: KanbanColumnPr
 function EmptyColumnState() {
   return (
     <div className="flex flex-col items-center justify-center flex-1 min-h-[120px] border-2 border-dashed border-slate-200 rounded-lg text-slate-400">
-      <p className="text-xs">No castings</p>
+      <p className="text-xs">No jobs</p>
     </div>
   )
 }

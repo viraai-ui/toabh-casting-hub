@@ -28,10 +28,10 @@ export interface AssistantMessage {
 }
 
 export const ASSISTANT_SUGGESTIONS = [
-  'How many castings are pending today?',
-  'Show delayed castings',
+  'How many jobs are pending today?',
+  'Show delayed jobs',
   "What are this week's assignments?",
-  'Find casting details for project Nike',
+  'Find job details for project Nike',
 ] as const
 
 export async function queryAssistant(query: string): Promise<AssistantResponse> {

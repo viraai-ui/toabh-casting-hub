@@ -175,7 +175,7 @@ export function EmailConfig() {
               type="text"
               value={form.from_name}
               onChange={(e) => setForm({ ...form, from_name: e.target.value })}
-              placeholder="TOABH Casting Hub"
+              placeholder="TOABH Jobs Hub"
               className="w-full px-3 py-2 border border-slate-200 rounded-xl"
             />
           </div>

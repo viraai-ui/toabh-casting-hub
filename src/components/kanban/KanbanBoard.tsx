@@ -123,7 +123,7 @@ export function KanbanBoard({
     } catch (err) {
       onCastingsChange?.(castings)
       const msg = err instanceof Error ? err.message : 'Failed to update'
-      toast.error(`Could not move casting: ${msg}`)
+      toast.error(`Could not move job: ${msg}`)
     } finally {
       updatingRef.current = false
     }

@@ -7,10 +7,10 @@ import { cn } from '@/lib/utils'
 // Keys match backend dashboard_modules.json
 const KNOWN_MODULES = ['kanban', 'calendar', 'activityFeed', 'quickActions', 'charts']
 const dashboardModules = [
-  { id: 'kanban', name: 'Kanban Board', description: 'Drag-and-drop casting pipeline board' },
+  { id: 'kanban', name: 'Kanban Board', description: 'Drag-and-drop job pipeline board' },
   { id: 'calendar', name: 'Calendar View', description: 'Shoot date calendar overview' },
   { id: 'activityFeed', name: 'Activity Feed', description: 'Recent activity stream' },
-  { id: 'quickActions', name: 'Quick Actions', description: 'New casting, search, calendar shortcuts' },
+  { id: 'quickActions', name: 'Quick Actions', description: 'New job, search, calendar shortcuts' },
   { id: 'charts', name: 'Charts & Stats', description: 'Analytics charts and summary statistics' },
 ]
 
@@ -121,7 +121,7 @@ export function DashboardSettings() {
         animate={{ opacity: 1, y: 0 }}
         className="card p-6"
       >
-        <h3 className="font-semibold text-slate-900 mb-4">Default Castings View</h3>
+        <h3 className="font-semibold text-slate-900 mb-4">Default Jobs View</h3>
         <div className="grid grid-cols-3 gap-4">
           {viewModes.map((mode) => (
             <button

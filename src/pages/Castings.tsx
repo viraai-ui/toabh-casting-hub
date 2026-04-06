@@ -262,7 +262,7 @@ export function Castings() {
 
   const appliedFilters = normalizeCastingFilters(activeFilters)
 
-  // Filter and sort castings
+  // Filter and sort jobs
   const getSortableValue = (casting: Casting, key: string): number | string => {
     switch (key) {
       case 'shootDate':
@@ -356,7 +356,7 @@ export function Castings() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search castings..."
+            placeholder="Search jobs..."
             className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500"
           />
         </div>
@@ -403,14 +403,14 @@ export function Castings() {
             )}
           </button>
 
-          {/* New Casting — same ?new=true entry as the FAB so both entry points
+          {/* New Job — same ?new=true entry as the FAB so both entry points
               are handled by the same guarded effect and back-button works uniformly. */}
           <button
             onClick={() => navigate('/castings?new=true')}
             className="btn-primary flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">New Casting</span>
+            <span className="hidden sm:inline">New Job</span>
           </button>
         </div>
       </div>
@@ -771,7 +771,7 @@ function ListView({
     const latestAttachmentUrl = casting.latest_attachment_url
 
     if (!attachmentsCount && !latestAttachmentUrl) {
-      toast.info('No attachments uploaded for this casting yet')
+      toast.info('No attachments uploaded for this job yet')
       return
     }
 
@@ -787,7 +787,7 @@ function ListView({
       }
       const fallbackAttachmentUrl = response?.attachments?.[0]?.url
       if (!fallbackAttachmentUrl) {
-        toast.info('No downloadable attachment found for this casting')
+        toast.info('No downloadable attachment found for this job')
         return
       }
       window.open(fallbackAttachmentUrl, '_blank', 'noopener,noreferrer')

@@ -10,7 +10,8 @@ import type { Activity } from '@/types'
 
 const pageTitles: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
-  '/castings': 'Castings',
+  '/jobs': 'Jobs',
+  '/castings': 'Jobs',
   '/clients': 'Clients',
   '/calendar': 'Calendar',
   '/team': 'Team',
@@ -58,9 +59,9 @@ const getNotificationTitle = (activity: Activity) => {
 }
 
 const getNotificationMeta = (activity: Activity) => {
-  const parts = [safeText(activity.user_name), activity.casting_id ? `Casting #${activity.casting_id}` : '']
+  const parts = [safeText(activity.user_name), activity.casting_id ? `Job #${activity.casting_id}` : '']
     .filter(Boolean)
-  return parts.join(' • ') || 'Casting Hub'
+  return parts.join(' • ') || 'Jobs Hub'
 }
 
 export function Header() {
@@ -170,7 +171,7 @@ export function Header() {
     Object.entries(pageTitles).find(([path]) =>
       location.pathname.startsWith(path) && path !== '/dashboard'
     )?.[1] ||
-    'Casting Hub'
+    'Jobs Hub'
 
   const handleLogout = () => {
     sessionStorage.removeItem('admin_verified')
@@ -186,7 +187,7 @@ export function Header() {
     setNotificationsOpen(false)
 
     if (activity.casting_id) {
-      navigate(`/castings?id=${activity.casting_id}`)
+      navigate(`/jobs?id=${activity.casting_id}`)
       return
     }
 
@@ -242,7 +243,7 @@ export function Header() {
                     <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">Notifications</p>
-                        <p className="text-xs text-slate-500">Recent activity from Casting Hub</p>
+                        <p className="text-xs text-slate-500">Recent activity from Jobs Hub</p>
                       </div>
                       <button
                         onClick={markAllRead}

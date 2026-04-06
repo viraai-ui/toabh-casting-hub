@@ -84,14 +84,14 @@ export function Dashboard() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           icon={Briefcase}
-          label="Total Castings"
+          label="Total Jobs"
           value={stats?.total_castings ?? 0}
           trend={12}
           iconColor="text-blue-500"
         />
         <StatCard
           icon={Users}
-          label="Active Castings"
+          label="Active Jobs"
           value={stats?.active_castings ?? 0}
           trend={-5}
           iconColor="text-amber-500"
@@ -187,7 +187,7 @@ export function Dashboard() {
           <div className="mb-4 grid gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 p-3 sm:grid-cols-2">
             <div>
               <p className="text-xs font-medium text-slate-400">Trend note</p>
-              <p className="mt-1 text-sm text-slate-600">Casting activity over time, updated from live dashboard data.</p>
+              <p className="mt-1 text-sm text-slate-600">Job activity over time, updated from live dashboard data.</p>
             </div>
             <div>
               <p className="text-xs font-medium text-slate-400">Current signal</p>
@@ -210,7 +210,7 @@ export function Dashboard() {
                     tickLine={false}
                     axisLine={false}
                     width={36}
-                    label={{ value: 'Castings', angle: -90, position: 'insideLeft', offset: 8, style: { fill: '#94a3b8', fontSize: 11 } }}
+                    label={{ value: 'Jobs', angle: -90, position: 'insideLeft', offset: 8, style: { fill: '#94a3b8', fontSize: 11 } }}
                   />
                   <Tooltip
                     contentStyle={{
@@ -254,9 +254,9 @@ export function Dashboard() {
           {recentActivity.length === 0 ? (
             <DashboardEmptyState
               title="No recent activity yet"
-              description="New casting updates, assignments, and status changes will appear here as your team starts using the hub."
-              ctaLabel="Create a casting"
-              onClick={() => navigate('/castings?new=true')}
+              description="New job updates, assignments, and status changes will appear here as your team starts using the hub."
+              ctaLabel="Create a job"
+              onClick={() => navigate('/jobs?new=true')}
             />
           ) : (
             <>
@@ -310,7 +310,7 @@ export function Dashboard() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
             <button
-              onClick={() => navigate('/castings?new=true')}
+              onClick={() => navigate('/jobs?new=true')}
               className="w-full rounded-2xl border border-amber-200/60 bg-gradient-to-br from-amber-50 to-amber-100/70 p-3.5 text-left text-amber-900 transition hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(245,158,11,0.14)]"
             >
               <div className="flex items-start gap-3">
@@ -318,7 +318,7 @@ export function Dashboard() {
                   <Plus className="w-4.5 h-4.5" />
                 </span>
                 <span className="block">
-                  <span className="block font-semibold">New Casting</span>
+                  <span className="block font-semibold">New Job</span>
                   <span className="mt-1 block text-sm text-amber-700/80">Start a fresh brief fast.</span>
                 </span>
               </div>
@@ -333,7 +333,7 @@ export function Dashboard() {
                 </span>
                 <span className="block">
                   <span className="block font-semibold">Search</span>
-                  <span className="mt-1 block text-sm text-slate-500">Find castings and clients instantly.</span>
+                  <span className="mt-1 block text-sm text-slate-500">Find jobs and clients instantly.</span>
                 </span>
               </div>
             </button>
@@ -380,7 +380,7 @@ export function Dashboard() {
           {workload.length === 0 ? (
             <DashboardEmptyState
               title="No team workload yet"
-              description="Once castings are assigned, you'll see workload distribution for each teammate here."
+              description="Once jobs are assigned, you'll see workload distribution for each teammate here."
               ctaLabel="Open team"
               onClick={() => navigate('/team')}
             />
@@ -421,7 +421,7 @@ function summarizeActivity(description: string) {
     .replace('Status changed from ', '')
     .replace('Talents Shortlisted', 'Shortlisted')
     .replace('Options Sent', 'Options')
-    .replace('Casting created: ', 'Created • ')
+    .replace('Job created: ', 'Created • ')
     .replace('Team reassigned', 'Team reassigned')
 }
 
@@ -559,7 +559,7 @@ function StatCard({
       <div className="mt-6 space-y-2">
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">{label}</p>
         <p className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]">{value}</p>
-        <p className="text-sm text-slate-500">Updated from your current casting data{trend !== 0 ? ' • vs last 30 days' : ''}.</p>
+        <p className="text-sm text-slate-500">Updated from your current job data{trend !== 0 ? ' • vs last 30 days' : ''}.</p>
       </div>
     </motion.div>
   )

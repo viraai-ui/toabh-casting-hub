@@ -20,7 +20,7 @@ import { useOverlay } from '@/hooks/useOverlayManager'
 // Main bottom nav: Home, Jobs, + (FAB), Clients, More
 const mainItems = [
   { icon: LayoutDashboard, label: 'Home', path: '/dashboard' },
-  { icon: Briefcase, label: 'Jobs', path: '/castings' },
+  { icon: Briefcase, label: 'Jobs', path: '/jobs' },
   { icon: Plus, label: '', path: '', isFab: true },
   { icon: Users, label: 'Clients', path: '/clients' },
   { icon: MoreHorizontal, label: 'More', path: '#' },
@@ -56,8 +56,8 @@ export function BottomNav() {
     if (fabNavigating.current) return
     fabNavigating.current = true
 
-    // Open New Casting modal via query param on Castings page
-    navigate('/castings?new=true')
+    // Open New Job modal via query param on Jobs page
+    navigate('/jobs?new=true')
 
     // Reset guard after navigation settles
     setTimeout(() => {
@@ -87,7 +87,7 @@ export function BottomNav() {
                   key="fab"
                   onClick={handleFabClick}
                   className="relative -mt-6 focus:outline-none active:scale-95 transition-transform"
-                  aria-label="Add new casting"
+                  aria-label="Add new job"
                 >
                   <div
                     className={cn(

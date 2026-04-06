@@ -53,12 +53,16 @@ function App() {
                 }
               />
               <Route
-                path="/castings"
+                path="/jobs"
                 element={
                   <ErrorBoundary>
                     <Castings />
                   </ErrorBoundary>
                 }
+              />
+              <Route
+                path="/castings"
+                element={<Navigate to="/jobs" replace />}
               />
               <Route
                 path="/clients"

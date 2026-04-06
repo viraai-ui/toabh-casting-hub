@@ -13,7 +13,7 @@ interface EmailTemplate {
 }
 
 const VARIABLES = [
-  { label: 'Casting Title', value: '{{casting_title}}' },
+  { label: 'Job Title', value: '{{job_title}}' },
   { label: 'Client Name', value: '{{client_name}}' },
   { label: 'Status', value: '{{status}}' },
   { label: 'Shoot Date', value: '{{shoot_date}}' },
@@ -112,7 +112,7 @@ export function EmailTemplates() {
 
   const previewTemplate = (template: EmailTemplate) => {
     const previewBody = template.body
-      .replace('{{casting_title}}', 'Sample Casting Project')
+      .replace('{{job_title}}', 'Sample Job Project')
       .replace('{{client_name}}', 'ABC Company')
       .replace('{{status}}', 'CONFIRMED')
       .replace('{{shoot_date}}', 'April 15, 2026')
@@ -227,7 +227,7 @@ export function EmailTemplates() {
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                placeholder="e.g. Casting Confirmation"
+                placeholder="e.g. Job Confirmation"
               />
             </div>
             <div>
@@ -237,7 +237,7 @@ export function EmailTemplates() {
                 value={form.subject}
                 onChange={(e) => setForm({ ...form, subject: e.target.value })}
                 className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                placeholder="e.g. Casting Confirmation - {{casting_title}}"
+                placeholder="e.g. Job Confirmation - {{job_title}}"
               />
             </div>
             <div>
@@ -247,7 +247,7 @@ export function EmailTemplates() {
                 onChange={(e) => setForm({ ...form, body: e.target.value })}
                 rows={8}
                 className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-                placeholder="Dear {{client_name}},&#10;&#10;We are pleased to confirm your casting..."
+                placeholder="Dear {{client_name}},&#10;&#10;We are pleased to confirm your job..."
               />
             </div>
           </div>

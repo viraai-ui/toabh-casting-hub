@@ -5,9 +5,9 @@ import { cn } from '@/lib/utils'
 import type { Role } from '@/types'
 
 const permissions = [
-  { id: 'castings_view', name: 'View Castings' },
-  { id: 'castings_edit', name: 'Edit Castings' },
-  { id: 'castings_delete', name: 'Delete Castings' },
+  { id: 'castings_view', name: 'View Jobs' },
+  { id: 'castings_edit', name: 'Edit Jobs' },
+  { id: 'castings_delete', name: 'Delete Jobs' },
   { id: 'clients_view', name: 'View Clients' },
   { id: 'clients_edit', name: 'Edit Clients' },
   { id: 'team_view', name: 'View Team' },

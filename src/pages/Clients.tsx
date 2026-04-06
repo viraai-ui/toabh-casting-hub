@@ -138,7 +138,7 @@ export function Clients() {
   const handleDelete = async (client: Client) => {
     const clientCastings = getClientCastings(client.id)
     if (clientCastings.length > 0) {
-      window.alert('Cannot delete client with castings. Remove all castings first.')
+      window.alert('Cannot delete client with active jobs. Remove all jobs first.')
       return
     }
     if (!window.confirm(`Delete ${client.name}?`)) return
@@ -208,7 +208,7 @@ export function Clients() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[520px]">
             <StatCard icon={Users} label="Total Clients" value={clients.length} />
             <StatCard icon={Tag} label="Tagged Clients" value={taggedClientsCount} />
-            <StatCard icon={Briefcase} label="Live Castings" value={castings.length} />
+            <StatCard icon={Briefcase} label="Live Jobs" value={castings.length} />
             <StatCard icon={Tag} label="Tag Links" value={totalClientTagAssignments} />
           </div>
         </div>
@@ -345,7 +345,7 @@ export function Clients() {
             <span>Company</span>
             <span>Contact</span>
             <span>Tags</span>
-            <span>Castings</span>
+            <span>Jobs</span>
             <span className="text-right">Actions</span>
           </div>
 
@@ -453,7 +453,7 @@ function ClientGridCard({
               {client.phone && <p className="truncate">{client.phone}</p>}
               {client.email && <p className="truncate">{client.email}</p>}
               <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
-                {castings.length} casting{castings.length === 1 ? '' : 's'}
+                {castings.length} job{castings.length === 1 ? '' : 's'}
               </p>
             </div>
 
@@ -600,7 +600,7 @@ function ClientListRow({
 
           <div className="flex items-center justify-between gap-3">
             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
-              {castings.length} casting{castings.length === 1 ? '' : 's'}
+              {castings.length} job{castings.length === 1 ? '' : 's'}
             </span>
             <ClientContactActions client={client} compact />
           </div>
@@ -730,12 +730,12 @@ function ClientExpandedPanel({
           <div className="grid gap-4 bg-slate-50/80 p-4 sm:p-5 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Castings</span>
+                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Jobs</span>
                 <span className="text-xs text-slate-400">{castings.length} total</span>
               </div>
 
               {castings.length === 0 ? (
-                <p className="mt-3 text-sm italic text-slate-400">No castings yet</p>
+                <p className="mt-3 text-sm italic text-slate-400">No jobs yet</p>
               ) : (
                 <div className="mt-3 space-y-2">
                   {castings.map((casting) => (
