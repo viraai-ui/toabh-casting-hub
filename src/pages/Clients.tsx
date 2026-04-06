@@ -332,8 +332,8 @@ export function Clients() {
         <div className="rounded-[28px] border border-slate-200 bg-white px-4 py-16 text-center shadow-sm">
           <p className="text-sm font-medium text-slate-700">No clients found</p>
           <p className="mt-1 text-sm text-slate-500">Try changing the search or tag filters.</p>
-
-      {viewMode === 'grid' ? (
+        </div>
+      ) : viewMode === 'grid' ? (
         <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
           {filteredClients.map((client) => (
             <ClientGridCard
