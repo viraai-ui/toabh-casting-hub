@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Briefcase, Mail, MessageCircle, Phone, Pencil, Tag, Trash2, Users, X } from 'lucide-react'
+import { Briefcase, Mail, MessageCircle, Phone, Pencil, Trash2, X } from 'lucide-react'
 import { cn, formatDate, getInitials } from '@/lib/utils'
 import type { Casting, Client, ClientTag } from '@/types'
 import { ClientTagPill } from '@/components/clients/ClientTagPill'
@@ -255,7 +255,7 @@ export function ClientDetailModal({ open, client, castings, onClose, onEdit, onD
                         type="button"
                         onClick={() => {
                           setConfirmDelete(false)
-                          onClose()
+                          onDelete()
                         }}
                         className="flex-1 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-600 transition"
                       >
