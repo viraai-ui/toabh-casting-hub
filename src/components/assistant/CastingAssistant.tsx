@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ChevronDown, Loader2, Mic, MicOff, Minimize2, SendHorizonal, Sparkles, X } from 'lucide-react'
+import { ChevronDown, Mic, MicOff, Minimize2, SendHorizonal, Sparkles, X } from 'lucide-react'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { ASSISTANT_SUGGESTIONS, queryAssistant, type AssistantMessage } from '@/lib/assistant'
 import { useVoice, processVoiceQuery } from '@/hooks/useVoice'
