@@ -8,7 +8,7 @@ import { useVoice, processVoiceQuery } from '@/hooks/useVoice'
 const WELCOME_MESSAGE: AssistantMessage = {
   id: 'assistant-welcome',
   role: 'assistant',
-  text: 'Ask about today's queue, delays, weekly work, or any casting detail.',
+  text: "Ask about today's queue, delays, weekly work, or any casting detail.",
   createdAt: new Date().toISOString(),
 }
 
