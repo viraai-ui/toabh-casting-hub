@@ -11,6 +11,7 @@ import {
   FileImage,
   Presentation,
   FileSpreadsheet,
+  Pencil,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
@@ -542,6 +543,49 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                 <form onSubmit={handleSubmit} id="casting-form" noValidate>
                   {/* ======= OVERVIEW TAB ======= */}
                   {activeTab === 'Overview' && (
+                    <>
+                      {/* ─── View Mode (Read-Only) ─── */}
+                      {!isEditing && casting && (
+                        <div className="space-y-3 sm:space-y-4">
+                          <div>
+                            <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Project Title</p>
+                            <p className="text-sm sm:text-base font-semibold text-slate-900">{casting.project_name || '—'}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Client</p>
+                            <p className="text-sm text-slate-900">{casting.client_name || '—'}</p>
+                          </div>
+                          {(casting.client_contact || casting.client_email || casting.client_company) && (
+                            <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-50 rounded-xl border border-slate-200">
+                              <div><p className="text-[11px] sm:text-xs text-slate-500">Phone</p><p className="text-xs sm:text-sm text-slate-900">{casting.client_contact || '—'}</p></div>
+                              <div><p className="text-[11px] sm:text-xs text-slate-500">Email</p><p className="text-xs sm:text-sm text-slate-900 truncate">{casting.client_email || '—'}</p></div>
+                              <div><p className="text-[11px] sm:text-xs text-slate-500">Company</p><p className="text-xs sm:text-sm text-slate-900 truncate">{casting.client_company || '—'}</p></div>
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Description</p>
+                            <p className="text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">{casting.requirements || '—'}</p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                            <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Shoot Date</p><p className="text-xs sm:text-sm text-slate-900">{casting.shoot_date_start || '—'}</p></div>
+                            <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">End Date</p><p className="text-xs sm:text-sm text-slate-900">{casting.shoot_date_end || '—'}</p></div>
+                          </div>
+                          <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Location</p><p className="text-xs sm:text-sm text-slate-900">{casting.location || '—'}</p></div>
+                          <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                            <div>
+                              <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Status</p>
+                              <span className={cn('inline-flex px-2 py-0.5 rounded-full text-xs font-semibold',
+                                casting.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
+                                casting.status === 'IN_PROGRESS' ? 'bg-amber-100 text-amber-700' :
+                                'bg-blue-100 text-blue-700'
+                              )}>{casting.status || '—'}</span>
+                            </div>
+                            <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Lead Source</p><p className="text-xs sm:text-sm text-slate-900">{casting.source || '—'}</p></div>
+                          </div>
+                        </div>
+                      )}
+                      {/* ─── Edit Mode ─── */}
+                      {isEditing && (
                     <div className="space-y-3 sm:space-y-4">
 
                       {/* Project Title — MANDATORY, FIRST */}
@@ -939,10 +983,41 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                           </div>
                         )}
                     </div>
+                      )}
+                    </>
                   )}
 
                   {/* ======= TEAM TAB ======= */}
                   {activeTab === 'Team' && (
+                    <>
+                      {/* View Mode */}
+                      {!isEditing && casting && (
+                        <div className="space-y-3 sm:space-y-4">
+                          {(() => {
+                            const ids = typeof casting.assigned_to === 'string'
+                              ? casting.assigned_to.split(',').map(Number).filter(Boolean)
+                              : Array.isArray(casting.assigned_to) ? casting.assigned_to : [];
+                            if (!ids.length) return <p className="text-sm text-slate-400 text-center py-4">No team members assigned</p>;
+                            return ids.map((mid: number) => {
+                              const m = teamMembers.find((tm) => tm.id === mid);
+                              if (!m) return null;
+                              return (
+                                <div key={mid} className="flex items-center gap-3 px-3 py-2 bg-slate-50 rounded-xl border border-slate-200">
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-xs font-medium shrink-0">
+                                    {getInitials(m.name)}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-slate-900">{m.name}</p>
+                                    <p className="text-xs text-slate-500">{m.role}</p>
+                                  </div>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      )}
+                      {/* Edit Mode */}
+                      {isEditing && (
                     <div className="space-y-3 sm:space-y-4">
                       {teamError && (
                         <div className="flex items-center gap-2 p-2.5 sm:p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs sm:text-sm">
@@ -1039,10 +1114,22 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                         </div>
                       </div>
                     </div>
+                      )}
+                    </>
                   )}
 
                   {/* ======= BUDGET TAB — Optional, no validation ======= */}
                   {activeTab === 'Budget' && (
+                    <>
+                      {/* View Mode */}
+                      {!isEditing && casting && (
+                        <div className="space-y-3 sm:space-y-4">
+                          <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Budget Min (₹)</p><p className="text-xs sm:text-sm text-slate-900">{casting.budget_min ? `₹${Number(casting.budget_min).toLocaleString()}` : '—'}</p></div>
+                          <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Budget Max (₹)</p><p className="text-xs sm:text-sm text-slate-900">{casting.budget_max ? `₹${Number(casting.budget_max).toLocaleString()}` : '—'}</p></div>
+                        </div>
+                      )}
+                      {/* Edit Mode */}
+                      {isEditing && (
                     <div className="space-y-3 sm:space-y-4">
                       <p className="text-xs sm:text-sm text-slate-500">Budget is optional. Leave blank if not applicable.</p>
                       <div className="grid grid-cols-2 gap-2 sm:gap-4">
@@ -1072,6 +1159,8 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                         </div>
                       </div>
                     </div>
+                      )}
+                    </>
                   )}
                 </form>
               )}
