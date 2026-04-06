@@ -18,6 +18,7 @@ const pageTitles: { [key: string]: string } = {
   '/reports': 'Reports',
   '/settings': 'Settings',
   '/profile': 'Profile',
+  '/tasks': 'Tasks',
 }
 
 const NOTIFICATION_STORAGE_KEY = 'toabh_notification_reads'

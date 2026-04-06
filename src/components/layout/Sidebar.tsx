@@ -3,6 +3,7 @@ import { AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard,
   Briefcase,
+  CheckSquare,
   Users,
   Calendar,
   UserCircle,
@@ -20,6 +21,7 @@ import { toApiUrl } from '@/lib/api'
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: Briefcase, label: 'Castings', path: '/castings' },
+  { icon: CheckSquare, label: 'Tasks', path: '/tasks' },
   { icon: Users, label: 'Clients', path: '/clients' },
   { icon: Calendar, label: 'Calendar', path: '/calendar' },
   { icon: UserCircle, label: 'Team', path: '/team' },
