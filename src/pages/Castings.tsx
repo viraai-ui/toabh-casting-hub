@@ -231,7 +231,7 @@ export function Castings() {
     if (modalOpen) return // already open — don't re-enter
     setSelectedCasting(null)
     setModalOpen(true)
-    navigate('/castings', { replace: true })
+    navigate('/jobs', { replace: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
@@ -406,7 +406,7 @@ export function Castings() {
           {/* New Casting — same ?new=true entry as the FAB so both entry points
               are handled by the same guarded effect and back-button works uniformly. */}
           <button
-            onClick={() => navigate('/castings?new=true')}
+            onClick={() => navigate('//jobs?new=true')}
             className="btn-primary flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />

@@ -59,7 +59,7 @@ export function BottomNav() {
     fabNavigating.current = true
 
     // Open New Casting modal via query param on Castings page
-    navigate('/castings?new=true')
+    navigate('/jobs?new=true')
 
     // Reset guard after navigation settles
     setTimeout(() => {
