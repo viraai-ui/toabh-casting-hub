@@ -11,7 +11,6 @@ import {
   FileImage,
   Presentation,
   FileSpreadsheet,
-  Pencil,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
@@ -994,9 +993,10 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                       {!isEditing && casting && (
                         <div className="space-y-3 sm:space-y-4">
                           {(() => {
-                            const ids = typeof casting.assigned_to === 'string'
-                              ? casting.assigned_to.split(',').map(Number).filter(Boolean)
-                              : Array.isArray(casting.assigned_to) ? casting.assigned_to : [];
+                            const assigned = (casting as any).assigned_to;
+                            const ids: number[] = typeof assigned === 'string'
+                              ? assigned.split(',').map(Number).filter(Boolean)
+                              : Array.isArray(assigned) ? assigned as number[] : [];
                             if (!ids.length) return <p className="text-sm text-slate-400 text-center py-4">No team members assigned</p>;
                             return ids.map((mid: number) => {
                               const m = teamMembers.find((tm) => tm.id === mid);
@@ -1168,22 +1168,41 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
 
             {/* Footer */}
             <div className="flex items-center justify-end gap-2 sm:gap-3 px-4 py-3 sm:px-6 sm:py-4 border-t border-slate-200 bg-slate-50">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="casting-form"
-                disabled={saving}
-                className="flex items-center gap-2 px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
-              >
-                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                {saving ? 'Saving...' : 'Save Casting'}
-              </button>
+              {(!isEditing && casting) ? (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-2 px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-xl transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>
+                  Edit Casting
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (readOnly) {
+                        onClose()
+                      } else {
+                        setIsEditing(false)
+                      }
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition-colors"
+                  >
+                    {readOnly ? 'Close' : 'Back to View'}
+                  </button>
+                  <button
+                    type="submit"
+                    form="casting-form"
+                    disabled={saving}
+                    className="flex items-center gap-2 px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
+                  >
+                    {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {saving ? 'Saving...' : 'Save Casting'}
+                  </button>
+                </>
+              )}
             </div>
           </motion.div>
 
