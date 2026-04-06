@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, useEffect } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 export type VoiceState = 'idle' | 'requesting' | 'listening' | 'processing' | 'unsupported' | 'error'
 
