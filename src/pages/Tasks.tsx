@@ -406,8 +406,8 @@ export function Tasks() {
         </div>
       </div>
 
-      <TaskComposer open={composerOpen} onClose={() => setComposerOpen(false)} onSaved={fetchData} task={selectedTask} team={team} stages={stages} currentUserTeamMemberId={currentUser?.team_member_id} />
-      <TaskDetail task={detailOpen ? selectedTask : null} team={team} stages={stages} onClose={() => setDetailOpen(false)} onRefresh={fetchData} />
+      <TaskComposer open={composerOpen} onClose={() => setComposerOpen(false)} onSaved={refreshData} task={selectedTask} team={team} stages={stages} currentUserTeamMemberId={currentUser?.team_member_id} />
+      <TaskDetail task={detailOpen ? selectedTask : null} team={team} stages={stages} onClose={() => setDetailOpen(false)} onRefresh={refreshData} />
     </div>
   )
 }
