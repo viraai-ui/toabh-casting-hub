@@ -139,7 +139,7 @@ export function LoginPage() {
                 </div>
               </div>
               <span className="text-sm text-slate-600 group-hover:text-slate-800 transition-colors">
-                Remember me for 30 days
+                Remember me
               </span>
             </label>
 

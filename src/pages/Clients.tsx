@@ -602,6 +602,7 @@ function ClientListRow({
           </div>
 
           <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            {clientTags.length > 0 ? (
               clientTags.map((tag) => (
                 <ClientTagPill key={tag.id} tag={tag} onRemove={() => onRemoveTag(tag.id)} />
               ))
