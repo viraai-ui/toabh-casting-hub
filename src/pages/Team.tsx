@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Pencil, Trash2, Loader2, Mail, Phone, X, Camera, User } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, Mail, Phone, X, Camera, User, MailQuestion, Shield, ShieldCheck, ShieldAlert } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import { useOverlay } from '@/hooks/useOverlayManager'
@@ -81,6 +81,51 @@ export function Team() {
     }
   }
 
+  const handleResendInvite = async (memberId: number, memberName: string) => {
+    if (!confirm(`Resend invite email to ${memberName}?`)) return
+    try {
+      const result = await fetch(`/api/team/${memberId}/resend-invite`, {
+        method: 'POST',
+      }).then(r => r.json())
+      if (result?.sent) {
+        alert(`Invite resent to ${memberName}`)
+        fetchTeam()
+      } else {
+        alert(result?.message || 'Failed to resend invite. Is SMTP configured?')
+      }
+    } catch (err: any) {
+      alert('Failed to resend invite: ' + (err?.message || 'Unknown error'))
+    }
+  }
+
+  const statusBadge = (member: TeamMember) => {
+    const inviteStatus = (member as any).invite_status
+    const isActive = member.is_active !== false
+    if (!isActive) {
+      return <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500"><X className="h-2.5 w-2.5" />Disabled</span>
+    }
+    if (inviteStatus === 'pending' || !inviteStatus) {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-600">
+          <MailQuestion className="h-2.5 w-2.5" />Invite Pending
+        </span>
+      )
+    }
+    return <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600"><ShieldCheck className="h-2.5 w-2.5" />Active</span>
+  }
+
+  const roleBadge = (role?: string) => {
+    const r = (role || '').toLowerCase()
+    const icon = r.includes('admin') ? <ShieldAlert className="h-3 w-3" /> : r.includes('lead') || r.includes('manage') ? <ShieldCheck className="h-3 w-3" /> : <Shield className="h-3 w-3" />
+    const cls = r.includes('admin') ? 'bg-red-50 text-red-600' : r.includes('lead') || r.includes('manage') ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-500'
+    return (
+      <span className={cn("inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold", cls)}>
+        {icon}
+        {(role || 'Member').toUpperCase()}
+      </span>
+    )
+  }
+
   const handleDelete = async (member: TeamMember) => {
     const assignments = getMemberAssignments(member.id)
     if (assignments > 0) {
@@ -151,6 +196,29 @@ export function Team() {
                     >
                       <Pencil className="w-4 h-4" />
                     </button>
+                    {/* Resend invite for pending members */}
+                    {(member as any).invite_status === 'pending' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleResendInvite(member.id, member.name)
+                        }}
+                        className="p-1.5 rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600"
+                        title="Resend invite"
+                      >
+                        <MailQuestion className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleToggleActive(member)
+                      }}
+                      className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                      title={member.is_active ? 'Deactivate' : 'Activate'}
+                    >
+                      <User className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
@@ -163,7 +231,13 @@ export function Team() {
                   </div>
                 </div>
 
-                <h3 className="font-semibold text-slate-900 mb-0.5">{member.name}</h3>
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="font-semibold text-slate-900">{member.name}</h3>
+                  <div className="flex gap-1 shrink-0 ml-2 flex-wrap justify-end">
+                    {roleBadge(member.role)}
+                    {statusBadge(member)}
+                  </div>
+                </div>
                 <p className="text-sm text-slate-500 mb-3">{member.role || 'Team Member'}</p>
 
                 <div className="space-y-2 mb-3">
