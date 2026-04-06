@@ -120,7 +120,7 @@ export function BottomNav() {
                           className="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col gap-2 z-50"
                         >
                           <button
-                            onClick={() => handleFabSelect('/jobs?new=true')}
+                            onClick={() => handleFabSelect('/castings?new=true')}
                             className="min-w-[180px] flex items-center gap-2.5 glass-dark rounded-xl px-4 py-2.5 shadow-xl active:scale-[0.97] transition-transform"
                           >
                             <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
