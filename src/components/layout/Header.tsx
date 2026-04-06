@@ -7,6 +7,7 @@ import { useOverlay } from '@/hooks/useOverlayManager'
 import { api, toApiUrl } from '@/lib/api'
 import { getInitials } from '@/lib/utils'
 import type { Activity } from '@/types'
+import { logout } from '@/lib/auth'
 
 const pageTitles: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
@@ -174,7 +175,7 @@ export function Header() {
     'Casting Hub'
 
   const handleLogout = () => {
-    sessionStorage.removeItem('admin_verified')
+    logout()
     navigate('/login')
   }
 
