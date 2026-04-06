@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Sidebar } from './Sidebar'
 import { BottomNav } from './BottomNav'
 import { Header } from './Header'
@@ -8,11 +8,24 @@ import { OverlayProvider } from '@/hooks/useOverlayManager'
 import { useAppStore } from '@/hooks/useStore'
 import { cn } from '@/lib/utils'
 import { CastingAssistant } from '@/components/assistant/CastingAssistant'
+import { CastingModal } from '@/components/CastingModal'
 import { api } from '@/lib/api'
-import type { UserProfile } from '@/types'
+import type { UserProfile, Casting } from '@/types'
 
 export function AppLayout() {
   const { searchOpen, sidebarCollapsed, setCurrentUser } = useAppStore()
+  const [castingModalOpen, setCastingModalOpen] = useState(false)
+
+  // Listen for global \"open casting modal\" events (from FAB, toolbar, dashboard)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if (e instanceof CustomEvent && e.detail?.action === 'open-casting-modal') {
+        setCastingModalOpen(true)
+      }
+    }
+    window.addEventListener('toabh-global-action', handler)
+    return () => window.removeEventListener('toabh-global-action', handler)
+  }, [])
 
   useEffect(() => {
     api.get('/profile')
@@ -32,6 +45,11 @@ export function AppLayout() {
         setCurrentUser({ name: 'Toaney Bhatia', role: 'Admin' })
       })
   }, [setCurrentUser])
+
+  const handleCastingSaved = () => {
+    // Reload any currently visible casting list
+    window.dispatchEvent(new CustomEvent('toabh-data-refresh'))
+  }
 
   return (
     <OverlayProvider>
@@ -55,6 +73,14 @@ export function AppLayout() {
         {/* Global Search Modal */}
         {searchOpen && <GlobalSearch />}
         <CastingAssistant />
+
+        {/* Global Casting Modal — accessible from anywhere via event */}
+        <CastingModal
+          open={castingModalOpen}
+          onClose={() => setCastingModalOpen(false)}
+          casting={null}
+          onSave={handleCastingSaved}
+        />
       </div>
     </OverlayProvider>
   )
