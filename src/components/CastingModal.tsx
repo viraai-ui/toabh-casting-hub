@@ -1182,15 +1182,12 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                   <button
                     type="button"
                     onClick={() => {
-                      if (readOnly) {
-                        onClose()
-                      } else {
-                        setIsEditing(false)
-                      }
+                      setIsEditing(false)
+                      onClose()
                     }}
-                    className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition-colors"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
                   >
-                    {readOnly ? 'Close' : 'Back to View'}
+                    Cancel
                   </button>
                   <button
                     type="submit"
