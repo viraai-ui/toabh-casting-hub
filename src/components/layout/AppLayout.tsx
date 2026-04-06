@@ -29,7 +29,6 @@ export function AppLayout() {
     }
 
     // Set token for API calls
-    api.setJwtToken(sess.token)
 
     // Load profile
     api.fetch('/profile')
