@@ -173,6 +173,7 @@ export interface ProfileTaskItem {
   client_name: string
   status: string
   shoot_date_start?: string | null
+  due_date?: string | null
 }
 
 export interface ProfileStats {
@@ -180,6 +181,7 @@ export interface ProfileStats {
   active_jobs: number
   completed_jobs: number
   pending_tasks: number
+  overdue_tasks: number
 }
 
 export interface UserProfile {

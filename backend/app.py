@@ -1250,11 +1250,24 @@ def _build_profile_payload(db, profile):
         assigned_rows = []
         activity_rows = []
 
+    from datetime import date as _date
     total_jobs = len(assigned_rows)
     active_jobs = sum(1 for row in assigned_rows if row['status'] in active_statuses)
     completed_jobs = sum(1 for row in assigned_rows if row['status'] in completed_statuses)
+    overdue_jobs = sum(
+        1 for row in assigned_rows
+        if row['status'] not in completed_statuses
+        and row['shoot_date_start']
+        and str(row['shoot_date_start']) < str(_date.today())
+    )
 
-    tasks = [dict(row) for row in assigned_rows[:8]]
+    tasks = [
+        {
+            **dict(row),
+            'due_date': row['shoot_date_start'],
+        }
+        for row in assigned_rows[:8]
+    ]
     recent_activity = [dict(row) for row in activity_rows]
 
     return {
@@ -1270,6 +1283,7 @@ def _build_profile_payload(db, profile):
             'active_jobs': active_jobs,
             'completed_jobs': completed_jobs,
             'pending_tasks': active_jobs,
+            'overdue_tasks': overdue_jobs,
         },
         'recent_activity': recent_activity,
         'tasks': tasks,
