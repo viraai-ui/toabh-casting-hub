@@ -73,11 +73,11 @@ export function CastingAssistant() {
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.96 }}
+            initial={{ opacity: 0, x: 24, scale: 0.96 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 20, scale: 0.96 }}
             transition={{ duration: 0.18 }}
-            className="fixed bottom-24 right-4 z-50 flex flex-col w-[calc(100vw-2rem)] max-w-[420px] max-h-[85vh] overflow-hidden rounded-[28px] border border-white/60 bg-slate-950 text-white shadow-[0_25px_80px_rgba(15,23,42,0.35)] backdrop-blur-2xl lg:bottom-6 lg:right-6"
+            className="fixed top-0 right-0 bottom-0 z-50 flex flex-col w-[380px] max-w-[calc(100vw-1rem)] bg-slate-950 text-white border-l border-white/10 shadow-[-24px_0_60px_rgba(15,23,42,0.35)] backdrop-blur-2xl"
           >
             {/* Header */}
             <div className="shrink-0 relative overflow-hidden border-b border-white/10 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.25),_transparent_55%),linear-gradient(135deg,rgba(15,23,42,0.96),rgba(30,41,59,0.94))] px-4 py-3">
