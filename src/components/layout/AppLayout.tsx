@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 import { CastingAssistant } from '@/components/assistant/CastingAssistant'
 import { CastingModal } from '@/components/CastingModal'
 import { api } from '@/lib/api'
-import type { UserProfile, Casting } from '@/types'
+import type { UserProfile } from '@/types'
 
 export function AppLayout() {
   const { searchOpen, sidebarCollapsed, setCurrentUser } = useAppStore()
