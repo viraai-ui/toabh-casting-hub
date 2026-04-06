@@ -11,6 +11,8 @@ import {
   FileImage,
   Presentation,
   FileSpreadsheet,
+  Pencil,
+} from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import type { Casting, Client, TeamMember, PipelineStage, LeadSource } from '@/types'
