@@ -431,7 +431,7 @@ function ClientGridCard({
   expanded,
   quickAddOpen,
   savingTag,
-  _onToggleExpand,
+  onToggleExpand,
   onToggleQuickAdd,
   onClick,
   onAddTag,
@@ -443,13 +443,14 @@ function ClientGridCard({
   expanded: boolean
   quickAddOpen: boolean
   savingTag: boolean
-  onToggleExpand: () => void
+  onToggleExpand?: () => void
   onToggleQuickAdd: () => void
   onClick: () => void
   onAddTag: (tagId: number) => void
   onRemoveTag: (tagId: number) => void
 }) {
   const clientTags = client.tags ?? []
+  void onToggleExpand // available for future use
   const availableQuickAddTags = availableTags.filter(
     (tag) => !clientTags.some((clientTag) => clientTag.id === tag.id),
   )
@@ -573,6 +574,7 @@ function ClientListRow({
   onRemoveTag: (tagId: number) => void
 }) {
   const clientTags = client.tags ?? []
+  void onToggleExpand // available for future use
   const availableQuickAddTags = availableTags.filter(
     (tag) => !clientTags.some((clientTag) => clientTag.id === tag.id),
   )
