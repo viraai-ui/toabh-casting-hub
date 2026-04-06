@@ -51,20 +51,21 @@ export function BottomNav() {
     }
   }, [moreOpen, openOverlay, closeOverlay])
 
-  // Guard against rapid double-taps on the FAB
-  const fabNavigating = useRef(false)
+  const [fabMenuOpen, setFabMenuOpen] = useState(false)
 
-  const handleFabClick = () => {
-    if (fabNavigating.current) return
-    fabNavigating.current = true
+  // Close FAB menu when navigating away
+  useEffect(() => {
+    if (fabMenuOpen) {
+      openOverlay('fab-menu', () => setFabMenuOpen(false))
+    } else {
+      closeOverlay('fab-menu')
+    }
+  }, [fabMenuOpen, openOverlay, closeOverlay])
 
-    // Open New Casting modal via query param on Castings page
-    navigate('/jobs?new=true')
-
-    // Reset guard after navigation settles
-    setTimeout(() => {
-      fabNavigating.current = false
-    }, 600)
+  // FAB selection: routes to correct page with ?new=true
+  const handleFabSelect = (route: string) => {
+    setFabMenuOpen(false)
+    navigate(route)
   }
 
   const handleLogout = () => {
@@ -85,23 +86,62 @@ export function BottomNav() {
 
             if (item.isFab) {
               return (
-                <button
-                  key="fab"
-                  onClick={handleFabClick}
-                  className="relative -mt-6 focus:outline-none active:scale-95 transition-transform"
-                  aria-label="Add new casting"
-                >
-                  <div
-                    className={cn(
-                      'w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-shadow',
-                      fabNavigating.current
-                        ? 'bg-slate-400'
-                        : 'bg-gradient-to-br from-amber-500 to-amber-600 hover:shadow-xl'
-                    )}
+                <div key="fab" className="relative -mt-6">
+                  {/* FAB Button */}
+                  <button
+                    onClick={() => setFabMenuOpen((v) => !v)}
+                    className="focus:outline-none active:scale-95 transition-transform"
+                    aria-label="Quick create"
                   >
-                    <Plus className="w-7 h-7 text-white" />
-                  </div>
-                </button>
+                    <div className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg bg-gradient-to-br from-amber-500 to-amber-600 hover:shadow-xl">
+                      <Plus className="w-7 h-7 text-white" />
+                    </div>
+                  </button>
+
+                  {/* FAB Menu — drops up on mobile */}
+                  <AnimatePresence>
+                    {fabMenuOpen && (
+                      <>
+                        {/* Backdrop */}
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.15 }}
+                          onClick={() => setFabMenuOpen(false)}
+                          className="fixed inset-0 z-40"
+                        />
+                        {/* Menu items */}
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9, y: 8 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.9, y: 8 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col gap-2 z-50"
+                        >
+                          <button
+                            onClick={() => handleFabSelect('/jobs?new=true')}
+                            className="min-w-[180px] flex items-center gap-2.5 glass-dark rounded-xl px-4 py-2.5 shadow-xl active:scale-[0.97] transition-transform"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                              <Briefcase className="w-4 h-4 text-amber-400" />
+                            </div>
+                            <span className="text-sm font-medium text-white">New Casting</span>
+                          </button>
+                          <button
+                            onClick={() => handleFabSelect('/tasks?new=true')}
+                            className="min-w-[180px] flex items-center gap-2.5 glass-dark rounded-xl px-4 py-2.5 shadow-xl active:scale-[0.97] transition-transform"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                              <CheckSquare className="w-4 h-4 text-emerald-400" />
+                            </div>
+                            <span className="text-sm font-medium text-white">New Task</span>
+                          </button>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
               )
             }
 
