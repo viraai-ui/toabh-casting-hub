@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useOverlay } from '@/hooks/useOverlayManager'
+import { logout } from '@/lib/auth'
 
 // Main bottom nav: Home, Jobs, + (FAB), Clients, More
 const mainItems = [
@@ -69,7 +70,7 @@ export function BottomNav() {
   }
 
   const handleLogout = () => {
-    sessionStorage.removeItem('admin_verified')
+    logout()
     navigate('/login')
   }
 

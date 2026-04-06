@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Loader2 } from 'lucide-react'
 import { AppLayout } from './components/layout/AppLayout'
 import { LoginPage } from './pages/LoginPage'
 import { Dashboard } from './pages/Dashboard'
@@ -13,6 +15,7 @@ import { Reports } from './pages/Reports'
 import { Settings } from './pages/Settings'
 import { Profile } from './pages/Profile'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { checkSession } from './lib/auth'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,10 +27,28 @@ const queryClient = new QueryClient({
 })
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const isVerified = sessionStorage.getItem('admin_verified') === 'true'
-  if (!isVerified) {
+  const [authorized, setAuthorized] = useState<boolean | null>(null) // null = checking
+
+  useEffect(() => {
+    let cancelled = false
+    checkSession().then(ok => {
+      if (!cancelled) setAuthorized(ok)
+    })
+    return () => { cancelled = true }
+  }, [])
+
+  if (authorized === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+      </div>
+    )
+  }
+
+  if (!authorized) {
     return <Navigate to="/login" replace />
   }
+
   return <>{children}</>
 }
 

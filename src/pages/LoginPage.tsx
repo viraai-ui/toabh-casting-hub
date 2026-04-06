@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Eye, EyeOff, Lock, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, Lock, AlertCircle, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { loginAndSetSession, checkSession } from '@/lib/auth'
+import { api } from '@/lib/api'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -11,24 +13,44 @@ export function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [shake, setShake] = useState(false)
+  const [rememberMe, setRememberMe] = useState(true) // default on
+
+  // If already logged in, redirect to dashboard
+  useEffect(() => {
+    checkSession().then(ok => {
+      if (ok) navigate('/dashboard', { replace: true })
+    })
+  }, [navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
-    // Simulate API call delay
-    await new Promise(r => setTimeout(r, 500))
-
-    if (password === 'toabh2026') {
-      sessionStorage.setItem('admin_verified', 'true')
-      navigate('/dashboard')
-    } else {
-      setError('Invalid password')
-      setShake(true)
-      setTimeout(() => setShake(false), 500)
+    try {
+      // Verify password against backend
+      const result = await api.post('/auth/verify-password', { password })
+      
+      if (result?.valid) {
+        await loginAndSetSession(rememberMe)
+        navigate('/dashboard')
+      } else {
+        setError('Invalid password')
+        setShake(true)
+        setTimeout(() => setShake(false), 500)
+      }
+    } catch {
+      // Fallback: if backend is down, check locally (offline mode)
+      if (password === 'toabh2026') {
+        await loginAndSetSession(rememberMe)
+        navigate('/dashboard')
+      } else {
+        setError('Invalid password')
+        setShake(true)
+        setTimeout(() => setShake(false), 500)
+      }
     }
-    
+
     setLoading(false)
   }
 
@@ -94,12 +116,46 @@ export function LoginPage() {
               )}
             </div>
 
+            {/* Remember Me */}
+            <label className="flex items-center gap-2 cursor-pointer select-none group">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={e => setRememberMe(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className={cn(
+                  'w-4 h-4 rounded border-2 transition-all flex items-center justify-center',
+                  rememberMe
+                    ? 'bg-amber-500 border-amber-500'
+                    : 'border-slate-300 group-hover:border-amber-400'
+                )}>
+                  {rememberMe && (
+                    <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <span className="text-sm text-slate-600 group-hover:text-slate-800 transition-colors">
+                Remember me for 30 days
+              </span>
+            </label>
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full btn-primary py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full btn-primary py-2.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? 'Verifying...' : 'Sign In'}
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                'Sign In'
+              )}
             </button>
           </form>
         </div>

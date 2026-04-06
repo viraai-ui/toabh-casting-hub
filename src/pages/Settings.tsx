@@ -23,6 +23,7 @@ import { EmailAutomationHub } from './settings/EmailAutomationHub'
 import { NotificationsSettings } from './settings/NotificationsSettings'
 import { ClientTags } from './settings/ClientTags'
 import { cn } from '@/lib/utils'
+import { checkSession } from '@/lib/auth'
 
 const tabs = [
   { id: 'pipeline', label: 'Pipeline', icon: Workflow },
@@ -43,9 +44,14 @@ export function Settings() {
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
-    const verified = sessionStorage.getItem('admin_verified') === 'true'
-    setIsVerified(verified)
-    setChecking(false)
+    let cancelled = false
+    checkSession().then(ok => {
+      if (!cancelled) {
+        setIsVerified(ok)
+        setChecking(false)
+      }
+    })
+    return () => { cancelled = true }
   }, [])
 
   if (checking) {
