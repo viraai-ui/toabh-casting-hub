@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, EyeOff, Lock, AlertCircle, Loader2, Mail, ArrowLeft } from 'lucide-react'
-import { api, isLoggedIn } from '@/lib/api'
+import { login, forgotPassword, resetPassword, isLoggedIn } from '@/lib/api'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -34,8 +34,7 @@ export function LoginPage() {
     if (!identifier.trim() || !password) { setError('Enter your username/email and password'); triggerShake(); return }
     setLoading(true)
     try {
-      const { token, user } = await api.login(identifier.trim(), password, remember)
-      api.setJwtToken(token)
+      await login(identifier.trim(), password, remember)
       navigate('/dashboard', { replace: true })
     } catch (err: any) { setError(err.message || 'Invalid credentials'); triggerShake() }
     finally { setLoading(false) }
@@ -46,7 +45,7 @@ export function LoginPage() {
     if (!forgotEmail.trim()) { setError('Enter your email address'); return }
     setLoading(true)
     try {
-      await api.forgotPassword(forgotEmail.trim())
+      await forgotPassword(forgotEmail.trim())
       setSuccess('If an account exists, a reset link has been sent.')
       setForgotEmail('')
     } catch (err: any) { setError(err.message || 'Failed to send reset email') }
@@ -59,7 +58,7 @@ export function LoginPage() {
     if (resetPw !== resetPwConfirm) { setError('Passwords do not match'); return }
     setLoading(true)
     try {
-      await api.resetPassword(resetToken, resetPw)
+      await resetPassword(resetToken, resetPw)
       setSuccess('Password updated! Redirecting to login…')
       setResetPw(''); setResetPwConfirm('')
       setTimeout(() => setMode('login'), 2000)

@@ -59,6 +59,8 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/reset-password" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<LoginPage />} />
             <Route
               element={
                 <ProtectedRoute>

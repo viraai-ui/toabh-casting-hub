@@ -17,7 +17,7 @@ import {
 import { cn, getInitials } from '@/lib/utils'
 import { useAppStore } from '@/hooks/useStore'
 import { toApiUrl } from '@/lib/api'
-import { logout } from '@/lib/auth'
+import { logout } from '@/lib/api'
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
