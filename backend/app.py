@@ -146,10 +146,36 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             role TEXT,
-            email TEXT,
+            email TEXT UNIQUE,
             phone TEXT,
             avatar_url TEXT,
-            is_active INTEGER DEFAULT 1
+            is_active INTEGER DEFAULT 1,
+            username TEXT,
+            password_hash TEXT,
+            must_reset_password INTEGER DEFAULT 0,
+            last_login TEXT,
+            invite_status TEXT DEFAULT 'invited',
+            invite_sent_at TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            action TEXT NOT NULL,
+            details TEXT,
+            ip_address TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS password_reset_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            token TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            used INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
 
         CREATE TABLE IF NOT EXISTS casting_assignments (
@@ -1422,23 +1448,44 @@ def list_team():
     db = get_db()
 
     if request.method == 'POST':
-        data = request.json
-        name = data.get('name', '').strip()
-        role = data.get('role', 'Team Member').strip()
-        email = data.get('email', '').strip()
-        phone = data.get('phone', '').strip()
-        avatar_url = data.get('avatar_url', '').strip()
+        data = request.json or {}
+        name = (data.get('name') or '').strip()
+        role = (data.get('role') or 'Team Member').strip()
+        email = (data.get('email') or '').strip()
+        phone = (data.get('phone') or '').strip()
+        avatar_url = (data.get('avatar_url') or '').strip()
 
         if not name:
             return jsonify({'error': 'Name is required'}), 400
+        if not email:
+            return jsonify({'error': 'Email is required'}), 400
+
+        # Generate unique username and initial password
+        existing = db.execute('SELECT username FROM team_members WHERE username IS NOT NULL').fetchall()
+        existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+        username = generate_unique_username(name, existing_usernames)
+        tmp_password = DEFAULT_PW
+        pw_hash = hash_password(tmp_password)
 
         cursor = db.execute(
-            'INSERT INTO team_members (name, role, email, phone, avatar_url, is_active) VALUES (?, ?, ?, ?, ?, 1)',
-            (name, role, email or None, phone or None, avatar_url or None)
+            'INSERT INTO team_members (name, role, email, phone, avatar_url, is_active, username, password_hash, must_reset_password, invite_status, invite_sent_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?, 1, "invited", datetime(\'now\'))',
+            (name, role, email, phone or None, avatar_url or None, username, pw_hash)
         )
+        member_id = cursor.lastrowid
         db.commit()
 
-        member = db.execute('SELECT * FROM team_members WHERE id = ?', (cursor.lastrowid,)).fetchone()
+        # Send invite email
+        login_url = f"https://toabh-casting-hub.vercel.app/login"
+        from backend.auth_module import invite_email_html, send_smtp
+        html_body = invite_email_html(name, username, tmp_password, login_url)
+        sent, msg = send_smtp(email, f"Welcome to TOABH Casting Hub — {name}", html_body)
+        if sent:
+            db.execute('UPDATE team_members SET invite_status = "active" WHERE id = ?', (member_id,))
+            db.commit()
+
+        _log_audit(db, None, 'TEAM_INVITE', f'Invited {name} ({email}) as {role}', _get_client_ip())
+
+        member = db.execute('SELECT * FROM team_members WHERE id = ?', (member_id,)).fetchone()
         return jsonify(dict(member)), 201
 
     rows = db.execute('SELECT * FROM team_members ORDER BY name').fetchall()
@@ -1463,19 +1510,22 @@ def single_team_member(member_id):
     if request.method == 'DELETE':
         db.execute('DELETE FROM team_members WHERE id = ?', (member_id,))
         db.commit()
+        _log_audit(db, None, 'TEAM_DELETE', f'Deleted team member {member_id}', _get_client_ip())
         return jsonify({'message': 'Deleted'})
 
     elif request.method == 'PUT':
         data = request.json
-        
-        name = data.get('name')
-        role = data.get('role')
+
+        name = (data.get('name') or '').strip()
+        role = (data.get('role') or '').strip()
+        email = (data.get('email') or '').strip()
+        phone = (data.get('phone') or '').strip()
         is_active = data.get('is_active')
-        email = data.get('email')
-        phone = data.get('phone')
-        avatar_url = data.get('avatar_url')
-        
-        updates = []
+        avatar_url = (data.get('avatar_url') or '').strip()
+
+        # Require email for all team members
+        if not email and request.method == 'PUT' and email == '':
+            pass  # allow blank email on PUT for existing members without email
         params = []
         if name is not None:
             updates.append('name = ?')
@@ -1521,6 +1571,46 @@ def single_team_member(member_id):
     member = dict(row)
     member['castings'] = [dict(c) for c in castings]
     return jsonify(member)
+
+
+@app.route('/api/team/<int:member_id>/resend-invite', methods=['POST'])
+def resend_invite(member_id):
+    db = get_db()
+    user = db.execute('SELECT id, name, email, username, invite_status FROM team_members WHERE id = ?', (member_id,)).fetchone()
+    if not user:
+        return jsonify({'error': 'Member not found'}), 404
+    if not user['email']:
+        return jsonify({'error': 'No email on file'}), 400
+    tmp_password = DEFAULT_PW
+    login_url = f"{os.environ.get('APP_BASE_URL', 'https://toabh-casting-hub.vercel.app')}/login"
+    from backend.auth_module import invite_email_html, send_smtp as _send_smtp
+    html_body = invite_email_html(user['name'], user['username'] or 'unknown', tmp_password, login_url)
+    sent, msg = _send_smtp(user['email'], f"TOABH Casting Hub invite (resend) — {user['name']}", html_body)
+    if sent:
+        db.execute("UPDATE team_members SET invite_status = 'active', invite_sent_at = datetime('now') WHERE id = ?", (member_id,))
+        db.commit()
+    try:
+        log_audit(db, None, 'INVITE_RESEND', f'Resent invite to {user["email"]}', request.remote_addr)
+    except Exception:
+        pass
+    return jsonify({'sent': sent, 'message': msg})
+
+
+@app.route('/api/team/<int:member_id>/toggle-status', methods=['POST'])
+def toggle_member_status(member_id):
+    db = get_db()
+    user = db.execute('SELECT id, name, is_active FROM team_members WHERE id = ?', (member_id,)).fetchone()
+    if not user:
+        return jsonify({'error': 'Member not found'}), 404
+    new_status = 0 if user['is_active'] else 1
+    db.execute('UPDATE team_members SET is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', (new_status, member_id))
+    db.commit()
+    action = 'DEACTIVATED' if new_status == 0 else 'ACTIVATED'
+    try:
+        log_audit(db, None, action, f'{action} user {user["name"]}', request.remote_addr)
+    except Exception:
+        pass
+    return jsonify({'is_active': new_status})
 
 # ==================== TEAM MEMBER UPLOAD ====================
 @app.route('/api/team/<int:member_id>/avatar', methods=['POST'])
@@ -2222,6 +2312,186 @@ def dashboard():
         'trend': months
     })
 
+# ==================== AUTH MODULE ====================
+from backend.auth_module import (
+    hash_password, verify_password, create_token, verify_token,
+    generate_unique_username, check_rate_limit,
+    invite_email_html, reset_email_html, send_smtp,
+    log_audit, _load_perms, save_perms, has_perm, get_super_admin_hash, verify_super_admin,
+    DEFAULT_PW
+)
+
+def _get_client_ip():
+    return request.headers.get('X-Forwarded-For', request.remote_addr or '')
+
+@app.route('/api/auth/login', methods=['POST'])
+def auth_login():
+    db = get_db()
+    ip = _get_client_ip()
+    data = request.json or {}
+    identifier = (data.get('username') or data.get('email') or '').strip().lower()
+    password = data.get('password', '')
+    remember = bool(data.get('remember'))
+
+    if not identifier or not password:
+        return jsonify({'error': 'Username/email and password required'}), 400
+
+    if not check_rate_limit(ip):
+        return jsonify({'error': 'Too many attempts. Try again later.'}), 429
+
+    # Super-admin bypass
+    if verify_super_admin(password):
+        clear_rate_limit(ip)
+        token = create_token(0, 'admin@toabhcasing.com', 'admin', is_super=True, remember=remember)
+        log_audit(db, 0, 'LOGIN', 'Super-admin login', ip)
+        resp = jsonify({'token': token, 'user': {'id': 0, 'email': 'admin@toabhcasing.com', 'role': 'admin', 'name': 'Administrator'}})
+        resp.set_cookie('toabh_session', token, httponly=True, samesite='Lax', max_age=86400)
+        return resp
+
+    # Super-admin env fallback
+    sa_hash = get_super_admin_hash()
+    if sa_hash and identifier == 'admin':
+        if verify_password(password, sa_hash):
+            clear_rate_limit(ip)
+            token = create_token(0, 'admin@toabhcasing.com', 'admin', is_super=True, remember=remember)
+            log_audit(db, 0, 'LOGIN', 'Super-admin login', ip)
+            resp = jsonify({'token': token, 'user': {'id': 0, 'email': 'admin@toabhcasing.com', 'role': 'admin', 'name': 'Administrator'}})
+            resp.set_cookie('toabh_session', token, httponly=True, samesite='Lax', max_age=86400)
+            return resp
+
+    # Find user by email or username
+    user = db.execute(
+        'SELECT id, name, email, role, username, password_hash, must_reset_password, last_login, invite_status FROM team_members WHERE (LOWER(email) = ? OR LOWER(username) = ?) AND is_active = 1',
+        (identifier, identifier)
+    ).fetchone()
+
+    if not user or not user['password_hash']:
+        return jsonify({'error': 'Invalid credentials'}), 401
+    if user['invite_status'] == 'pending':
+        return jsonify({'error': 'Please check your email and accept the invite first'}), 401
+
+    if not verify_password(password, user['password_hash']):
+        return jsonify({'error': 'Invalid credentials'}), 401
+
+    clear_rate_limit(ip)
+    token = create_token(user['id'], user['email'], user['role'], remember=remember)
+    db.execute("UPDATE team_members SET last_login = datetime('now'), invite_status = 'active' WHERE id = ?", (user['id'],))
+    log_audit(db, user['id'], 'LOGIN', f'User {user["email"]} logged in', ip)
+
+    resp = jsonify({
+        'token': token,
+        'user': {
+            'id': user['id'],
+            'name': user['name'],
+            'email': user['email'],
+            'role': user['role'],
+            'must_reset_password': bool(user['must_reset_password']),
+        }
+    })
+    resp.set_cookie('toabh_session', token, httponly=True, samesite='Lax', max_age=86400)
+    return resp
+
+
+@app.route('/api/auth/logout', methods=['POST'])
+def auth_logout():
+    from backend.auth_module import _extract_token
+    token = _extract_token(request)
+    payload = verify_token(token)
+    uid = payload['sub'] if payload else None
+    if uid:
+        log_audit(get_db(), uid, 'LOGOUT', 'User logged out', _get_client_ip())
+    resp = jsonify({'ok': True})
+    resp.delete_cookie('toabh_session')
+    return resp
+
+
+@app.route('/api/auth/me', methods=['GET'])
+def auth_me():
+    from backend.auth_module import _extract_token
+    token = _extract_token(request)
+    payload = verify_token(token)
+    if not payload:
+        return jsonify({'error': 'unauthorized'}), 401
+    db = get_db()
+    user = db.execute(
+        'SELECT id, name, email, role, username, last_login, invite_status FROM team_members WHERE id = ?',
+        (payload.get('sub'),)
+    ).fetchone()
+    if not user:
+        return jsonify({'error': 'user_not_found'}), 401
+    return jsonify(dict(user))
+
+
+@app.route('/api/auth/forgot-password', methods=['POST'])
+def auth_forgot_password():
+    db = get_db()
+    email = (request.json or {}).get('email', '').strip().lower()
+    if not email:
+        return jsonify({'error': 'Email required'}), 400
+    user = db.execute('SELECT id, name, email FROM team_members WHERE LOWER(email) = ?', (email,)).fetchone()
+    if not user:
+        return jsonify({'message': 'If an account exists, a reset link has been sent'}), 200
+    from backend.auth_module import DEFAULT_PW
+    reset_token = ''.join(__import__('secrets').token_urlsafe(32))
+    import datetime
+    expires = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)).isoformat()
+    db.execute('INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)',
+               (user['id'], reset_token, expires))
+    db.commit()
+    reset_url = f"{__import__('os').environ.get('APP_BASE_URL', 'https://toabh-casting-hub.vercel.app')}/reset-password?token={reset_token}"
+    from backend.auth_module import reset_email_html, send_smtp
+    html = reset_email_html(user['name'], reset_url)
+    sent, msg = send_smtp(user['email'], 'Reset your TOABH Casting Hub password', html)
+    log_audit(db, user['id'], 'PASSWORD_RESET_REQUESTED', f'Reset link sent to {email}', _get_client_ip())
+    if sent:
+        return jsonify({'message': 'Reset link sent to your email'}), 200
+    return jsonify({'message': 'If an account exists, a reset link has been sent'}), 200
+
+
+@app.route('/api/auth/reset-password', methods=['POST'])
+def auth_reset_password():
+    db = get_db()
+    data = request.json or {}
+    token = data.get('token', '')
+    new_pw = data.get('password', '')
+    if not token or not new_pw:
+        return jsonify({'error': 'Token and new password required'}), 400
+    import datetime
+    row = db.execute('SELECT user_id, expires_at, used FROM password_reset_tokens WHERE token = ?', (token,)).fetchone()
+    if not row or row['used'] or datetime.datetime.fromisoformat(row['expires_at']) < datetime.datetime.now(datetime.timezone.utc):
+        return jsonify({'error': 'Invalid or expired token'}), 400
+    user = db.execute('SELECT id FROM team_members WHERE id = ?', (row['user_id'],)).fetchone()
+    if not user:
+        return jsonify({'error': 'User not found'}), 400
+    new_hash = hash_password(new_pw)
+    db.execute('UPDATE team_members SET password_hash = ?, must_reset_password = 0 WHERE id = ?', (new_hash, user['id']))
+    db.execute('UPDATE password_reset_tokens SET used = 1 WHERE token = ?', (token,))
+    db.commit()
+    log_audit(db, user['id'], 'PASSWORD_RESET', 'Password was reset', _get_client_ip())
+    return jsonify({'message': 'Password updated'}), 200
+
+
+@app.route('/api/auth/change-password', methods=['POST'])
+def auth_change_password():
+    from backend.auth_module import _extract_token, log_audit as _log_a
+    from backend.auth_module import _extract_token
+    import secrets
+    new_pw = data.get('password', '')
+    token = _extract_token(request)
+    payload = verify_token(token)
+    if not payload:
+        return jsonify({'error': 'unauthorized'}), 401
+    db = get_db()
+    user_id = payload.get('sub')
+    if not new_pw:
+        return jsonify({'error': 'New password required'}), 400
+    db.execute('UPDATE team_members SET password_hash = ?, must_reset_password = 0 WHERE id = ?',
+               (hash_password(new_pw), user_id))
+    db.commit()
+    log_audit(db, user_id, 'PASSWORD_CHANGED', 'User changed password', _get_client_ip())
+    return jsonify({'message': 'Password updated'}), 200
+
+
 # ==================== MESSAGE PARSER ====================
 
 @app.route('/api/parse', methods=['POST'])
@@ -2668,6 +2938,99 @@ def delete_user(user_id):
     global USERS
     USERS = [u for u in USERS if u['id'] != user_id]
     return jsonify({'message':'Deleted'})
+
+
+# ==================== PERMISSIONS ====================
+@app.route('/api/settings/permissions', methods=['GET'])
+def get_permissions():
+    from backend.auth_module import _load_perms
+    return jsonify(_load_perms())
+
+@app.route('/api/settings/permissions', methods=['PUT'])
+def update_permissions():
+    from backend.auth_module import save_perms
+    data = request.json or {}
+    save_perms(data)
+    return jsonify(data)
+
+
+# ==================== AUDIT LOG ====================
+@app.route('/api/audit-log', methods=['GET'])
+def get_audit_log():
+    db = get_db()
+    rows = db.execute(
+        'SELECT a.id, a.user_id, a.action, a.details, a.ip_address, a.created_at, '\
+        'COALESCE(tm.name, a.user_id) as user_name '\
+        'FROM audit_log a '\
+        'LEFT JOIN team_members tm ON tm.id = a.user_id '\
+        'ORDER BY a.created_at DESC LIMIT 200'
+    ).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+
+# ==================== PROFILE PASSWORD CHANGE ====================
+@app.route('/api/profile/password', methods=['PUT'])
+def update_profile_password():
+    from backend.auth_module import _extract_token, verify_token
+    token = _extract_token(request)
+    payload = verify_token(token)
+    if not payload:
+        return jsonify({'error': 'unauthorized'}), 401
+
+    db = get_db()
+    data = request.json or {}
+    current_pw = data.get('current_password', '')
+    new_pw = data.get('new_password', '')
+
+    if not new_pw or len(new_pw) < 6:
+        return jsonify({'error': 'Password must be at least 6 characters'}), 400
+
+    user_id = payload.get('sub')
+    # For super-admin, skip current password check
+    if not payload.get('sa') and current_pw:
+        user = db.execute('SELECT password_hash FROM team_members WHERE id = ?', (user_id,)).fetchone()
+        if not user or not verify_password(current_pw, user.get('password_hash', '')):
+            return jsonify({'error': 'Current password is incorrect'}), 401
+
+    db.execute('UPDATE team_members SET password_hash = ?, must_reset_password = 0 WHERE id = ?',
+               (hash_password(new_pw), user_id))
+    db.commit()
+    try:
+        log_audit(db, user_id, 'PASSWORD_CHANGE', 'User changed password', request.remote_addr)
+    except Exception:
+        pass
+    return jsonify({'message': 'Password updated'})
+
+
+# ==================== NO-CACHE MIDDLEWARE ====================
+@app.after_request
+def add_no_cache_headers(response):
+    # Never cache API responses
+    if request.path.startswith('/api/'):
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
+
+# ==================== FRONTEND SPA ROUTES ====================
+
+# Serve static assets (JS, CSS, images, etc.)
+@app.route('/assets/<path:filename>')
+def serve_assets(filename):
+    return send_from_directory(os.path.join(FRONTEND_DIST, 'assets'), filename)
+
+@app.route('/favicon.<ext>')
+def serve_favicon(ext):
+    return send_from_directory(FRONTEND_DIST, f'favicon.{ext}')
+
+# Catch-all: serve index.html for SPA routing
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def catch_all(path):
+    # Don't interfere with API routes
+    if path.startswith('api/'):
+        return jsonify({'error': 'Not found'}), 404
+    return send_from_directory(FRONTEND_DIST, 'index.html')
 
 # ==================== SEARCH ROUTE ====================
 
