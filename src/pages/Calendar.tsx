@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Loader2, Filter, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import { CastingModal } from '@/components/CastingModal'
+import { CastingDetailModal } from '@/components/CastingDetailModal'
 import { useOverlay } from '@/hooks/useOverlayManager'
 import type { Casting, PipelineStage } from '@/types'
 import {
@@ -28,7 +29,8 @@ export function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<'month' | 'week' | 'day'>('month')
   const [selectedCasting, setSelectedCasting] = useState<Casting | null>(null)
-  const [modalOpen, setModalOpen] = useState(false)
+  const [detailModalOpen, setDetailModalOpen] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
   const [filters, setFilters] = useState<{ team?: string; status?: string; client?: string }>({})
   const [filtersOpen, setFiltersOpen] = useState(false) // collapsed on mobile by default
 
@@ -54,12 +56,35 @@ export function Calendar() {
   }, [])
 
   useEffect(() => {
-    if (modalOpen) {
-      openOverlay('casting-calendar-modal', () => setModalOpen(false))
+    if (detailModalOpen) {
+      openOverlay('casting-detail-modal', () => setDetailModalOpen(false))
     } else {
-      closeOverlay('casting-calendar-modal')
+      closeOverlay('casting-detail-modal')
     }
-  }, [modalOpen, openOverlay, closeOverlay])
+  }, [detailModalOpen, openOverlay, closeOverlay])
+
+  useEffect(() => {
+    if (editModalOpen) {
+      openOverlay('casting-calendar-edit-modal', () => setEditModalOpen(false))
+    } else {
+      closeOverlay('casting-calendar-edit-modal')
+    }
+  }, [editModalOpen, openOverlay, closeOverlay])
+
+  const openDetail = (c: Casting) => {
+    setSelectedCasting(c)
+    setDetailModalOpen(true)
+  }
+
+  const openEdit = () => {
+    setDetailModalOpen(false)
+    setEditModalOpen(true)
+  }
+
+  const closeEdit = () => {
+    setEditModalOpen(false)
+    setSelectedCasting(null)
+  }
 
   const getCastingColor = (status: string) => {
     const stage = pipeline.find((p) => p.name === status)
@@ -202,10 +227,7 @@ export function Calendar() {
             currentDate={currentDate}
             getCastingsForDate={getCastingsForDate}
             getCastingColor={getCastingColor}
-            onCastingClick={(c) => {
-              setSelectedCasting(c)
-              setModalOpen(true)
-            }}
+            onCastingClick={openDetail}
           />
         )}
         {view === 'week' && (
@@ -213,32 +235,36 @@ export function Calendar() {
             currentDate={currentDate}
             getCastingsForDate={getCastingsForDate}
             getCastingColor={getCastingColor}
-            onCastingClick={(c) => {
-              setSelectedCasting(c)
-              setModalOpen(true)
-            }}
+            onCastingClick={openDetail}
           />
         )}
         {view === 'day' && (
           <DayView
             currentDate={currentDate}
             castings={filteredCastings}
-            onCastingClick={(c) => {
-              setSelectedCasting(c)
-              setModalOpen(true)
-            }}
+            onCastingClick={openDetail}
           />
         )}
       </div>
 
-      <CastingModal
-        open={modalOpen}
+      <CastingDetailModal
+        open={detailModalOpen}
         onClose={() => {
-          setModalOpen(false)
+          setDetailModalOpen(false)
           setSelectedCasting(null)
         }}
+        onEdit={openEdit}
         casting={selectedCasting}
-        onSave={fetchData}
+      />
+
+      <CastingModal
+        open={editModalOpen}
+        onClose={closeEdit}
+        casting={selectedCasting}
+        onSave={() => {
+          fetchData()
+          closeEdit()
+        }}
       />
     </div>
   )
