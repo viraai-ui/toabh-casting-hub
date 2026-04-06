@@ -1583,9 +1583,9 @@ def resend_invite(member_id):
         return jsonify({'error': 'No email on file'}), 400
     tmp_password = DEFAULT_PW
     login_url = f"{os.environ.get('APP_BASE_URL', 'https://toabh-casting-hub.vercel.app')}/login"
-    from backend.auth_module import invite_email_html, send_smtp as _send_smtp
-    html_body = invite_email_html(user['name'], user['username'] or 'unknown', tmp_password, login_url)
-    sent, msg = _send_smtp(user['email'], f"TOABH Casting Hub invite (resend) — {user['name']}", html_body)
+    from backend.auth_module import invite_email_html
+    html_body = invite_email_html(user['name'], user['username'] or user['name'], tmp_password, login_url)
+    sent, msg = send_smtp(user['email'], f"TOABH Casting Hub invite (resend) — {user['name']}", html_body)
     if sent:
         db.execute("UPDATE team_members SET invite_status = 'active', invite_sent_at = datetime('now') WHERE id = ?", (member_id,))
         db.commit()
