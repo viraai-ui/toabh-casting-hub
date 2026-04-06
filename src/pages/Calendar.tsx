@@ -239,6 +239,7 @@ export function Calendar() {
         }}
         casting={selectedCasting}
         onSave={fetchData}
+        readOnly={true}
       />
     </div>
   )
