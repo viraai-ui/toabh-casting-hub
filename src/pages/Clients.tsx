@@ -402,6 +402,24 @@ export function Clients() {
           }
         }}
       />
+
+      <ClientDetailModal
+        open={detailOpen}
+        client={detailClient}
+        castings={detailClient ? getClientCastings(detailClient.id) : []}
+        onClose={() => {
+          setDetailOpen(false)
+          setDetailClient(null)
+        }}
+        onEdit={() => {
+          setDetailOpen(false)
+          if (detailClient) {
+            setEditingClient(detailClient)
+            setModalOpen(true)
+          }
+        }}
+        onDelete={handleDetailDelete}
+      />
     </div>
   )
 }
