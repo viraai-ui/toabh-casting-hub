@@ -501,7 +501,7 @@ function ClientGridCard({
                   {availableTags.length > 0 && (
                     <button
                       type="button"
-                      onClick={onToggleQuickAdd}
+                      onClick={(e) => { e.stopPropagation(); onToggleQuickAdd() }}
                       className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-2.5 py-1 text-[11px] font-semibold text-slate-500 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
                     >
                       <Plus className="h-3 w-3" />
@@ -528,7 +528,7 @@ function ClientGridCard({
                       <button
                         key={tag.id}
                         type="button"
-                        onClick={() => onAddTag(tag.id)}
+                        onClick={(e) => { e.stopPropagation(); onAddTag(tag.id) }}
                         disabled={savingTag}
                         className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 disabled:opacity-50"
                       >
@@ -601,8 +601,7 @@ function ClientListRow({
             <span className="truncate">{client.email || 'No email'}</span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {clientTags.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
               clientTags.map((tag) => (
                 <ClientTagPill key={tag.id} tag={tag} onRemove={() => onRemoveTag(tag.id)} />
               ))
@@ -706,7 +705,7 @@ function ClientListRow({
                   <button
                     key={tag.id}
                     type="button"
-                    onClick={() => onAddTag(tag.id)}
+                        onClick={(e) => { e.stopPropagation(); onAddTag(tag.id) }}
                     disabled={savingTag}
                     className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 disabled:opacity-50"
                   >
