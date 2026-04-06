@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ChevronDown, Mic, Minimize2, SendHorizonal, Sparkles, X } from 'lucide-react'
+import { ChevronDown, Loader2, Mic, MicOff, Minimize2, SendHorizonal, Sparkles, X } from 'lucide-react'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { ASSISTANT_SUGGESTIONS, queryAssistant, type AssistantMessage } from '@/lib/assistant'
+import { useVoice, processVoiceQuery } from '@/hooks/useVoice'
 
 const WELCOME_MESSAGE: AssistantMessage = {
   id: 'assistant-welcome',
   role: 'assistant',
-  text: 'Ask about today’s queue, delays, weekly work, or any casting detail.',
+  text: 'Ask about today's queue, delays, weekly work, or any casting detail.',
   createdAt: new Date().toISOString(),
 }
 
@@ -18,53 +19,105 @@ export function CastingAssistant() {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [messages, setMessages] = useState<AssistantMessage[]>([WELCOME_MESSAGE])
   const scrollRef = useRef<HTMLDivElement | null>(null)
+  const processedRef = useRef('')
+
+  const {
+    state: voiceState,
+    interimTranscript,
+    startListening,
+    stopListening,
+    resetState,
+  } = useVoice()
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, open, loading])
 
-  const canSubmit = input.trim().length > 0 && !loading
-  const latestResponse = useMemo(() => [...messages].reverse().find((message) => message.response)?.response, [messages])
-
-  const submitQuery = async (rawQuery: string) => {
-    const query = rawQuery.trim()
-    if (!query || loading) return
-
-    const userMessage: AssistantMessage = {
-      id: `${Date.now()}-user`,
-      role: 'user',
-      text: query,
-      createdAt: new Date().toISOString(),
+  // Handle final voice transcript auto-submission
+  useEffect(() => {
+    if (voiceState === 'processing' && interimTranscript && interimTranscript !== processedRef.current) {
+      processedRef.current = interimTranscript
+      const { cleanQuery } = processVoiceQuery(interimTranscript)
+      const query = cleanQuery.trim() || interimTranscript
+      // Small delay so the user sees the processing state
+      const timer = setTimeout(() => {
+        void submitQuery(query)
+        resetState()
+        processedRef.current = ''
+      }, 400)
+      return () => clearTimeout(timer)
     }
+  }, [voiceState, interimTranscript, resetState])
 
-    setMessages((current) => [...current, userMessage])
-    setInput('')
-    setLoading(true)
+  // Reset processedRef when voice returns to idle after an error
+  useEffect(() => {
+    if (voiceState === 'idle' || voiceState === 'error') {
+      processedRef.current = ''
+    }
+  }, [voiceState])
 
-    try {
-      const response = await queryAssistant(query)
-      setMessages((current) => [
-        ...current,
-        {
-          id: `${Date.now()}-assistant`,
-          role: 'assistant',
-          text: response.answer,
-          response,
-          createdAt: new Date().toISOString(),
-        },
-      ])
-    } catch {
-      setMessages((current) => [
-        ...current,
-        {
-          id: `${Date.now()}-assistant-error`,
-          role: 'assistant',
-          text: 'I could not reach the casting data right now. Please try again in a moment.',
-          createdAt: new Date().toISOString(),
-        },
-      ])
-    } finally {
-      setLoading(false)
+  const canSubmit = input.trim().length > 0 && !loading
+
+  const isListening = voiceState === 'requesting' || voiceState === 'listening'
+
+  const submitQuery = useCallback(
+    async (rawQuery: string) => {
+      const query = rawQuery.trim()
+      if (!query || loading) return
+
+      const userMessage: AssistantMessage = {
+        id: `${Date.now()}-user`,
+        role: 'user',
+        text: query,
+        createdAt: new Date().toISOString(),
+      }
+
+      setMessages((current) => [...current, userMessage])
+      setInput('')
+      setLoading(true)
+
+      try {
+        const response = await queryAssistant(query)
+        setMessages((current) => [
+          ...current,
+          {
+            id: `${Date.now()}-assistant`,
+            role: 'assistant',
+            text: response.answer,
+            response,
+            createdAt: new Date().toISOString(),
+          },
+        ])
+      } catch {
+        setMessages((current) => [
+          ...current,
+          {
+            id: `${Date.now()}-assistant-error`,
+            role: 'assistant',
+            text: 'I could not reach the casting data right now. Please try again in a moment.',
+            createdAt: new Date().toISOString(),
+          },
+        ])
+      } finally {
+        setLoading(false)
+      }
+    },
+    [loading],
+  )
+
+  const liveTranscript = isListening ? interimTranscript : ''
+
+  const latestResponse = useMemo(
+    () => [...messages].reverse().find((message) => message.response)?.response,
+    [messages],
+  )
+
+  const toggleVoice = () => {
+    if (isListening) {
+      stopListening()
+    } else {
+      resetState()
+      startListening()
     }
   }
 
@@ -121,11 +174,7 @@ export function CastingAssistant() {
                       : 'border border-white/10 bg-white/6 text-slate-100'
                   )}>
                     <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-inherit/70">
-                      {message.role === 'assistant' ? (
-                        <Sparkles className="h-3 w-3" />
-                      ) : (
-                        <Sparkles className="h-3 w-3" />
-                      )}
+                      <Sparkles className="h-3 w-3" />
                       <span>{message.role === 'assistant' ? 'Assistant' : 'You'}</span>
                     </div>
                     <p className="mt-1.5 text-[13px] leading-[1.55]">{message.text}</p>
@@ -166,6 +215,32 @@ export function CastingAssistant() {
                 <div className="flex justify-start">
                   <div className="rounded-2xl border border-white/10 bg-white/6 px-3 py-2 text-[13px] text-slate-300">
                     Reading casting data…
+                  </div>
+                </div>
+              )}
+
+              {/* Voice processing indicator */}
+              {voiceState === 'processing' && interimTranscript && (
+                <div className="flex justify-end">
+                  <div className={cn(
+                    'max-w-[88%] rounded-2xl px-3 py-2.5',
+                    'border border-amber-300/20 bg-amber-500/10 text-amber-100'
+                  )}>
+                    <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-amber-200/70">
+                      <Mic className="h-3 w-3" />
+                      <span>Voice</span>
+                    </div>
+                    <p className="mt-1.5 text-[13px] leading-[1.55] italic opacity-80">{interimTranscript}</p>
+                    <p className="mt-1 text-[10px] text-amber-200/50">Sending…</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Voice error indicator */}
+              {voiceState === 'error' && (
+                <div className="flex justify-center">
+                  <div className="rounded-2xl border border-red-300/20 bg-red-500/10 px-3 py-2 text-[13px] text-red-200">
+                    Microphone not available. Please allow mic access in browser settings.
                   </div>
                 </div>
               )}
@@ -215,17 +290,53 @@ export function CastingAssistant() {
                 </AnimatePresence>
               </div>
 
+              {/* Live voice transcript bar */}
+              {isListening && liveTranscript && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-2 rounded-xl bg-amber-400/10 px-3 py-1.5 border border-amber-300/20"
+                >
+                  <p className="text-[12px] text-amber-200 leading-relaxed">{liveTranscript}</p>
+                </motion.div>
+              )}
+
               {/* Input bar */}
               <div className="flex items-end gap-1.5 rounded-[24px] border border-white/10 bg-white/6 p-1.5 shadow-inner shadow-black/10">
+                {/* Voice button */}
                 <button
                   type="button"
-                  disabled
-                  title="Voice input foundation ready for browser speech capture integration"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-dashed border-amber-300/35 bg-amber-400/10 text-amber-200 opacity-80"
-                  aria-label="Voice input coming soon"
+                  onClick={toggleVoice}
+                  title={
+                    voiceState === 'unsupported'
+                      ? 'Voice not supported in this browser'
+                      : isListening
+                      ? 'Stop listening'
+                      : 'Start voice input'
+                  }
+                  className={cn(
+                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all relative',
+                    isListening
+                      ? 'bg-red-500/20 border border-red-300/30 text-red-400 animate-pulse'
+                      : voiceState === 'unsupported'
+                      ? 'bg-white/5 border border-white/5 text-slate-600 opacity-50 cursor-not-allowed'
+                      : 'border border-dashed border-amber-300/35 bg-amber-400/10 text-amber-200 hover:border-amber-300/60 hover:bg-amber-400/20',
+                  )}
+                  aria-label={
+                    isListening ? 'Stop listening' : 'Start voice input'
+                  }
+                  disabled={voiceState === 'unsupported'}
                 >
-                  <Mic className="h-3.5 w-3.5" />
+                  {isListening ? (
+                    <>
+                      <MicOff className="h-3.5 w-3.5" />
+                      <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-red-500 animate-ping" />
+                    </>
+                  ) : (
+                    <Mic className="h-3.5 w-3.5" />
+                  )}
                 </button>
+
                 <label className="sr-only" htmlFor="casting-assistant-input">Ask the assistant</label>
                 <textarea
                   id="casting-assistant-input"
@@ -238,8 +349,11 @@ export function CastingAssistant() {
                       void submitQuery(input)
                     }
                   }}
-                  placeholder="Ask about today, delays, weekly work, or a casting..."
-                  className="max-h-24 min-h-[40px] flex-1 resize-none bg-transparent px-2 py-1.5 text-[13px] text-white placeholder:text-slate-400 focus:outline-none"
+                  placeholder={isListening ? 'Listening… speak now' : 'Ask about today, delays, weekly work, or a casting...'}
+                  className={cn(
+                    'max-h-24 min-h-[40px] flex-1 resize-none bg-transparent px-2 py-1.5 text-[13px] text-white placeholder:text-slate-400 focus:outline-none',
+                    isListening && 'text-amber-100',
+                  )}
                 />
                 <button
                   type="button"
@@ -256,7 +370,13 @@ export function CastingAssistant() {
               </div>
 
               {/* Footer hint */}
-              <p className="mt-2 text-[11px] text-slate-500 text-center">Voice ready — tap the mic and speak.</p>
+              <p className="mt-2 text-[11px] text-slate-500 text-center">
+                {voiceState === 'unsupported'
+                  ? 'Voice input not supported in this browser. Use Chrome for best results.'
+                  : isListening
+                  ? 'Listening… tap mic to stop'
+                  : 'Tap the mic and speak to ask questions'}
+              </p>
             </div>
           </motion.div>
         )}
