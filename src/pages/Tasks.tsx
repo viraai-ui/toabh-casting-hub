@@ -335,7 +335,7 @@ export function Tasks() {
 
   const isAdmin = ['admin', 'founder'].includes((currentUser?.role || '').toLowerCase())
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       const query = new URLSearchParams()
@@ -349,12 +349,12 @@ export function Tasks() {
       setTasks(Array.isArray(tasksData) ? tasksData : [])
       setTeam(Array.isArray(teamData) ? teamData : [])
       setStages(Array.isArray(stageData) ? stageData : [])
+    } catch (err) {
+      console.error('[Tasks] Failed to fetch:', err)
     } finally {
       setLoading(false)
     }
-  }
-
-  useEffect(() => { void fetchData() }, [filter, currentUser?.team_member_id])
+  }, [filter, currentUser?.team_member_id])
 
   if (loading) {
     return <div className="flex items-center justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-amber-500" /></div>
