@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, User, Instagram, Phone, Mail, Pencil, Trash2, Loader2, Check, Eye, EyeOff } from 'lucide-react'
+import { X, User, Camera, Phone, Mail, Pencil, Trash2, Loader2, Check, Eye, EyeOff } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import type { Talent } from '@/types'
@@ -182,7 +182,7 @@ export function TalentDetailModal({ open, onClose, talent, onSave }: TalentDetai
                   <label className="text-xs font-medium text-slate-500 mb-1 block">Instagram Handle</label>
                   {mode === 'view' ? (
                     <div className="flex items-center gap-2 py-2 px-3 bg-slate-50 rounded-xl">
-                      <Instagram className="w-4 h-4 text-slate-400" />
+                      <Camera className="w-4 h-4 text-slate-400" />
                       <a
                         href={form.instagram_handle ? `https://instagram.com/${form.instagram_handle.replace(/^@/, '')}` : '#'}
                         target="_blank"
@@ -194,7 +194,7 @@ export function TalentDetailModal({ open, onClose, talent, onSave }: TalentDetai
                     </div>
                   ) : (
                     <div className="relative">
-                      <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <Camera className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <input
                         type="text"
                         value={form.instagram_handle}

@@ -14,6 +14,7 @@ import {
   BarChart3,
   Settings,
   LogOut,
+  Star,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useOverlay } from '@/hooks/useOverlayManager'

@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  Star,
 } from 'lucide-react'
 import { cn, getInitials } from '@/lib/utils'
 import { useAppStore } from '@/hooks/useStore'
@@ -26,6 +27,7 @@ const navItems = [
   { icon: Users, label: 'Clients', path: '/clients' },
   { icon: Calendar, label: 'Calendar', path: '/calendar' },
   { icon: UserCircle, label: 'Team', path: '/team' },
+  { icon: Star, label: 'Talents', path: '/talents' },
   { icon: Activity, label: 'Activity', path: '/activity' },
   { icon: BarChart3, label: 'Reports', path: '/reports' },
   { icon: Settings, label: 'Settings', path: '/settings' },
