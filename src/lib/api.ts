@@ -1,5 +1,5 @@
 const BASE = import.meta.env.VITE_API_URL || ''
-// AUTH TEMPORARILY DISABLED — set to true to enable auth back
+// AUTH TEMPORARILY DISABLED — set to false to re-enable
 const AUTH_DISABLED = true
 
 export function toApiUrl(path: string) {
@@ -67,25 +67,8 @@ export const api = {
   del: (path: string) => request('DELETE', path),
 }
 
-// ─── Session helpers ───────────────────────────────────────────────────
-
-// ─── Auth disabled auto-session ───────────────────────────
-function _ensureAuthDisabledSession() {
-  if (!AUTH_DISABLED) return
-  try {
-    const existing = sessionStorage.getItem('toabh_session') || localStorage.getItem('toabh_session')
-    if (!existing) {
-      const fakeToken = btoa(JSON.stringify({ sub: 0, email: 'admin@toabh.com', role: 'admin', sa: true, iat: Date.now()/1000, exp: Date.now()/1000 + 86400 })) + '.disabled'
-      const session = { token: fakeToken, user: { id: 0, email: 'admin@toabh.com', role: 'admin', name: 'Administrator' }, ts: Date.now() }
-      sessionStorage.setItem('toabh_session', JSON.stringify(session))
-      localStorage.setItem('toabh_session', JSON.stringify(session))
-      localStorage.setItem('toabh_user', JSON.stringify(session.user))
-    }
-  } catch {/* */}
-}
-_ensureAuthDisabledSession()
-
 export function isLoggedIn(): boolean {
+  if (AUTH_DISABLED) return true
   try {
     const raw = sessionStorage.getItem('toabh_session') || localStorage.getItem('toabh_session')
     if (!raw) return false
@@ -105,18 +88,15 @@ export function getSessionUser() {
   } catch { return null }
 }
 
-// ─── Auth actions ──────────────────────────────────────────────────────
+export function clearSession() {
+  if (AUTH_DISABLED) return
+  sessionStorage.removeItem('toabh_session')
+  localStorage.removeItem('toabh_session')
+  sessionStorage.removeItem('toabh_user')
+  localStorage.removeItem('toabh_user')
+}
 
 export async function login(identifier: string, password: string, remember = false) {
-  if (AUTH_DISABLED) {
-    const fakeToken = btoa(JSON.stringify({ sub: 0, email: 'admin@toabh.com', role: 'admin', sa: true, iat: Date.now()/1000, exp: Date.now()/1000 + 86400 })) + '.disabled'
-    const user = { id: 0, email: 'admin@toabh.com', role: 'admin', name: 'Administrator' }
-    const store = remember ? localStorage : sessionStorage
-    store.setItem('toabh_session', JSON.stringify({ token: fakeToken, user, ts: Date.now() }))
-    localStorage.setItem('toabh_user', JSON.stringify(user))
-    sessionStorage.setItem('toabh_user', JSON.stringify(user))
-    return { token: fakeToken, user }
-  }
   const r = await fetch(toApiUrl('/api/auth/login'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -135,31 +115,18 @@ export async function login(identifier: string, password: string, remember = fal
   return data
 }
 
-export async function loginAndSetSession(_remember = false) {
-  // Backwards compat — login() already does this
-}
-
 export async function logout() {
+  if (AUTH_DISABLED) return
   try {
     const raw = sessionStorage.getItem('toabh_session') || localStorage.getItem('toabh_session')
     if (raw) {
       const { token } = JSON.parse(raw)
       if (token) {
-        await fetch(toApiUrl('/api/auth/logout'), {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        await fetch(toApiUrl('/api/auth/logout'), { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
       }
     }
   } catch { /* ignore */ }
   clearSession()
-}
-
-export function clearSession() {
-  sessionStorage.removeItem('toabh_session')
-  localStorage.removeItem('toabh_session')
-  sessionStorage.removeItem('toabh_user')
-  localStorage.removeItem('toabh_user')
 }
 
 export async function forgotPassword(email: string) {
