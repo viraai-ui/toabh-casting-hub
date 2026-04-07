@@ -1,5 +1,6 @@
 const BASE = import.meta.env.VITE_API_URL || ''
-const AUTH_DISABLED = import.meta.env.VITE_AUTH_DISABLED === 'true'
+// AUTH TEMPORARILY DISABLED — set to true to enable auth back
+const AUTH_DISABLED = true
 
 export function toApiUrl(path: string) {
   if (/^https?:\/\//.test(path)) return path

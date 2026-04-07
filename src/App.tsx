@@ -17,7 +17,8 @@ import { Profile } from './pages/Profile'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { checkSession } from './lib/api'
 
-const AUTH_DISABLED = import.meta.env.VITE_AUTH_DISABLED === 'true'
+// AUTH TEMPORARILY DISABLED — set to true to enable auth back
+const AUTH_DISABLED = true
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -451,6 +451,31 @@ def init_db():
         )
     ''')
 
+    # ─── Talents module ──────────────────────────────────────────────
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS talents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            instagram_handle TEXT,
+            phone TEXT,
+            email TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            updated_at TEXT DEFAULT (datetime('now'))
+        )
+    ''')
+    db.execute('CREATE INDEX IF NOT EXISTS idx_talents_name ON talents(name)')
+    db.execute('CREATE INDEX IF NOT EXISTS idx_talents_phone ON talents(phone)')
+    db.execute('CREATE INDEX IF NOT EXISTS idx_talents_email ON talents(email)')
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS casting_talents (
+            casting_id INTEGER NOT NULL,
+            talent_id INTEGER NOT NULL,
+            PRIMARY KEY (casting_id, talent_id),
+            FOREIGN KEY (casting_id) REFERENCES castings(id) ON DELETE CASCADE,
+            FOREIGN KEY (talent_id) REFERENCES talents(id) ON DELETE CASCADE
+        )
+    ''')
+
     # Seed pipeline stages if empty
     cursor = db.execute('SELECT COUNT(*) FROM settings_pipeline')
     if cursor.fetchone()[0] == 0:
@@ -3048,6 +3073,338 @@ def update_profile_password():
     except Exception:
         pass
     return jsonify({'message': 'Password updated'})
+
+
+# ==================== TALENTS MODULE ====================
+
+def normalize_phone(phone):
+    """Strip non-digit characters for comparison."""
+    import re
+    return re.sub(r'[^\d+]', '', phone or '')
+
+def normalize_email(email):
+    return (email or '').strip().lower()
+
+def sanitize_instagram(handle):
+    """Strip @ prefix if present."""
+    h = (handle or '').strip()
+    if h.startswith('@'):
+        h = h[1:]
+    return h or None
+
+@app.route('/api/talents', methods=['GET'])
+def list_talents():
+    db = get_db()
+    q = request.args.get('q', '').strip()
+    if q:
+        like = f'%{q}%'
+        rows = db.execute('''
+            SELECT * FROM talents
+            WHERE name LIKE ? OR phone LIKE ? OR email LIKE ? OR instagram_handle LIKE ?
+            ORDER BY updated_at DESC
+        ''', (like, like, like, like)).fetchall()
+    else:
+        rows = db.execute('SELECT * FROM talents ORDER BY updated_at DESC').fetchall()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/api/talents/search', methods=['GET'])
+def search_talents():
+    db = get_db()
+    q = request.args.get('q', '').strip()
+    if not q:
+        return jsonify([])
+    like = f'%{q}%'
+    rows = db.execute('''
+        SELECT id, name, phone, email, instagram_handle
+        FROM talents
+        WHERE name LIKE ? OR phone LIKE ? OR email LIKE ? OR instagram_handle LIKE ?
+        ORDER BY
+            CASE WHEN name LIKE ? THEN 0 ELSE 1 END,
+            name ASC
+        LIMIT 15
+    ''', (like, like, like, like, f'{q}%')).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/api/talents', methods=['POST'])
+def create_talent():
+    db = get_db()
+    data = request.json or {}
+    name = (data.get('name') or '').strip()
+    if not name:
+        return jsonify({'error': 'Talent name is required'}), 400
+
+    instagram = sanitize_instagram(data.get('instagram_handle'))
+    phone = (data.get('phone') or '').strip()
+    email = (data.get('email') or '').strip()
+
+    if email and '@' not in email:
+        return jsonify({'error': 'Invalid email format'}), 400
+
+    row = db.execute('''
+        INSERT INTO talents (name, instagram_handle, phone, email)
+        VALUES (?, ?, ?, ?)
+    ''', (name, instagram, phone, email))
+    db.commit()
+
+    talent = db.execute('SELECT * FROM talents WHERE id = ?', (row.lastrowid,)).fetchone()
+    return jsonify(dict(talent)), 201
+
+
+@app.route('/api/talents/<int:talent_id>', methods=['PUT'])
+def update_talent(talent_id):
+    db = get_db()
+    existing = db.execute('SELECT * FROM talents WHERE id = ?', (talent_id,)).fetchone()
+    if not existing:
+        return jsonify({'error': 'Talent not found'}), 404
+
+    data = request.json or {}
+    name = data.get('name', existing['name']).strip()
+    if not name:
+        return jsonify({'error': 'Talent name is required'}), 400
+
+    instagram = sanitize_instagram(data.get('instagram_handle', existing['instagram_handle']))
+    phone = data.get('phone', existing['phone'] or '').strip()
+    email = data.get('email', existing['email'] or '').strip()
+
+    if email and '@' not in email:
+        return jsonify({'error': 'Invalid email format'}), 400
+
+    db.execute('''
+        UPDATE talents SET name=?, instagram_handle=?, phone=?, email=?,
+               updated_at = datetime('now')
+        WHERE id=?
+    ''', (name, instagram, phone, email, talent_id))
+    db.commit()
+
+    talent = db.execute('SELECT * FROM talents WHERE id = ?', (talent_id,)).fetchone()
+    return jsonify(dict(talent))
+
+
+@app.route('/api/talents/<int:talent_id>', methods=['DELETE'])
+def delete_talent(talent_id):
+    db = get_db()
+    existing = db.execute('SELECT * FROM talents WHERE id = ?', (talent_id,)).fetchone()
+    if not existing:
+        return jsonify({'error': 'Talent not found'}), 404
+
+    db.execute('DELETE FROM talents WHERE id = ?', (talent_id,))
+    db.commit()
+    return jsonify({'ok': True})
+
+
+@app.route('/api/castings/<int:casting_id>/talents', methods=['GET'])
+def get_casting_talents(casting_id):
+    db = get_db()
+    rows = db.execute('''
+        SELECT t.id as talent_id, t.name, t.phone, t.email, t.instagram_handle
+        FROM casting_talents ct
+        JOIN talents t ON ct.talent_id = t.id
+        WHERE ct.casting_id = ?
+        ORDER BY t.name
+    ''', (casting_id,)).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/api/castings/<int:casting_id>/talents', methods=['POST'])
+def update_casting_talents(casting_id):
+    db = get_db()
+    data = request.json or {}
+    talent_ids = data.get('talent_ids', [])
+
+    # Verify casting exists
+    casting = db.execute('SELECT id, project_name FROM castings WHERE id = ?', (casting_id,)).fetchone()
+    if not casting:
+        return jsonify({'error': 'Casting not found'}), 404
+
+    # Remove existing links
+    db.execute('DELETE FROM casting_talents WHERE casting_id = ?', (casting_id,))
+
+    # Insert new links
+    for tid in talent_ids:
+        try:
+            db.execute('INSERT INTO casting_talents (casting_id, talent_id) VALUES (?, ?)', (casting_id, int(tid)))
+        except Exception:
+            pass
+
+    db.commit()
+
+    # Return updated list
+    rows = db.execute('''
+        SELECT t.id as talent_id, t.name, t.phone, t.email, t.instagram_handle
+        FROM casting_talents ct
+        JOIN talents t ON ct.talent_id = t.id
+        WHERE ct.casting_id = ?
+        ORDER BY t.name
+    ''', (casting_id,)).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/api/talents/import', methods=['POST'])
+def import_talents_dry_run():
+    """Dry-run CSV import: parse, validate, deduplicate, return results without inserting."""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+
+    file = request.files['file']
+    if not file.filename or not file.filename.lower().endswith('.csv'):
+        return jsonify({'error': 'Please upload a CSV file'}), 400
+
+    import csv
+    import io
+
+    content = file.read().decode('utf-8-sig')  # handles BOM
+    reader = csv.DictReader(io.StringIO(content))
+
+    # Normalize header names
+    if reader.fieldnames:
+        header_map = {}
+        for h in reader.fieldnames:
+            cleaned = h.strip().lower().replace(' ', '_').replace('#', '')
+            header_map[h] = cleaned
+        reader.fieldnames = [header_map.get(h, h) for h in reader.fieldnames]
+
+    db = get_db()
+    total_rows = 0
+    importable = []
+    duplicates_existing = []
+    errors = []
+
+    # Track within-file deduplication by normalized phone/email
+    seen_phone = {}
+    seen_email = {}
+
+    for row_num, row in enumerate(reader, start=2):  # row 1 = headers
+        total_rows += 1
+        name = (row.get('name') or '').strip()
+        phone = (row.get('phone') or '').strip()
+        email = (row.get('email') or '').strip()
+        instagram = sanitize_instagram(row.get('instagram_handle') or '')
+
+        # Skip blank rows
+        if not name and not phone and not email and not instagram:
+            continue
+
+        # Validation
+        if not name:
+            errors.append({'row_num': row_num, 'reason': 'Name is required', 'raw_data': dict(row)})
+            continue
+
+        if email and '@' not in email:
+            errors.append({'row_num': row_num, 'reason': f'Invalid email: {email}', 'raw_data': dict(row)})
+            continue
+
+        # Within-file dedup
+        norm_phone = normalize_phone(phone)
+        norm_email = normalize_email(email)
+
+        if norm_phone and norm_phone in seen_phone:
+            # Skip duplicate within file
+            continue
+        if norm_email and norm_email in seen_email:
+            continue
+
+        if norm_phone:
+            seen_phone[norm_phone] = row_num
+        if norm_email:
+            seen_email[norm_email] = row_num
+
+        # Check against existing DB
+        existing = None
+        matched_on = None
+
+        if norm_phone:
+            existing = db.execute('SELECT id, name, phone, email FROM talents WHERE phone = ?', (phone,)).fetchone()
+            if existing:
+                matched_on = 'phone'
+
+        if not existing and norm_email and '@' in norm_email:
+            existing = db.execute('SELECT id, name, phone, email FROM talents WHERE email = ?', (email,)).fetchone()
+            if existing:
+                matched_on = 'email'
+
+        if existing and matched_on:
+            duplicates_existing.append({
+                'row_num': row_num,
+                'name': name,
+                'phone': phone,
+                'email': email,
+                'existing_id': existing['id'],
+                'existing_name': existing['name'],
+                'matched_on': matched_on,
+            })
+        else:
+            importable.append({
+                'name': name,
+                'instagram_handle': instagram,
+                'phone': phone,
+                'email': email,
+            })
+
+    return jsonify({
+        'total_rows': total_rows,
+        'valid': len(importable) + len(duplicates_existing),
+        'errors': errors,
+        'duplicates_existing': duplicates_existing,
+        'importable': importable,
+    })
+
+
+@app.route('/api/talents/import/confirm', methods=['POST'])
+def import_talents_confirm():
+    """Actually import talents after user reviews the dry-run results."""
+    db = get_db()
+    data = request.json or {}
+
+    records = data.get('records', [])
+    update_existing = data.get('update_existing', [])
+    skip_ids = data.get('skip_ids', [])
+
+    imported = 0
+    updated = 0
+    skipped = len(skip_ids)
+
+    # Insert new records
+    for rec in records:
+        name = (rec.get('name') or '').strip()
+        if not name:
+            continue
+        instagram = sanitize_instagram(rec.get('instagram_handle'))
+        phone = (rec.get('phone') or '').strip()
+        email = (rec.get('email') or '').strip()
+
+        db.execute('''
+            INSERT INTO talents (name, instagram_handle, phone, email)
+            VALUES (?, ?, ?, ?)
+        ''', (name, instagram, phone, email))
+        imported += 1
+
+    # Update existing
+    for rec in update_existing:
+        eid = rec.get('id') or rec.get('existing_id')
+        if not eid or eid in skip_ids:
+            continue
+        existing = db.execute('SELECT id FROM talents WHERE id = ?', (int(eid),)).fetchone()
+        if not existing:
+            continue
+
+        name = (rec.get('name') or '').strip()
+        if not name:
+            continue
+        instagram = sanitize_instagram(rec.get('instagram_handle'))
+        phone = (rec.get('phone') or '').strip()
+        email = (rec.get('email') or '').strip()
+
+        db.execute('''
+            UPDATE talents SET name=?, instagram_handle=?, phone=?, email=?,
+                   updated_at = datetime('now')
+            WHERE id=?
+        ''', (name, instagram, phone, email, int(eid)))
+        updated += 1
+
+    db.commit()
+    return jsonify({'imported': imported, 'updated': updated, 'skipped': skipped})
 
 
 # ==================== NO-CACHE MIDDLEWARE ====================
