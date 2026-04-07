@@ -127,6 +127,9 @@ def check_rate_limit(ip):
     RATE_LIMIT[ip] = entries
     return True
 
+def clear_rate_limit(ip):
+    RATE_LIMIT.pop(ip, None)
+
 # ─── Email ────────────────────────────────────────────────────────────
 def send_smtp(to, subject, html):
     if not SMTP_HOST or not SMTP_USER:
