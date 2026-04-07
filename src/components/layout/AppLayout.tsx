@@ -22,32 +22,9 @@ export function AppLayout() {
     if (mountedRef.current) return
     mountedRef.current = true
 
-    const sess = getSession()
-    if (!sess?.token) {
-      setChecked(true)
-      return
-    }
-
-    // Set token for API calls
-
-    // Load profile
-    api.fetch('/profile')
-      .then((data: UserProfile) => {
-        setCurrentUser({
-          name: data.name,
-          role: data.role,
-          email: data.email,
-          phone: data.phone,
-          avatar: data.avatar_url,
-          date_of_birth: data.date_of_birth,
-          team_member_id: data.team_member_id,
-        })
-        setChecked(true)
-      })
-      .catch(() => {
-        setCurrentUser({ name: sess.user?.name || 'Toaney Bhatia', role: sess.user?.role || 'Admin' })
-        setChecked(true)
-      })
+      // When auth is disabled, set admin user immediately and mark checked
+    setCurrentUser({ name: 'Administrator', role: 'admin', email: 'admin@toabh.com' })
+    setChecked(true)
   }, [setCurrentUser])
 
   // Listen for global "open casting modal" events (from FAB, toolbar, dashboard)

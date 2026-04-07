@@ -13,6 +13,7 @@ import { Tasks } from './pages/Tasks'
 import { Reports } from './pages/Reports'
 import { Settings } from './pages/Settings'
 import { Profile } from './pages/Profile'
+import { Talents } from './pages/Talents'
 import { ErrorBoundary } from './components/ErrorBoundary'
 
 // AUTH TEMPORARILY DISABLED — set to false to re-enable
@@ -65,6 +66,7 @@ function App() {
               <Route path="/clients" element={<ErrorBoundary><Clients /></ErrorBoundary>} />
               <Route path="/calendar" element={<ErrorBoundary><Calendar /></ErrorBoundary>} />
               <Route path="/team" element={<ErrorBoundary><Team /></ErrorBoundary>} />
+              <Route path="/talents" element={<ErrorBoundary><Talents /></ErrorBoundary>} />
               <Route path="/activity" element={<ErrorBoundary><ActivityLog /></ErrorBoundary>} />
               <Route path="/reports" element={<ErrorBoundary><Reports /></ErrorBoundary>} />
               <Route path="/settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
