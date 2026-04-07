@@ -7,6 +7,8 @@ import {
   Radio,
   Rows3,
   ShieldCheck,
+  Shield,
+  Activity,
   Users,
   Mail,
   BellRing,
@@ -22,13 +24,18 @@ import { DashboardSettings } from './settings/DashboardSettings'
 import { EmailAutomationHub } from './settings/EmailAutomationHub'
 import { NotificationsSettings } from './settings/NotificationsSettings'
 import { ClientTags } from './settings/ClientTags'
+import { PermissionsEditor } from './settings/PermissionsEditor'
+import { AuditLogViewer } from './settings/AuditLogViewer'
 import { cn } from '@/lib/utils'
+import { checkSession } from '@/lib/api'
 
 const tabs = [
   { id: 'pipeline', label: 'Pipeline', icon: Workflow },
   { id: 'sources', label: 'Sources', icon: Radio },
   { id: 'custom-fields', label: 'Fields', icon: Rows3 },
   { id: 'client-tags', label: 'Client Tags', icon: Tags },
+  { id: 'permissions', label: 'Roles & Permissions', icon: Shield },
+  { id: 'audit-log', label: 'Audit Log', icon: Activity },
   { id: 'roles', label: 'Roles', icon: ShieldCheck },
   { id: 'team', label: 'Team', icon: Users },
   { id: 'email', label: 'Email', icon: Mail },
@@ -43,9 +50,14 @@ export function Settings() {
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
-    const verified = sessionStorage.getItem('admin_verified') === 'true'
-    setIsVerified(verified)
-    setChecking(false)
+    let cancelled = false
+    checkSession().then((ok: boolean) => {
+      if (!cancelled) {
+        setIsVerified(ok)
+        setChecking(false)
+      }
+    })
+    return () => { cancelled = true }
   }, [])
 
   if (checking) {
@@ -150,6 +162,8 @@ export function Settings() {
               {activeTab === 'sources' && <LeadSources />}
               {activeTab === 'custom-fields' && <CustomFields />}
               {activeTab === 'client-tags' && <ClientTags />}
+              {activeTab === 'permissions' && <PermissionsEditor />}
+              {activeTab === 'audit-log' && <AuditLogViewer />}
               {activeTab === 'roles' && <RolesPermissions />}
               {activeTab === 'team' && <TeamManagement />}
               {activeTab === 'email' && <EmailAutomationHub />}

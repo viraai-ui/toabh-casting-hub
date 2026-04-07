@@ -403,10 +403,11 @@ export function Castings() {
             )}
           </button>
 
-          {/* New Casting — same ?new=true entry as the FAB so both entry points
-              are handled by the same guarded effect and back-button works uniformly. */}
+          {/* New Casting — dispatches global event to open modal in AppLayout */}
           <button
-            onClick={() => navigate('/castings?new=true')}
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('toabh-global-action', { detail: { action: 'open-casting-modal' } }))
+            }}
             className="btn-primary flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />

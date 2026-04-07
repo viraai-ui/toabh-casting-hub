@@ -23,6 +23,7 @@ import { cn, formatDate, getInitials } from '@/lib/utils'
 import { useOverlay } from '@/hooks/useOverlayManager'
 import type { Casting, Client, ClientTag } from '@/types'
 import { ClientTagPill } from '@/components/clients/ClientTagPill'
+import { ClientDetailModal } from '@/components/clients/ClientDetailModal'
 
 interface ClientTagWithUsage extends ClientTag {
   usage_count?: number
@@ -42,6 +43,8 @@ export function Clients() {
   const [selectedFilterTagIds, setSelectedFilterTagIds] = useState<number[]>([])
   const [expandedClient, setExpandedClient] = useState<number | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [detailClient, setDetailClient] = useState<Client | null>(null)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [quickAddClientId, setQuickAddClientId] = useState<number | null>(null)
   const [savingTagClientId, setSavingTagClientId] = useState<number | null>(null)
@@ -147,9 +150,24 @@ export function Clients() {
       setClients((prev) => prev.filter((item) => item.id !== client.id))
       if (expandedClient === client.id) setExpandedClient(null)
       if (quickAddClientId === client.id) setQuickAddClientId(null)
+      // Also close detail modal if the deleted client was being viewed
+      if (detailClient?.id === client.id) {
+        setDetailOpen(false)
+        setDetailClient(null)
+      }
     } catch (err) {
       console.error('Failed to delete client:', err)
     }
+  }
+
+  const openDetail = (client: Client) => {
+    setDetailClient(client)
+    setDetailOpen(true)
+  }
+
+  const handleDetailDelete = async () => {
+    if (!detailClient) return
+    await handleDelete(detailClient)
   }
 
   const addTagToClient = async (clientId: number, tagId: number) => {
@@ -328,11 +346,9 @@ export function Clients() {
               savingTag={savingTagClientId === client.id}
               onToggleExpand={() => setExpandedClient((prev) => (prev === client.id ? null : client.id))}
               onToggleQuickAdd={() => setQuickAddClientId((prev) => (prev === client.id ? null : client.id))}
-              onEdit={() => {
-                setEditingClient(client)
-                setModalOpen(true)
+              onClick={() => {
+                openDetail(client)
               }}
-              onDelete={() => handleDelete(client)}
               onAddTag={(tagId) => addTagToClient(client.id, tagId)}
               onRemoveTag={(tagId) => removeTagFromClient(client.id, tagId)}
             />
@@ -340,7 +356,7 @@ export function Clients() {
         </div>
       ) : (
         <div className="rounded-[28px] border border-slate-200 bg-white shadow-sm">
-          <div className="hidden grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.6fr)_minmax(0,1.8fr)_88px_176px] items-center gap-3 border-b border-slate-200 bg-slate-50/80 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 lg:grid">
+          <div className="hidden grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.6fr)_minmax(0,1.8fr)_88px_100px] items-center gap-3 border-b border-slate-200 bg-slate-50/80 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 lg:grid">
             <span>Name</span>
             <span>Company</span>
             <span>Contact</span>
@@ -361,11 +377,7 @@ export function Clients() {
                 savingTag={savingTagClientId === client.id}
                 onToggleExpand={() => setExpandedClient((prev) => (prev === client.id ? null : client.id))}
                 onToggleQuickAdd={() => setQuickAddClientId((prev) => (prev === client.id ? null : client.id))}
-                onEdit={() => {
-                  setEditingClient(client)
-                  setModalOpen(true)
-                }}
-                onDelete={() => handleDelete(client)}
+                onClick={() => openDetail(client)}
                 onAddTag={(tagId) => addTagToClient(client.id, tagId)}
                 onRemoveTag={(tagId) => removeTagFromClient(client.id, tagId)}
               />
@@ -390,6 +402,24 @@ export function Clients() {
           }
         }}
       />
+
+      <ClientDetailModal
+        open={detailOpen}
+        client={detailClient}
+        castings={detailClient ? getClientCastings(detailClient.id) : []}
+        onClose={() => {
+          setDetailOpen(false)
+          setDetailClient(null)
+        }}
+        onEdit={() => {
+          setDetailOpen(false)
+          if (detailClient) {
+            setEditingClient(detailClient)
+            setModalOpen(true)
+          }
+        }}
+        onDelete={handleDetailDelete}
+      />
     </div>
   )
 }
@@ -403,8 +433,7 @@ function ClientGridCard({
   savingTag,
   onToggleExpand,
   onToggleQuickAdd,
-  onEdit,
-  onDelete,
+  onClick,
   onAddTag,
   onRemoveTag,
 }: {
@@ -414,21 +443,24 @@ function ClientGridCard({
   expanded: boolean
   quickAddOpen: boolean
   savingTag: boolean
-  onToggleExpand: () => void
+  onToggleExpand?: () => void
   onToggleQuickAdd: () => void
-  onEdit: () => void
-  onDelete: () => void
+  onClick: () => void
   onAddTag: (tagId: number) => void
   onRemoveTag: (tagId: number) => void
 }) {
   const clientTags = client.tags ?? []
+  void onToggleExpand // available for future use
   const availableQuickAddTags = availableTags.filter(
     (tag) => !clientTags.some((clientTag) => clientTag.id === tag.id),
   )
 
   return (
     <motion.div layout initial={false} className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm">
-      <div className="p-4 sm:p-5">
+      <div
+        onClick={onClick}
+        className="p-4 sm:p-5 cursor-pointer hover:bg-slate-50/50 transition-colors"
+      >
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-sm font-semibold text-white shadow-sm">
             {getInitials(client.name)}
@@ -440,13 +472,6 @@ function ClientGridCard({
                 <h3 className="truncate text-base font-semibold text-slate-900">{client.name}</h3>
                 {client.company && <p className="mt-0.5 truncate text-sm text-slate-500">{client.company}</p>}
               </div>
-              <ClientPrimaryActions
-                client={client}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onToggleExpand={onToggleExpand}
-                expanded={expanded}
-              />
             </div>
 
             <div className="mt-3 space-y-1.5 text-sm text-slate-500">
@@ -476,7 +501,7 @@ function ClientGridCard({
                   {availableTags.length > 0 && (
                     <button
                       type="button"
-                      onClick={onToggleQuickAdd}
+                      onClick={(e) => { e.stopPropagation(); onToggleQuickAdd() }}
                       className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-2.5 py-1 text-[11px] font-semibold text-slate-500 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
                     >
                       <Plus className="h-3 w-3" />
@@ -503,7 +528,7 @@ function ClientGridCard({
                       <button
                         key={tag.id}
                         type="button"
-                        onClick={() => onAddTag(tag.id)}
+                        onClick={(e) => { e.stopPropagation(); onAddTag(tag.id) }}
                         disabled={savingTag}
                         className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 disabled:opacity-50"
                       >
@@ -532,8 +557,7 @@ function ClientListRow({
   savingTag,
   onToggleExpand,
   onToggleQuickAdd,
-  onEdit,
-  onDelete,
+  onClick,
   onAddTag,
   onRemoveTag,
 }: {
@@ -545,32 +569,31 @@ function ClientListRow({
   savingTag: boolean
   onToggleExpand: () => void
   onToggleQuickAdd: () => void
-  onEdit: () => void
-  onDelete: () => void
+  onClick: () => void
   onAddTag: (tagId: number) => void
   onRemoveTag: (tagId: number) => void
 }) {
   const clientTags = client.tags ?? []
+  void onToggleExpand // available for future use
   const availableQuickAddTags = availableTags.filter(
     (tag) => !clientTags.some((clientTag) => clientTag.id === tag.id),
   )
 
   return (
     <motion.div layout initial={false} className="overflow-hidden">
-      <div className="p-4 lg:px-4 lg:py-3">
+      <div
+        onClick={onClick}
+        className="p-4 lg:px-4 lg:py-3 cursor-pointer hover:bg-slate-50/50 transition-colors"
+      >
         <div className="space-y-3 lg:hidden">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-xs font-semibold text-white">
+              {getInitials(client.name)}
+            </div>
+            <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-slate-900">{client.name}</p>
               {client.company && <p className="truncate text-xs text-slate-500">{client.company}</p>}
             </div>
-            <ClientPrimaryActions
-              client={client}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onToggleExpand={onToggleExpand}
-              expanded={expanded}
-            />
           </div>
 
           <div className="grid gap-2 text-xs text-slate-500 sm:grid-cols-2">
@@ -578,7 +601,7 @@ function ClientListRow({
             <span className="truncate">{client.email || 'No email'}</span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
             {clientTags.length > 0 ? (
               clientTags.map((tag) => (
                 <ClientTagPill key={tag.id} tag={tag} onRemove={() => onRemoveTag(tag.id)} />
@@ -589,7 +612,10 @@ function ClientListRow({
             {availableTags.length > 0 && (
               <button
                 type="button"
-                onClick={onToggleQuickAdd}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onToggleQuickAdd()
+                }}
                 className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-2.5 py-1 text-[11px] font-semibold text-slate-500 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
               >
                 <Plus className="h-3 w-3" />
@@ -606,8 +632,8 @@ function ClientListRow({
           </div>
         </div>
 
-        <div className="hidden lg:grid lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.6fr)_minmax(0,1.8fr)_88px_176px] lg:items-center lg:gap-3">
-          <button type="button" onClick={onToggleExpand} className="flex min-w-0 items-center gap-3 text-left">
+        <div className="hidden lg:grid lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1.2fr)_minmax(0,1.6fr)_minmax(0,1.8fr)_88px_100px] lg:items-center lg:gap-3">
+          <div className="flex min-w-0 items-center gap-3 text-left">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-xs font-semibold text-white">
               {getInitials(client.name)}
             </div>
@@ -615,7 +641,7 @@ function ClientListRow({
               <p className="truncate text-sm font-semibold text-slate-900">{client.name}</p>
               <p className="mt-0.5 text-xs text-slate-400">Updated {formatDate(client.updated_at)}</p>
             </div>
-          </button>
+          </div>
 
           <div className="min-w-0 text-sm text-slate-600">{client.company || '—'}</div>
 
@@ -636,7 +662,10 @@ function ClientListRow({
               {availableTags.length > 0 && (
                 <button
                   type="button"
-                  onClick={onToggleQuickAdd}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onToggleQuickAdd()
+                  }}
                   className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-500 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
                 >
                   <Plus className="h-3 w-3" />
@@ -651,23 +680,10 @@ function ClientListRow({
             <ClientContactActions client={client} compact />
             <button
               type="button"
-              onClick={onEdit}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-600"
-              title="Edit client"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={onDelete}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-500"
-              title="Delete client"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={onToggleExpand}
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleExpand()
+              }}
               className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
               title={expanded ? 'Collapse details' : 'Expand details'}
             >
@@ -690,7 +706,7 @@ function ClientListRow({
                   <button
                     key={tag.id}
                     type="button"
-                    onClick={() => onAddTag(tag.id)}
+                        onClick={(e) => { e.stopPropagation(); onAddTag(tag.id) }}
                     disabled={savingTag}
                     className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 disabled:opacity-50"
                   >
@@ -784,7 +800,7 @@ function ClientExpandedPanel({
   )
 }
 
-function ClientPrimaryActions({
+export function ClientPrimaryActions({
   client,
   expanded,
   onEdit,

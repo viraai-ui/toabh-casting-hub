@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Calendar, Loader2, MessageSquare, Plus, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, formatDate, formatRelativeTime, getInitials } from '@/lib/utils'
@@ -313,6 +314,7 @@ function TaskDetail({
 
 export function Tasks() {
   const { currentUser } = useAppStore()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [tasks, setTasks] = useState<Task[]>([])
   const [team, setTeam] = useState<TeamMember[]>([])
   const [stages, setStages] = useState<TaskStage[]>([])
@@ -321,6 +323,15 @@ export function Tasks() {
   const [composerOpen, setComposerOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
+
+  // Handle ?new=true URL param — opens the task composer modal
+  useEffect(() => {
+    if (searchParams.get('new') === 'true' && !composerOpen) {
+      setComposerOpen(true)
+      searchParams.delete('new')
+      setSearchParams(searchParams, { replace: true })
+    }
+  }, [searchParams, setSearchParams, composerOpen])
 
   const isAdmin = ['admin', 'founder'].includes((currentUser?.role || '').toLowerCase())
 
