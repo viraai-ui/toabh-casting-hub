@@ -200,11 +200,20 @@ def has_perm(role, page):
     perms = _load_perms()
     return bool(perms.get(role, {}).get(page, 0))
 
+# ─── Auth kill-switch ─────────────────────────────────────────────────
+AUTH_DISABLED = os.environ.get("AUTH_DISABLED", "0") == "1"
+
+# ─── Auth kill-switch ─────────────────────────────────────────────────
+AUTH_DISABLED = os.environ.get("AUTH_DISABLED", "0") == "1"
+
 # ─── Flask decorators ─────────────────────────────────────────────────
 def require_auth(f):
     from flask import request, g, jsonify
     @wraps(f)
     def wrapper(*a, **kw):
+        if AUTH_DISABLED:
+            g.user = {"sub": 0, "email": "admin@toabh.com", "role": "admin", "sa": True}
+            return f(*a, **kw)
         token = _extract_token(request)
         payload = verify_token(token)
         if not payload:
@@ -218,6 +227,9 @@ def require_perm(page):
         from flask import request, g, jsonify
         @wraps(f)
         def wrapper(*a, **kw):
+            if AUTH_DISABLED:
+                g.user = {"sub": 0, "email": "admin@toabh.com", "role": "admin", "sa": True}
+                return f(*a, **kw)
             if SUPER_ADMIN:
                 g.user = {"sub": -1, "email": "superadmin", "role": "super-admin", "sa": True}
                 return f(*a, **kw)

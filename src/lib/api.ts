@@ -1,4 +1,5 @@
 const BASE = import.meta.env.VITE_API_URL || ''
+const AUTH_DISABLED = import.meta.env.VITE_AUTH_DISABLED === 'true'
 
 export function toApiUrl(path: string) {
   if (/^https?:\/\//.test(path)) return path
@@ -67,6 +68,22 @@ export const api = {
 
 // ─── Session helpers ───────────────────────────────────────────────────
 
+// ─── Auth disabled auto-session ───────────────────────────
+function _ensureAuthDisabledSession() {
+  if (!AUTH_DISABLED) return
+  try {
+    const existing = sessionStorage.getItem('toabh_session') || localStorage.getItem('toabh_session')
+    if (!existing) {
+      const fakeToken = btoa(JSON.stringify({ sub: 0, email: 'admin@toabh.com', role: 'admin', sa: true, iat: Date.now()/1000, exp: Date.now()/1000 + 86400 })) + '.disabled'
+      const session = { token: fakeToken, user: { id: 0, email: 'admin@toabh.com', role: 'admin', name: 'Administrator' }, ts: Date.now() }
+      sessionStorage.setItem('toabh_session', JSON.stringify(session))
+      localStorage.setItem('toabh_session', JSON.stringify(session))
+      localStorage.setItem('toabh_user', JSON.stringify(session.user))
+    }
+  } catch {/* */}
+}
+_ensureAuthDisabledSession()
+
 export function isLoggedIn(): boolean {
   try {
     const raw = sessionStorage.getItem('toabh_session') || localStorage.getItem('toabh_session')
@@ -90,6 +107,15 @@ export function getSessionUser() {
 // ─── Auth actions ──────────────────────────────────────────────────────
 
 export async function login(identifier: string, password: string, remember = false) {
+  if (AUTH_DISABLED) {
+    const fakeToken = btoa(JSON.stringify({ sub: 0, email: 'admin@toabh.com', role: 'admin', sa: true, iat: Date.now()/1000, exp: Date.now()/1000 + 86400 })) + '.disabled'
+    const user = { id: 0, email: 'admin@toabh.com', role: 'admin', name: 'Administrator' }
+    const store = remember ? localStorage : sessionStorage
+    store.setItem('toabh_session', JSON.stringify({ token: fakeToken, user, ts: Date.now() }))
+    localStorage.setItem('toabh_user', JSON.stringify(user))
+    sessionStorage.setItem('toabh_user', JSON.stringify(user))
+    return { token: fakeToken, user }
+  }
   const r = await fetch(toApiUrl('/api/auth/login'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
