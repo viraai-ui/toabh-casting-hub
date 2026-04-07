@@ -15,6 +15,7 @@ import {
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import type { Casting, Client, TeamMember, PipelineStage, LeadSource } from '@/types'
+import { TalentPicker } from './TalentPicker'
 
 interface CastingModalProps {
   open: boolean
@@ -108,6 +109,7 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
   const [isDragActive, setIsDragActive] = useState(false)
   const [uploadNotice, setUploadNotice] = useState<UploadNotice | null>(null)
   const [draftCastingId, setDraftCastingId] = useState<number | null>(null)
+  const [selectedTalentIds, setSelectedTalentIds] = useState<number[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [form, setForm] = useState({
@@ -177,6 +179,13 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
           budget_max: casting.budget_max?.toString() || '',
           custom_fields: customFieldsData,
         })
+        // Load linked talents
+        api.get(`/castings/${casting.id}/talents`)
+          .then((data) => {
+            const ids = (Array.isArray(data) ? data : []).map((t: any) => t.talent_id)
+            setSelectedTalentIds(ids)
+          })
+          .catch(() => setSelectedTalentIds([]))
       } else {
         setForm({
           project_name: '',
@@ -196,6 +205,7 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
           budget_max: '',
           custom_fields: {},
         })
+        setSelectedTalentIds([])
       }
     }
   }, [open, casting])
@@ -450,6 +460,15 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
 
       if (castingId && queuedAttachmentCount) {
         await uploadQueuedAttachments(castingId)
+      }
+
+      // Save talent relationships
+      if (castingId) {
+        try {
+          await api.post(`/castings/${castingId}/talents`, { talent_ids: selectedTalentIds })
+        } catch {
+          // Non-critical — casting already saved
+        }
       }
 
       if (queuedAttachmentCount) {
@@ -1112,6 +1131,21 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                             </label>
                           ))}
                         </div>
+                      </div>
+
+                      {/* ─── Talent Picker ─── */}
+                      <div className="border-t border-slate-200 pt-3 sm:pt-4 mt-3 sm:mt-4">
+                        <div className="mb-2 sm:mb-3 flex items-center gap-2 text-[11px] sm:text-xs font-medium uppercase tracking-wide text-slate-400">
+                          <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                          </svg>
+                          <span>Linked Talents</span>
+                        </div>
+                        <TalentPicker
+                          selectedIds={selectedTalentIds}
+                          onChange={setSelectedTalentIds}
+                          disabled={!isEditing}
+                        />
                       </div>
                     </div>
                       )}
