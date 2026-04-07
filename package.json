@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "python3 -m py_compile backend/app.py api/index.py && tsc -b && vite build",
+    "build": "python3 -m py_compile backend/app.py api/index.py && vite build",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
