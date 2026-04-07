@@ -15,12 +15,14 @@ import {
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import type { Casting, Client, TeamMember, PipelineStage, LeadSource } from '@/types'
+import { TalentPicker } from './TalentPicker'
 
 interface CastingModalProps {
   open: boolean
   onClose: () => void
   casting: Casting | null
   onSave: () => void
+  readOnly?: boolean
 }
 
 const TABS = ['Overview', 'Team', 'Budget'] as const
@@ -89,8 +91,9 @@ function attachmentStatusMeta(status: PendingAttachment['status']) {
   }
 }
 
-export function CastingModal({ open, onClose, casting, onSave }: CastingModalProps) {
+export function CastingModal({ open, onClose, casting, onSave, readOnly = false }: CastingModalProps) {
   const [activeTab, setActiveTab] = useState<Tab>('Overview')
+  const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [clients, setClients] = useState<Client[]>([])
@@ -106,6 +109,7 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
   const [isDragActive, setIsDragActive] = useState(false)
   const [uploadNotice, setUploadNotice] = useState<UploadNotice | null>(null)
   const [draftCastingId, setDraftCastingId] = useState<number | null>(null)
+  const [selectedTalentIds, setSelectedTalentIds] = useState<number[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [form, setForm] = useState({
@@ -138,6 +142,7 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
       setIsDragActive(false)
       setUploadNotice(null)
       setDraftCastingId(casting?.id ?? null)
+      setIsEditing(!readOnly)
       fetchData()
       if (casting) {
         let customFieldsData: { [key: string]: string } = {}
@@ -174,6 +179,13 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
           budget_max: casting.budget_max?.toString() || '',
           custom_fields: customFieldsData,
         })
+        // Load linked talents
+        api.get(`/castings/${casting.id}/talents`)
+          .then((data) => {
+            const ids = (Array.isArray(data) ? data : []).map((t: any) => t.talent_id)
+            setSelectedTalentIds(ids)
+          })
+          .catch(() => setSelectedTalentIds([]))
       } else {
         setForm({
           project_name: '',
@@ -193,6 +205,7 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
           budget_max: '',
           custom_fields: {},
         })
+        setSelectedTalentIds([])
       }
     }
   }, [open, casting])
@@ -449,6 +462,15 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
         await uploadQueuedAttachments(castingId)
       }
 
+      // Save talent relationships
+      if (castingId) {
+        try {
+          await api.post(`/castings/${castingId}/talents`, { talent_ids: selectedTalentIds })
+        } catch {
+          // Non-critical — casting already saved
+        }
+      }
+
       if (queuedAttachmentCount) {
         setUploadNotice({
           tone: 'success',
@@ -501,7 +523,7 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-slate-200 bg-slate-50">
               <h2 className="text-base sm:text-lg font-semibold text-slate-900">
-                {casting ? 'Edit Casting' : 'New Casting'}
+                {!casting ? 'New Casting' : isEditing ? 'Edit Casting' : 'Casting Details'}
               </h2>
               <button
                 onClick={onClose}
@@ -539,6 +561,49 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
                 <form onSubmit={handleSubmit} id="casting-form" noValidate>
                   {/* ======= OVERVIEW TAB ======= */}
                   {activeTab === 'Overview' && (
+                    <>
+                      {/* ─── View Mode (Read-Only) ─── */}
+                      {!isEditing && casting && (
+                        <div className="space-y-3 sm:space-y-4">
+                          <div>
+                            <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Project Title</p>
+                            <p className="text-sm sm:text-base font-semibold text-slate-900">{casting.project_name || '—'}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Client</p>
+                            <p className="text-sm text-slate-900">{casting.client_name || '—'}</p>
+                          </div>
+                          {(casting.client_contact || casting.client_email || casting.client_company) && (
+                            <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-50 rounded-xl border border-slate-200">
+                              <div><p className="text-[11px] sm:text-xs text-slate-500">Phone</p><p className="text-xs sm:text-sm text-slate-900">{casting.client_contact || '—'}</p></div>
+                              <div><p className="text-[11px] sm:text-xs text-slate-500">Email</p><p className="text-xs sm:text-sm text-slate-900 truncate">{casting.client_email || '—'}</p></div>
+                              <div><p className="text-[11px] sm:text-xs text-slate-500">Company</p><p className="text-xs sm:text-sm text-slate-900 truncate">{casting.client_company || '—'}</p></div>
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Description</p>
+                            <p className="text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">{casting.requirements || '—'}</p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                            <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Shoot Date</p><p className="text-xs sm:text-sm text-slate-900">{casting.shoot_date_start || '—'}</p></div>
+                            <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">End Date</p><p className="text-xs sm:text-sm text-slate-900">{casting.shoot_date_end || '—'}</p></div>
+                          </div>
+                          <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Location</p><p className="text-xs sm:text-sm text-slate-900">{casting.location || '—'}</p></div>
+                          <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                            <div>
+                              <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Status</p>
+                              <span className={cn('inline-flex px-2 py-0.5 rounded-full text-xs font-semibold',
+                                casting.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
+                                casting.status === 'IN_PROGRESS' ? 'bg-amber-100 text-amber-700' :
+                                'bg-blue-100 text-blue-700'
+                              )}>{casting.status || '—'}</span>
+                            </div>
+                            <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Lead Source</p><p className="text-xs sm:text-sm text-slate-900">{casting.source || '—'}</p></div>
+                          </div>
+                        </div>
+                      )}
+                      {/* ─── Edit Mode ─── */}
+                      {isEditing && (
                     <div className="space-y-3 sm:space-y-4">
 
                       {/* Project Title — MANDATORY, FIRST */}
@@ -936,10 +1001,42 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
                           </div>
                         )}
                     </div>
+                      )}
+                    </>
                   )}
 
                   {/* ======= TEAM TAB ======= */}
                   {activeTab === 'Team' && (
+                    <>
+                      {/* View Mode */}
+                      {!isEditing && casting && (
+                        <div className="space-y-3 sm:space-y-4">
+                          {(() => {
+                            const assigned = (casting as any).assigned_to;
+                            const ids: number[] = typeof assigned === 'string'
+                              ? assigned.split(',').map(Number).filter(Boolean)
+                              : Array.isArray(assigned) ? assigned as number[] : [];
+                            if (!ids.length) return <p className="text-sm text-slate-400 text-center py-4">No team members assigned</p>;
+                            return ids.map((mid: number) => {
+                              const m = teamMembers.find((tm) => tm.id === mid);
+                              if (!m) return null;
+                              return (
+                                <div key={mid} className="flex items-center gap-3 px-3 py-2 bg-slate-50 rounded-xl border border-slate-200">
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-xs font-medium shrink-0">
+                                    {getInitials(m.name)}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-slate-900">{m.name}</p>
+                                    <p className="text-xs text-slate-500">{m.role}</p>
+                                  </div>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      )}
+                      {/* Edit Mode */}
+                      {isEditing && (
                     <div className="space-y-3 sm:space-y-4">
                       {teamError && (
                         <div className="flex items-center gap-2 p-2.5 sm:p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs sm:text-sm">
@@ -1035,11 +1132,38 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
                           ))}
                         </div>
                       </div>
+
+                      {/* ─── Talent Picker ─── */}
+                      <div className="border-t border-slate-200 pt-3 sm:pt-4 mt-3 sm:mt-4">
+                        <div className="mb-2 sm:mb-3 flex items-center gap-2 text-[11px] sm:text-xs font-medium uppercase tracking-wide text-slate-400">
+                          <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                          </svg>
+                          <span>Linked Talents</span>
+                        </div>
+                        <TalentPicker
+                          selectedIds={selectedTalentIds}
+                          onChange={setSelectedTalentIds}
+                          disabled={!isEditing}
+                        />
+                      </div>
                     </div>
+                      )}
+                    </>
                   )}
 
                   {/* ======= BUDGET TAB — Optional, no validation ======= */}
                   {activeTab === 'Budget' && (
+                    <>
+                      {/* View Mode */}
+                      {!isEditing && casting && (
+                        <div className="space-y-3 sm:space-y-4">
+                          <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Budget Min (₹)</p><p className="text-xs sm:text-sm text-slate-900">{casting.budget_min ? `₹${Number(casting.budget_min).toLocaleString()}` : '—'}</p></div>
+                          <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Budget Max (₹)</p><p className="text-xs sm:text-sm text-slate-900">{casting.budget_max ? `₹${Number(casting.budget_max).toLocaleString()}` : '—'}</p></div>
+                        </div>
+                      )}
+                      {/* Edit Mode */}
+                      {isEditing && (
                     <div className="space-y-3 sm:space-y-4">
                       <p className="text-xs sm:text-sm text-slate-500">Budget is optional. Leave blank if not applicable.</p>
                       <div className="grid grid-cols-2 gap-2 sm:gap-4">
@@ -1069,6 +1193,8 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
                         </div>
                       </div>
                     </div>
+                      )}
+                    </>
                   )}
                 </form>
               )}
@@ -1076,22 +1202,38 @@ export function CastingModal({ open, onClose, casting, onSave }: CastingModalPro
 
             {/* Footer */}
             <div className="flex items-center justify-end gap-2 sm:gap-3 px-4 py-3 sm:px-6 sm:py-4 border-t border-slate-200 bg-slate-50">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="casting-form"
-                disabled={saving}
-                className="flex items-center gap-2 px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
-              >
-                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                {saving ? 'Saving...' : 'Save Casting'}
-              </button>
+              {(!isEditing && casting) ? (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-2 px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-xl transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z" /></svg>
+                  Edit Casting
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditing(false)
+                      onClose()
+                    }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    form="casting-form"
+                    disabled={saving}
+                    className="flex items-center gap-2 px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
+                  >
+                    {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {saving ? 'Saving...' : 'Save Casting'}
+                  </button>
+                </>
+              )}
             </div>
           </motion.div>
 

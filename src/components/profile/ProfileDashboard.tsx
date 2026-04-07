@@ -25,6 +25,7 @@ const EMPTY_STATS = {
   active_jobs: 0,
   completed_jobs: 0,
   pending_tasks: 0,
+  overdue_tasks: 0,
 }
 
 const EMPTY_PROFILE: UserProfile = {

@@ -6,11 +6,14 @@ import { useAppStore } from '@/hooks/useStore'
 import type { UserProfile } from '@/types'
 import { toast } from 'sonner'
 
+type TaskFilter = 'all' | 'pending' | 'overdue'
+
 const EMPTY_STATS = {
   total_jobs: 0,
   active_jobs: 0,
   completed_jobs: 0,
   pending_tasks: 0,
+  overdue_tasks: 0,
 }
 
 const EMPTY_PROFILE: UserProfile = {
@@ -50,8 +53,36 @@ export function Profile() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [taskFilter, setTaskFilter] = useState<TaskFilter>('all')
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const infoSectionRef = useRef<HTMLDivElement | null>(null)
+
+  const isOverdue = (task: UserProfile['tasks'][number]) => {
+    const dueDate = task.due_date || task.shoot_date_start
+    if (!dueDate) return false
+    if (task.status === 'WON' || task.status === 'PAID' || task.status === 'COMPLETED') return false
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return new Date(dueDate) < today
+  }
+
+  const filteredTasks = useMemo(() => {
+    if (taskFilter === 'all') return profile.tasks
+    if (taskFilter === 'overdue') return profile.tasks.filter(isOverdue)
+    return profile.tasks.filter((t) => t.status !== 'WON' && t.status !== 'PAID' && t.status !== 'COMPLETED')
+  }, [profile.tasks, taskFilter])
+
+  const taskCounts = useMemo(() => ({
+    all: profile.tasks.length,
+    pending: profile.tasks.filter((t) => t.status !== 'WON' && t.status !== 'PAID' && t.status !== 'COMPLETED').length,
+    overdue: profile.tasks.filter(isOverdue).length,
+  }), [profile.tasks])
+
+  const taskFilterConfig: { key: TaskFilter; label: string; count: number }[] = [
+    { key: 'all', label: 'All Tasks', count: taskCounts.all },
+    { key: 'pending', label: 'Pending Tasks', count: taskCounts.pending },
+    { key: 'overdue', label: 'Overdue Tasks', count: taskCounts.overdue },
+  ]
 
   const applyCurrentUser = (data: UserProfile) => {
     setCurrentUser({
@@ -281,25 +312,60 @@ export function Profile() {
               </div>
             </div>
 
-            <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-              <h2 className="text-sm font-semibold text-slate-900">My Tasks</h2>
-              <div className="mt-4 space-y-3">
-                {profile.tasks.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">No assigned items right now.</div>
-                ) : profile.tasks.map((task) => (
-                  <div key={task.id} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-slate-800">{task.project_name || 'Untitled Job'}</p>
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                          <span className="inline-flex items-center gap-1"><Mail className="h-3 w-3" />{task.client_name || 'No client'}</span>
-                          {task.shoot_date_start && <span className="inline-flex items-center gap-1"><Calendar className="h-3 w-3" />{formatDate(task.shoot_date_start)}</span>}
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                {taskFilterConfig.map((item) => (
+                  <button
+                    key={item.key}
+                    onClick={() => setTaskFilter(item.key)}
+                    className={cn(
+                      'flex flex-col items-center justify-center rounded-2xl border p-4 text-center transition-all duration-200',
+                      taskFilter === item.key
+                        ? 'border-amber-300 bg-amber-50/70 shadow-md'
+                        : 'border-slate-200 bg-white shadow-sm hover:border-slate-300 hover:shadow',
+                    )}
+                  >
+                    <span className="text-2xl font-semibold text-slate-900">{item.count}</span>
+                    <span className={cn(
+                      'mt-1 text-xs font-medium',
+                      taskFilter === item.key ? 'text-amber-700' : 'text-slate-500',
+                    )}>
+                      {item.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                <div className="space-y-3">
+                  {filteredTasks.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">No tasks in this category.</div>
+                  ) : filteredTasks.map((task) => {
+                    const overdue = isOverdue(task)
+                    return (
+                      <div key={task.id} className={cn(
+                        'rounded-2xl border px-4 py-3 transition-colors duration-150',
+                        overdue ? 'border-red-100 bg-red-50/40' : 'border-slate-100 bg-slate-50',
+                      )}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium text-slate-800">{task.project_name || 'Untitled Job'}</p>
+                            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                              <span className="inline-flex items-center gap-1"><Mail className="h-3 w-3" />{task.client_name || 'No client'}</span>
+                              {(task.due_date || task.shoot_date_start) && <span className={cn('inline-flex items-center gap-1', overdue && 'text-red-500')}><Calendar className="h-3 w-3" />{formatDate(task.due_date || task.shoot_date_start)}</span>}
+                            </div>
+                          </div>
+                          <span className={cn(
+                            'rounded-full px-2.5 py-1 text-[11px] font-medium',
+                            overdue
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-amber-50 text-amber-700',
+                          )}>{overdue ? 'Overdue' : task.status}</span>
                         </div>
                       </div>
-                      <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-700">{task.status}</span>
-                    </div>
-                  </div>
-                ))}
+                    )
+                  })}
+                </div>
               </div>
             </div>
           </div>
