@@ -1,3 +1,6 @@
+// AUTH TEMPORARILY DISABLED — set to false to re-enable
+const AUTH_DISABLED = true
+
 const TOKEN_KEY = 'toabh_session'
 
 export interface User {
@@ -8,13 +11,35 @@ export interface User {
   must_reset_password?: boolean
 }
 
+// When auth is disabled, create a fake session on first access (lazy, not at module load)
+function _getOrInitDisabledSession(): { token: string; user: User } | null {
+  if (!AUTH_DISABLED) return null
+  try {
+    for (const store of [sessionStorage, localStorage]) {
+      const raw = store.getItem(TOKEN_KEY)
+      if (raw) { return JSON.parse(raw) }
+    }
+    // Create on-the-fly if nothing stored yet
+    const user: User = { id: 0, email: 'admin@toabh.com', role: 'admin', name: 'Administrator' }
+    const payload = JSON.stringify({ sub: 0, email: 'admin@toabh.com', role: 'admin', sa: true, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 86400 })
+    const fakeToken = btoa(payload) + '.disabled'
+    const session = { token: fakeToken, user, ts: Date.now() }
+    sessionStorage.setItem(TOKEN_KEY, JSON.stringify(session))
+    localStorage.setItem(TOKEN_KEY, JSON.stringify(session))
+    localStorage.setItem('toabh_user', JSON.stringify(user))
+    return session
+  } catch {
+    return null
+  }
+}
+
 function _parseToken(token: string) {
   try {
     const [b64] = token.split('.')
     if (!b64) return null
     const padding = 4 - (b64.length % 4)
-    const payload = b64 + '='.repeat(padding === 4 ? 0 : padding)
-    return JSON.parse(atob(payload))
+    const data = b64 + '='.repeat(padding === 4 ? 0 : padding)
+    return JSON.parse(atob(data))
   } catch {
     return null
   }
@@ -26,22 +51,20 @@ export function saveSession(token: string, user: User, remember = false) {
 }
 
 export function getSession(): { token: string; user: User } | null {
+  // When auth is disabled, always return an admin session
+  if (AUTH_DISABLED) {
+    return _getOrInitDisabledSession() ?? { token: 'disabled', user: { id: 0, email: 'admin@toabh.com', role: 'admin', name: 'Administrator' } }
+  }
+
   for (const store of [sessionStorage, localStorage]) {
     const raw = store.getItem(TOKEN_KEY)
     if (!raw) continue
     try {
       const data = JSON.parse(raw)
-      // 24h session, 30d remember
       const ttl = store === localStorage ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000
-      if (Date.now() - data.ts > ttl) {
-        store.removeItem(TOKEN_KEY)
-        continue
-      }
+      if (Date.now() - data.ts > ttl) { store.removeItem(TOKEN_KEY); continue }
       const payload = _parseToken(data.token)
-      if (!payload || payload.exp < Date.now() / 1000) {
-        store.removeItem(TOKEN_KEY)
-        continue
-      }
+      if (!payload || payload.exp < Date.now() / 1000) { store.removeItem(TOKEN_KEY); continue }
       return { token: data.token, user: data.user }
     } catch {
       store.removeItem(TOKEN_KEY)
@@ -51,16 +74,26 @@ export function getSession(): { token: string; user: User } | null {
 }
 
 export function clearSession() {
+  if (AUTH_DISABLED) return // never clear disabled session
   sessionStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(TOKEN_KEY)
 }
 
 export function isLoggedIn(): boolean {
+  if (AUTH_DISABLED) return true
   return getSession() !== null
 }
 
 export const api = {
   async login(identifier: string, password: string, remember = false) {
+    if (AUTH_DISABLED) {
+      const user: User = { id: 0, email: 'admin@toabh.com', role: 'admin', name: 'Administrator' }
+      const payload = JSON.stringify({ sub: 0, email: 'admin@toabh.com', role: 'admin', sa: true, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 86400 })
+      const fakeToken = btoa(payload) + '.disabled'
+      saveSession(fakeToken, user, remember)
+      return { token: fakeToken, user }
+    }
+
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -76,6 +109,7 @@ export const api = {
   },
 
   async logout() {
+    if (AUTH_DISABLED) return
     try {
       const s = getSession()
       if (s?.token) {
@@ -84,9 +118,7 @@ export const api = {
           headers: { Authorization: `Bearer ${s.token}` },
         })
       }
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
     clearSession()
   },
 
@@ -113,6 +145,7 @@ export const api = {
   },
 
   async changePassword(current_password: string, new_password: string) {
+    if (AUTH_DISABLED) { return { ok: true } }
     const s = getSession()
     if (!s) throw new Error('Not logged in')
     const res = await fetch('/api/auth/change-password', {
@@ -131,6 +164,7 @@ export const api = {
   },
 
   async getPermissions() {
+    if (AUTH_DISABLED) { return { admin: { dashboard:1, jobs:1, clients:1, calendar:1, team:1, tasks:1, reports:1, settings:1, activity:1, profile:1 } } }
     const s = getSession()
     if (!s?.token) return {}
     const res = await fetch('/api/settings/permissions', {
@@ -160,7 +194,6 @@ export const api = {
     return res.json()
   },
 
-  // Generic authenticated fetch
   async fetch(path: string, opts: RequestInit = {}) {
     const s = getSession()
     const headers: Record<string, string> = {
@@ -169,7 +202,7 @@ export const api = {
       ...((opts.headers as Record<string, string>) || {}),
     }
     const res = await fetch(path.startsWith('http') ? path : `/api${path}`, { ...opts, headers })
-    if (res.status === 401) {
+    if (res.status === 401 && !AUTH_DISABLED) {
       clearSession()
       window.location.href = '/login'
       throw new Error('Unauthorized')
