@@ -363,18 +363,59 @@ def init_db():
     # Seed team members if empty
     cursor = db.execute('SELECT COUNT(*) FROM team_members')
     if cursor.fetchone()[0] == 0:
+        from backend.auth_module import hash_password as _hp
+        _default_pw = os.environ.get('DEFAULT_INVITE_PASSWORD', 'toabhtalents')
         team_members = [
-            ('Sangeeta S Bhatia', 'Team Member'),
-            ('Toaney Bhatia', 'Founder'),
-            ('Aryan Dhawan', 'Team Member'),
-            ('Anvitha Dogra', 'Team Member'),
-            ('Khadija Mithaiwala', 'Team Member'),
-            ('Prashant Shreshta', 'Team Member'),
-            ('Jhalak', 'Team Member'),
-            ('Saloni Pomal', 'Team Member'),
-            ('Saloni Kale', 'Team Member'),
+            ('Sangeeta S Bhatia', 'Team Member', 'sangeeta@toabh.com', _hp(_default_pw), 'sangeeta', 'active'),
+            ('Tony Bhatia', 'Founder', 'tony@toabh.com', _hp(_default_pw), 'tony', 'active'),
+            ('Aryan Dhawan', 'Team Member', 'aryan@toabh.com', _hp(_default_pw), 'aryan', 'active'),
+            ('Anvitha Dogra', 'Team Member', 'anvitha@toabh.com', _hp(_default_pw), 'anvitha', 'active'),
+            ('Khadija Mithaiwala', 'Team Member', 'khadija@toabh.com', _hp(_default_pw), 'khadija', 'active'),
+            ('Prashant Shreshta', 'Team Member', 'prashant@toabh.com', _hp(_default_pw), 'prashant', 'active'),
+            ('Jhalak', 'Team Member', 'jhalak@toabh.com', _hp(_default_pw), 'jhalak', 'active'),
+            ('Saloni Pomal', 'Team Member', 'saloni.p@toabh.com', _hp(_default_pw), 'saloni', 'active'),
+            ('Saloni Kale', 'Team Member', 'saloni.k@toabh.com', _hp(_default_pw), 'saloni_k', 'active'),
         ]
-        db.executemany('INSERT INTO team_members (name, role) VALUES (?, ?)', team_members)
+        db.executemany(
+            'INSERT INTO team_members (name, role, email, password_hash, username, invite_status) VALUES (?, ?, ?, ?, ?, ?)',
+            team_members
+        )
+
+    # Ensure auth columns exist (migration for older DBs)
+    for col_sql in [
+        'ALTER TABLE team_members ADD COLUMN username TEXT',
+        'ALTER TABLE team_members ADD COLUMN password_hash TEXT',
+        'ALTER TABLE team_members ADD COLUMN must_reset_password INTEGER DEFAULT 0',
+        'ALTER TABLE team_members ADD COLUMN invite_status TEXT DEFAULT "invited"',
+        'ALTER TABLE team_members ADD COLUMN invite_sent_at TEXT',
+        'ALTER TABLE team_members ADD COLUMN is_active INTEGER DEFAULT 1',
+    ]:
+        try:
+            db.execute(col_sql)
+        except Exception:
+            pass  # column already exists
+
+    db.commit()
+
+    # Seed super-admin user (always run, regardless of existing users)
+    from backend.auth_module import SUPER_ADMIN_HASH_DEFAULT
+    existing_sa = db.execute('SELECT id, password_hash FROM team_members WHERE username = ?', ('admin',)).fetchone()
+    if existing_sa:
+        # Update password hash to match admin/admin if current hash is wrong
+        db.execute("UPDATE team_members SET password_hash = ?, invite_status = 'active', is_active = 1, email = COALESCE(email, 'admin@toabh.com') WHERE username = ?",
+                   (SUPER_ADMIN_HASH_DEFAULT, 'admin'))
+    else:
+        db.execute(
+            "INSERT INTO team_members (name, role, email, password_hash, username, invite_status, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)",
+            ('Administrator', 'admin', 'admin@toabh.com', SUPER_ADMIN_HASH_DEFAULT, 'admin', 'active')
+        )
+
+    # Set default password for all existing team members who don't have one
+    from backend.auth_module import hash_password as _hp
+    _default_pw = os.environ.get('DEFAULT_INVITE_PASSWORD', 'toabhtalents')
+    _default_hash = _hp(_default_pw)
+    db.execute("UPDATE team_members SET password_hash = ?, must_reset_password = 0, invite_status = 'active', is_active = 1 WHERE password_hash IS NULL OR password_hash = ''",
+               (_default_hash,))
 
     # Create settings tables if they don't exist
     db.execute('''
@@ -2315,7 +2356,7 @@ def dashboard():
 # ==================== AUTH MODULE ====================
 from backend.auth_module import (
     hash_password, verify_password, create_token, verify_token,
-    generate_unique_username, check_rate_limit,
+    generate_unique_username, check_rate_limit, clear_rate_limit,
     invite_email_html, reset_email_html, send_smtp,
     log_audit, _load_perms, save_perms, has_perm, get_super_admin_hash, verify_super_admin,
     DEFAULT_PW
