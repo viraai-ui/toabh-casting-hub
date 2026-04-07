@@ -4,6 +4,31 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, EyeOff, Lock, AlertCircle, Loader2, Mail, ArrowLeft } from 'lucide-react'
 import { login, forgotPassword, resetPassword, isLoggedIn } from '@/lib/api'
 
+function ToabhLogo({ size = 56 }: { size?: number }) {
+  const [imgError, setImgError] = useState(false)
+
+  if (imgError) {
+    return (
+      <div
+        className="rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg"
+        style={{ width: size, height: size }}
+      >
+        <span className="text-white font-bold" style={{ fontSize: size * 0.375 }}>T</span>
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src="/TOABH NEW.png"
+      alt="TOABH"
+      className="object-contain drop-shadow-lg"
+      style={{ width: size, height: size }}
+      onError={() => setImgError(true)}
+    />
+  )
+}
+
 export function LoginPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -59,7 +84,7 @@ export function LoginPage() {
     setLoading(true)
     try {
       await resetPassword(resetToken, resetPw)
-      setSuccess('Password updated! Redirecting to login…')
+      setSuccess('Password updated! Redirecting to login\u2026')
       setResetPw(''); setResetPwConfirm('')
       setTimeout(() => setMode('login'), 2000)
     } catch (err: any) { setError(err.message || 'Failed to reset password') }
@@ -73,9 +98,9 @@ export function LoginPage() {
           {mode === 'login' && (
             <motion.div key="login" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="glass rounded-3xl p-8 shadow-xl">
               <div className="flex flex-col items-center mb-8">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg mb-4"><span className="text-white font-bold text-2xl">T</span></div>
-                <h1 className="text-2xl font-bold text-slate-900">TOABH</h1>
-                <p className="text-slate-500 mt-1">Casting Hub</p>
+                <ToabhLogo size={56} />
+                <h1 className="text-2xl font-bold text-slate-900 mt-4">TOABH Casting Hub</h1>
+                <p className="text-slate-500 text-sm mt-1">Sign in to your account</p>
               </div>
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
@@ -109,8 +134,8 @@ export function LoginPage() {
             <motion.div key="forgot" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="glass rounded-3xl p-8 shadow-xl">
               <button onClick={() => { setMode('login'); setError(''); setSuccess('') }} className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-6"><ArrowLeft className="w-4 h-4" />Back to login</button>
               <div className="flex flex-col items-center mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center mb-3"><Lock className="w-6 h-6 text-amber-600" /></div>
-                <h2 className="text-xl font-bold text-slate-900">Reset Password</h2>
+                <ToabhLogo size={44} />
+                <h2 className="text-xl font-bold text-slate-900 mt-3">Reset Password</h2>
                 <p className="text-sm text-slate-500 mt-1 text-center">Enter your email and we'll send a reset link.</p>
               </div>
               <form onSubmit={handleForgot} className="space-y-4">
@@ -127,8 +152,8 @@ export function LoginPage() {
           {mode === 'reset' && (
             <motion.div key="reset" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-3xl p-8 shadow-xl">
               <div className="flex flex-col items-center mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-amber-100 flex items-center justify-center mb-3"><Lock className="w-6 h-6 text-amber-600" /></div>
-                <h2 className="text-xl font-bold text-slate-900">Set New Password</h2>
+                <ToabhLogo size={44} />
+                <h2 className="text-xl font-bold text-slate-900 mt-3">Set New Password</h2>
                 <p className="text-sm text-slate-500 mt-1">Enter your new password below.</p>
               </div>
               <form onSubmit={handleReset} className="space-y-4">
