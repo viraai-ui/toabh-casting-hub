@@ -48,11 +48,9 @@ export function LoginPage() {
   const [shake, setShake] = useState(false)
 
   useEffect(() => {
-    // AUTH DISABLED — always redirect to dashboard immediately
-    navigate('/dashboard', { replace: true })
-    return
     // When auth is disabled, redirect directly to dashboard
-    if (true) {
+    if (import.meta.env.VITE_AUTH_DISABLED === 'true') {
+
       navigate('/dashboard', { replace: true })
       return
     }
@@ -106,8 +104,8 @@ export function LoginPage() {
           {mode === 'login' && (
             <motion.div key="login" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="glass rounded-3xl p-8 shadow-xl">
               <div className="flex flex-col items-center mb-8">
-                <ToabhLogo size={56} />
-                <h1 className="text-2xl font-bold text-slate-900 mt-4">TOABH Casting Hub</h1>
+<ToabhLogo size={76} />
+                <h1 className="text-2xl font-bold text-slate-900 mt-5">Casting Hub</h1>
                 <p className="text-slate-500 text-sm mt-1">Sign in to your account</p>
               </div>
               <form onSubmit={handleLogin} className="space-y-4">
@@ -142,7 +140,7 @@ export function LoginPage() {
             <motion.div key="forgot" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="glass rounded-3xl p-8 shadow-xl">
               <button onClick={() => { setMode('login'); setError(''); setSuccess('') }} className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-6"><ArrowLeft className="w-4 h-4" />Back to login</button>
               <div className="flex flex-col items-center mb-6">
-                <ToabhLogo size={44} />
+<ToabhLogo size={60} />
                 <h2 className="text-xl font-bold text-slate-900 mt-3">Reset Password</h2>
                 <p className="text-sm text-slate-500 mt-1 text-center">Enter your email and we'll send a reset link.</p>
               </div>
@@ -160,7 +158,7 @@ export function LoginPage() {
           {mode === 'reset' && (
             <motion.div key="reset" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-3xl p-8 shadow-xl">
               <div className="flex flex-col items-center mb-6">
-                <ToabhLogo size={44} />
+<ToabhLogo size={60} />
                 <h2 className="text-xl font-bold text-slate-900 mt-3">Set New Password</h2>
                 <p className="text-sm text-slate-500 mt-1">Enter your new password below.</p>
               </div>
