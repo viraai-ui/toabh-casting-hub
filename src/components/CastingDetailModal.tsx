@@ -1,9 +1,11 @@
-import React, { useEffect, useRef } from 'react'
-import { X, Edit2, Phone, MessageCircle, MapPin, User, Tag } from 'lucide-react'
+import React, { useEffect, useRef, useState } from 'react'
+import { X, Edit2, Phone, MessageCircle, MapPin, User, Tag, Users } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { getInitials } from '@/lib/utils'
-import type { Casting } from '@/types'
+import type { Casting, Talent } from '@/types'
 import { CastingCommunicationPanel } from './casting/CastingCommunicationPanel'
+import { api } from '@/lib/api'
+import { TalentDetailModal } from './TalentDetailModal'
 
 interface TeamMemberInfo {
   id: number
@@ -67,6 +69,30 @@ function EmptyState({ message }: { message: string }) {
 
 export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDetailModalProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
+
+  // Linked talents
+  const [talents, setTalents] = useState<Talent[]>([])
+  const [talentsLoading, setTalentsLoading] = useState(false)
+  const [selectedTalent, setSelectedTalent] = useState<Talent | null>(null)
+  const [talentDetailOpen, setTalentDetailOpen] = useState(false)
+
+  useEffect(() => {
+    if (!casting?.id || !open) { setTalents([]); return }
+    setTalentsLoading(true)
+    api.get(`/castings/${casting.id}/talents`)
+      .then((data: unknown) => {
+        const arr = Array.isArray(data) ? data : []
+        setTalents(arr.map((t: Record<string, unknown>) => ({
+          id: t.talent_id as number,
+          name: t.name as string,
+          phone: t.phone as string | null,
+          email: t.email as string | null,
+          instagram_handle: t.instagram_handle as string | null,
+        })))
+      })
+      .catch(() => setTalents([]))
+      .finally(() => setTalentsLoading(false))
+  }, [casting?.id, open])
 
   useEffect(() => {
     if (open) {
@@ -298,6 +324,44 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                     />
                   </SectionCard>
 
+                  {/* TALENTS */}
+                  <SectionCard>
+                    <SectionHeader icon={Users} label="Talents" />
+                    {talentsLoading ? (
+                      <div className="px-4 pb-4 pt-2 flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                        <span className="text-[12px] text-slate-400">Loading talents...</span>
+                      </div>
+                    ) : talents.length === 0 ? (
+                      <EmptyState message="No talents assigned" />
+                    ) : (
+                      <div className="px-4 pb-3 pt-1 flex flex-col gap-2">
+                        {talents.map((talent) => (
+                          <div
+                            key={talent.id}
+                            onClick={() => { setSelectedTalent(talent); setTalentDetailOpen(true) }}
+                            className="group flex items-center gap-3 px-3 py-2.5 bg-slate-50 rounded-xl border border-slate-200 cursor-pointer hover:border-amber-300 hover:bg-amber-50/50 transition-all"
+                          >
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-[11px] font-bold shrink-0 shadow-sm">
+                              {getInitials(talent.name)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[13px] font-semibold text-slate-800 leading-tight truncate">{talent.name}</p>
+                              {(talent.phone || talent.email) && (
+                                <p className="text-[10px] text-slate-400 leading-tight truncate">
+                                  {talent.phone}{talent.phone && talent.email ? ' · ' : ''}{talent.email}
+                                </p>
+                              )}
+                            </div>
+                            {talent.instagram_handle && (
+                              <span className="text-[10px] text-purple-500 shrink-0">@{String(talent.instagram_handle).replace(/^@/, '')}</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </SectionCard>
+
                   {/* TEAM */}
                   <SectionCard>
                     <SectionHeader icon={User} label="Team" />
@@ -369,6 +433,31 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                 </div>
               </div>
             </div>
+
+            {/* Talent detail popup */}
+            <TalentDetailModal
+              open={talentDetailOpen}
+              onClose={() => {
+                setTalentDetailOpen(false)
+                setSelectedTalent(null)
+                // Refresh talents after close
+                if (casting?.id) {
+                  api.get(`/castings/${casting.id}/talents`)
+                    .then((data: unknown) => {
+                      const arr = Array.isArray(data) ? data : []
+                      setTalents(arr.map((t: Record<string, unknown>) => ({
+                        id: t.talent_id as number,
+                        name: t.name as string,
+                        phone: t.phone as string | null,
+                        email: t.email as string | null,
+                        instagram_handle: t.instagram_handle as string | null,
+                      })))
+                    }).catch(() => {})
+                }
+              }}
+              talent={selectedTalent}
+              onSave={() => {}}
+            />
           </motion.div>
         </>
       )}
