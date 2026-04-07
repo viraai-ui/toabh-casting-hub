@@ -11,28 +11,6 @@ export interface User {
   must_reset_password?: boolean
 }
 
-// When auth is disabled, create a fake session on first access (lazy, not at module load)
-function _getOrInitDisabledSession(): { token: string; user: User } | null {
-  if (!AUTH_DISABLED) return null
-  try {
-    for (const store of [sessionStorage, localStorage]) {
-      const raw = store.getItem(TOKEN_KEY)
-      if (raw) { return JSON.parse(raw) }
-    }
-    // Create on-the-fly if nothing stored yet
-    const user: User = { id: 0, email: 'admin@toabh.com', role: 'admin', name: 'Administrator' }
-    const payload = JSON.stringify({ sub: 0, email: 'admin@toabh.com', role: 'admin', sa: true, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 86400 })
-    const fakeToken = btoa(payload) + '.disabled'
-    const session = { token: fakeToken, user, ts: Date.now() }
-    sessionStorage.setItem(TOKEN_KEY, JSON.stringify(session))
-    localStorage.setItem(TOKEN_KEY, JSON.stringify(session))
-    localStorage.setItem('toabh_user', JSON.stringify(user))
-    return session
-  } catch {
-    return null
-  }
-}
-
 function _parseToken(token: string) {
   try {
     const [b64] = token.split('.')
@@ -40,9 +18,7 @@ function _parseToken(token: string) {
     const padding = 4 - (b64.length % 4)
     const data = b64 + '='.repeat(padding === 4 ? 0 : padding)
     return JSON.parse(atob(data))
-  } catch {
-    return null
-  }
+  } catch { return null }
 }
 
 export function saveSession(token: string, user: User, remember = false) {
@@ -51,9 +27,21 @@ export function saveSession(token: string, user: User, remember = false) {
 }
 
 export function getSession(): { token: string; user: User } | null {
-  // When auth is disabled, always return an admin session
+  // When auth is disabled, always return admin session (create it if needed)
   if (AUTH_DISABLED) {
-    return _getOrInitDisabledSession() ?? { token: 'disabled', user: { id: 0, email: 'admin@toabh.com', role: 'admin', name: 'Administrator' } }
+    for (const store of [sessionStorage, localStorage]) {
+      const raw = store.getItem(TOKEN_KEY)
+      if (raw) { try { return JSON.parse(raw) } catch { /* */ } }
+    }
+    // Create session on-the-fly
+    const user: User = { id: 0, email: 'admin@toabh.com', role: 'admin', name: 'Administrator' }
+    const payload = JSON.stringify({ sub: 0, email: 'admin@toabh.com', role: 'admin', sa: true, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 86400 })
+    const fakeToken = btoa(payload) + '.disabled'
+    const session = { token: fakeToken, user, ts: Date.now() }
+    sessionStorage.setItem(TOKEN_KEY, JSON.stringify(session))
+    localStorage.setItem(TOKEN_KEY, JSON.stringify(session))
+    localStorage.setItem('toabh_user', JSON.stringify(user))
+    return session
   }
 
   for (const store of [sessionStorage, localStorage]) {
@@ -66,15 +54,13 @@ export function getSession(): { token: string; user: User } | null {
       const payload = _parseToken(data.token)
       if (!payload || payload.exp < Date.now() / 1000) { store.removeItem(TOKEN_KEY); continue }
       return { token: data.token, user: data.user }
-    } catch {
-      store.removeItem(TOKEN_KEY)
-    }
+    } catch { store.removeItem(TOKEN_KEY) }
   }
   return null
 }
 
 export function clearSession() {
-  if (AUTH_DISABLED) return // never clear disabled session
+  if (AUTH_DISABLED) return
   sessionStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(TOKEN_KEY)
 }
@@ -84,27 +70,30 @@ export function isLoggedIn(): boolean {
   return getSession() !== null
 }
 
+export function checkSession(): Promise<boolean> {
+  return Promise.resolve(isLoggedIn())
+}
+
 export const api = {
-  async login(identifier: string, password: string, remember = false) {
+  async login(_identifier: string, _password: string, _remember = false) {
     if (AUTH_DISABLED) {
       const user: User = { id: 0, email: 'admin@toabh.com', role: 'admin', name: 'Administrator' }
       const payload = JSON.stringify({ sub: 0, email: 'admin@toabh.com', role: 'admin', sa: true, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 86400 })
       const fakeToken = btoa(payload) + '.disabled'
-      saveSession(fakeToken, user, remember)
+      saveSession(fakeToken, user, _remember)
       return { token: fakeToken, user }
     }
-
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: identifier, password, remember }),
+      body: JSON.stringify({ username: _identifier, password: _password, remember: _remember }),
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Login failed' }))
       throw new Error(err.error || 'Login failed')
     }
     const data = await res.json()
-    saveSession(data.token, data.user, remember)
+    saveSession(data.token, data.user, _remember)
     return data
   },
 
@@ -113,29 +102,22 @@ export const api = {
     try {
       const s = getSession()
       if (s?.token) {
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${s.token}` },
-        })
+        await fetch('/api/auth/logout', { method: 'POST', headers: { Authorization: `Bearer ${s.token}` } })
       }
-    } catch { /* ignore */ }
+    } catch { /* */ }
     clearSession()
   },
 
   async forgotPassword(email: string) {
     const res = await fetch('/api/auth/forgot-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }),
     })
     return res.json()
   },
 
   async resetPassword(token: string, password: string) {
     const res = await fetch('/api/auth/reset-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, password }),
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, password }),
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Reset failed' }))
@@ -144,17 +126,14 @@ export const api = {
     return res.json()
   },
 
-  async changePassword(current_password: string, new_password: string) {
-    if (AUTH_DISABLED) { return { ok: true } }
+  async changePassword(_cur: string, _new: string) {
+    if (AUTH_DISABLED) return { ok: true }
     const s = getSession()
     if (!s) throw new Error('Not logged in')
     const res = await fetch('/api/auth/change-password', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${s.token}`,
-      },
-      body: JSON.stringify({ current_password, new_password }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${s.token}` },
+      body: JSON.stringify({ current_password: _cur, new_password: _new }),
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Failed' }))
@@ -164,12 +143,10 @@ export const api = {
   },
 
   async getPermissions() {
-    if (AUTH_DISABLED) { return { admin: { dashboard:1, jobs:1, clients:1, calendar:1, team:1, tasks:1, reports:1, settings:1, activity:1, profile:1 } } }
+    if (AUTH_DISABLED) return { admin: { dashboard:1, jobs:1, clients:1, calendar:1, team:1, tasks:1, reports:1, settings:1, activity:1, profile:1 } }
     const s = getSession()
     if (!s?.token) return {}
-    const res = await fetch('/api/settings/permissions', {
-      headers: { Authorization: `Bearer ${s.token}` },
-    })
+    const res = await fetch('/api/settings/permissions', { headers: { Authorization: `Bearer ${s.token}` } })
     if (!res.ok) return {}
     return res.json()
   },
@@ -177,20 +154,14 @@ export const api = {
   async resendInvite(memberId: number) {
     const s = getSession()
     if (!s?.token) throw new Error('Not logged in')
-    const res = await fetch(`/api/team/${memberId}/resend-invite`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${s.token}` },
-    })
+    const res = await fetch(`/api/team/${memberId}/resend-invite`, { method: 'POST', headers: { Authorization: `Bearer ${s.token}` } })
     return res.json()
   },
 
   async toggleMemberStatus(memberId: number) {
     const s = getSession()
     if (!s?.token) throw new Error('Not logged in')
-    const res = await fetch(`/api/team/${memberId}/toggle-status`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${s.token}` },
-    })
+    const res = await fetch(`/api/team/${memberId}/toggle-status`, { method: 'POST', headers: { Authorization: `Bearer ${s.token}` } })
     return res.json()
   },
 
