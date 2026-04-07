@@ -93,7 +93,7 @@ export async function login(identifier: string, password: string, remember = fal
   const r = await fetch(toApiUrl('/api/auth/login'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ identifier, password, remember }),
+    body: JSON.stringify({ username: identifier, password, remember }),
   })
   if (!r.ok) {
     let errMsg = 'Login failed'
