@@ -1,0 +1,54 @@
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.68.58:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [07/Apr/2026 10:35:46] "GET /api/talents HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:36:20] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:37:19] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:38:20] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:38:29] "[35m[1mPOST /api/talents HTTP/1.1[0m" 201 -
+127.0.0.1 - - [07/Apr/2026 10:38:34] "GET /api/talents/search?q=test HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:38:37] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:38:37] "GET /assets/index-qgOfiLBd.css HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:38:38] "GET /assets/index-Bb0pXUBx.js HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:38:40] "[36mGET / HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 10:39:01] "PUT /api/talents/1 HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:39:01] "POST /api/castings/1/talents HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:39:01] "GET /api/castings/1/talents HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:39:20] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:40:19] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:41:19] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:42:20] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:43:19] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:44:19] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:45:20] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:46:20] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:47:20] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:48:19] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:49:20] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:52:08] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:54:01] "[36mGET / HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 10:54:01] "[36mGET /assets/index-qgOfiLBd.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 10:54:02] "[36mGET /assets/index-Bb0pXUBx.js HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 10:55:09] "[36mGET / HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 10:55:09] "[36mGET /assets/index-qgOfiLBd.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 10:55:10] "[36mGET /assets/index-Bb0pXUBx.js HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 10:55:40] "[36mGET / HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 10:56:16] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:56:46] "[36mGET / HTTP/1.1[0m" 304 -
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.68.58:5000
+[33mPress CTRL+C to quit[0m
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.68.58:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [07/Apr/2026 10:57:40] "GET /assets/index-Bb0pXUBx.js HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 10:57:50] "[36mGET / HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 11:05:29] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 11:06:20] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 11:07:20] "GET /api/activities HTTP/1.1" 200 -
