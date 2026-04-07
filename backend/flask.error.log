@@ -52,3 +52,22 @@
 127.0.0.1 - - [07/Apr/2026 11:05:29] "GET /api/activities HTTP/1.1" 200 -
 127.0.0.1 - - [07/Apr/2026 11:06:20] "GET /api/activities HTTP/1.1" 200 -
 127.0.0.1 - - [07/Apr/2026 11:07:20] "GET /api/activities HTTP/1.1" 200 -
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.68.58:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [07/Apr/2026 11:18:04] "GET /api/health HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 11:18:06] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 11:18:13] "[36mGET / HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 11:18:13] "GET /assets/index-Bb0pXUBx.js HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 11:18:13] "GET /assets/index-qgOfiLBd.css HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 11:39:30] "[36mGET / HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 11:39:30] "[36mGET /assets/index-Bb0pXUBx.js HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 11:39:30] "[36mGET /assets/index-qgOfiLBd.css HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 11:39:32] "[36mGET / HTTP/1.1[0m" 304 -
+127.0.0.1 - - [07/Apr/2026 11:41:56] "GET /robots.txt HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 11:41:57] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 11:43:17] "GET /assets/index-Bb0pXUBx.js HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 11:43:19] "GET /assets/index-qgOfiLBd.css HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:02:41] "GET /api/activities HTTP/1.1" 200 -
