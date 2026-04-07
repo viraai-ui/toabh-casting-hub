@@ -2358,7 +2358,7 @@ from backend.auth_module import (
     hash_password, verify_password, create_token, verify_token,
     generate_unique_username, check_rate_limit, clear_rate_limit,
     invite_email_html, reset_email_html, send_smtp,
-    log_audit, _load_perms, save_perms, has_perm, get_super_admin_hash, verify_super_admin,
+    log_audit, _load_perms, save_perms, has_perm, get_super_admin_hash, verify_super_admin, AUTH_DISABLED,
     DEFAULT_PW
 )
 
@@ -2373,6 +2373,13 @@ def auth_login():
     identifier = (data.get('username') or data.get('email') or '').strip().lower()
     password = data.get('password', '')
     remember = bool(data.get('remember'))
+
+    # Auth disabled bypass — always allow login and return admin token
+    if AUTH_DISABLED:
+        token = create_token(0, 'admin@toabh.com', 'admin', is_super=True, remember=True)
+        resp = jsonify({'token': token, 'user': {'id': 0, 'email': 'admin@toabh.com', 'role': 'admin', 'name': 'Administrator'}})
+        resp.set_cookie('toabh_session', token, httponly=True, samesite='Lax', max_age=86400)
+        return resp
 
     if not identifier or not password:
         return jsonify({'error': 'Username/email and password required'}), 400
