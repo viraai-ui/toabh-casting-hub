@@ -48,9 +48,14 @@ export function LoginPage() {
   const [shake, setShake] = useState(false)
 
   useEffect(() => {
-    // AUTH DISABLED — always redirect to dashboard immediately
-    navigate('/dashboard', { replace: true })
-  }, [])
+    // When auth is disabled, redirect directly to dashboard
+    if (import.meta.env.VITE_AUTH_DISABLED === 'true') {
+
+      navigate('/dashboard', { replace: true })
+      return
+    }
+    if (isLoggedIn() && mode === 'login') navigate('/dashboard', { replace: true })
+  }, [mode, navigate])
 
   const triggerShake = () => { setShake(true); setTimeout(() => setShake(false), 500) }
 

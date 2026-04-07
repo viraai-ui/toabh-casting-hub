@@ -71,3 +71,445 @@
 127.0.0.1 - - [07/Apr/2026 11:43:17] "GET /assets/index-Bb0pXUBx.js HTTP/1.1" 200 -
 127.0.0.1 - - [07/Apr/2026 11:43:19] "GET /assets/index-qgOfiLBd.css HTTP/1.1" 200 -
 127.0.0.1 - - [07/Apr/2026 12:02:41] "GET /api/activities HTTP/1.1" 200 -
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.68.58:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [07/Apr/2026 12:06:50] "GET /api/health HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:06:51] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:06:51] "GET /assets/index-qgOfiLBd.css HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:06:52] "GET /assets/index-BZUTsVM8.js HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:06:53] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:06:53] "GET /api/dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:06:55] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:06:55] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:06:55] "GET /api/dashboard HTTP/1.1" 200 -
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.68.58:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [07/Apr/2026 12:08:27] "OPTIONS /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:08:41] "OPTIONS /api/dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:08:45] "GET /api/activities HTTP/1.1" 200 -
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.68.58:5000
+[33mPress CTRL+C to quit[0m
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.68.58:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [07/Apr/2026 12:09:05] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:05] "OPTIONS /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:05] "OPTIONS /api/dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:05] "GET /api/dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:06] "OPTIONS /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:06] "OPTIONS /api/dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:07] "OPTIONS /api/dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:07] "GET /api/health HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:08] "OPTIONS /api/dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:15] "GET /api/dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:15] "GET /api/dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:15] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:16] "GET /dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:16] "GET /assets/index-qgOfiLBd.css HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:16] "GET /assets/index-DHKIT4AZ.js HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:17] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:17] "GET /api/dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:19] "OPTIONS /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:19] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:24] "GET /api/settings/pipeline HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:28] "GET /api/settings/sources HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:29] "GET /api/settings/custom-fields HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:31] "GET /api/settings/client-tags HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:32] "GET /api/settings/custom-fields HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:39] "GET /api/settings/client-tags HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:42] "OPTIONS /api/dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:42] "GET /api/settings/permissions HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:43] "GET /api/audit-log HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:48] "GET /api/settings/roles HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:50] "GET /api/team HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:53] "GET /api/settings/email-templates HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:09:55] "GET /api/settings/automation-rules HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:10:00] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:10:00] "GET /api/team HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:10:02] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:10:09] "GET /api/settings/roles HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:10:15] "GET /api/dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:10:15] "GET /api/settings/roles HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:10:19] "GET /api/settings/roles HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:10:19] "GET /api/activities HTTP/1.1" 200 -
+[2026-04-07 12:10:32,776] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:32] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:34,582] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:34] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:35,301] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:35] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:35,571] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:35] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:35,812] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:35] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:35,975] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:35] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:36,154] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:36] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:36,310] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:36] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:36,481] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:36] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:36,647] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:36] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:36,810] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:36] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:36,967] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:36] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:37,133] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:37] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:37,296] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:37] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:37,478] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:37] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:37,618] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:37] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:37,781] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:37] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:37,935] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:37] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:38,099] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:38] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:38,263] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:38] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:38,445] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:38] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+[2026-04-07 12:10:38,655] ERROR in app: Exception on /api/team [POST]
+Traceback (most recent call last):
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/Users/aineshsikdar/Library/Python/3.9/lib/python/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in list_team
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+  File "/Users/aineshsikdar/github-dashboards/toabh-casting-hub/backend/app.py", line 1531, in <setcomp>
+    existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+AttributeError: 'sqlite3.Row' object has no attribute 'get'
+127.0.0.1 - - [07/Apr/2026 12:10:38] "[35m[1mPOST /api/team HTTP/1.1[0m" 500 -
+127.0.0.1 - - [07/Apr/2026 12:10:45] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:10:47] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:11:15] "GET /api/dashboard HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:11:20] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:11:30] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:11:32] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:12:00] "GET /api/settings/roles HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:12:00] "GET /api/castings HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:12:00] "GET /api/team HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:12:17] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:12:19] "GET /api/activities HTTP/1.1" 200 -
+127.0.0.1 - - [07/Apr/2026 12:13:02] "GET /api/activities HTTP/1.1" 200 -
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.68.58:5000
+[33mPress CTRL+C to quit[0m
+127.0.0.1 - - [07/Apr/2026 12:13:11] "GET /api/health HTTP/1.1" 200 -
