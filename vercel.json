@@ -24,6 +24,10 @@
       "dest": "api/index.py"
     },
     {
+      "src": "/auth/(.*)",
+      "dest": "api/index.py"
+    },
+    {
       "handle": "filesystem"
     },
     {
