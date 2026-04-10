@@ -15,7 +15,7 @@ import { Settings } from './pages/Settings'
 import { Profile } from './pages/Profile'
 import { Talents } from './pages/Talents'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { checkSession, isLoggedIn } from './lib/api'
+import { checkSession } from './lib/api'
 import { LoginPage } from './pages/LoginPage'
 
 const queryClient = new QueryClient({
@@ -70,7 +70,7 @@ function App() {
               <Route path="/profile" element={<ErrorBoundary><Profile /></ErrorBoundary>} />
               <Route path="/tasks" element={<ErrorBoundary><Tasks /></ErrorBoundary>} />
             </Route>
-            <Route path="/login" element={isLoggedIn() ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route path="/reset-password" element={<LoginPage />} />
             <Route path="/forgot-password" element={<LoginPage />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

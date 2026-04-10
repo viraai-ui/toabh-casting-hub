@@ -2409,6 +2409,27 @@ from backend.auth_module import (
 def _get_client_ip():
     return request.headers.get('X-Forwarded-For', request.remote_addr or '')
 
+
+def _set_session_cookie(resp, token):
+    resp.set_cookie(
+        'toabh_session',
+        token,
+        httponly=True,
+        samesite='Lax',
+        secure=bool(os.environ.get('VERCEL')),
+        max_age=86400,
+        path='/',
+    )
+
+
+def _clear_session_cookie(resp):
+    resp.delete_cookie(
+        'toabh_session',
+        path='/',
+        samesite='Lax',
+        secure=bool(os.environ.get('VERCEL')),
+    )
+
 @app.route('/api/auth/login', methods=['POST'])
 def auth_login():
     db = get_db()
@@ -2422,7 +2443,7 @@ def auth_login():
     if AUTH_DISABLED:
         token = create_token(0, 'admin@toabh.com', 'admin', is_super=True, remember=True)
         resp = jsonify({'token': token, 'user': {'id': 0, 'email': 'admin@toabh.com', 'role': 'admin', 'name': 'Administrator'}})
-        resp.set_cookie('toabh_session', token, httponly=True, samesite='Lax', max_age=86400)
+        _set_session_cookie(resp, token)
         return resp
 
     if not identifier or not password:
@@ -2438,7 +2459,7 @@ def auth_login():
         token = create_token(0, 'admin@toabhcasing.com', 'admin', is_super=True, remember=remember)
         safe_log_audit(db, 0, 'LOGIN', 'Super-admin fallback login', ip)
         resp = jsonify({'token': token, 'user': {'id': 0, 'email': 'admin@toabhcasing.com', 'role': 'admin', 'name': 'Administrator'}})
-        resp.set_cookie('toabh_session', token, httponly=True, samesite='Lax', max_age=86400)
+        _set_session_cookie(resp, token)
         return resp
 
     # Super-admin env fallback
@@ -2449,7 +2470,7 @@ def auth_login():
             token = create_token(0, 'admin@toabhcasing.com', 'admin', is_super=True, remember=remember)
             safe_log_audit(db, 0, 'LOGIN', 'Super-admin login', ip)
             resp = jsonify({'token': token, 'user': {'id': 0, 'email': 'admin@toabhcasing.com', 'role': 'admin', 'name': 'Administrator'}})
-            resp.set_cookie('toabh_session', token, httponly=True, samesite='Lax', max_age=86400)
+            _set_session_cookie(resp, token)
             return resp
 
     # Find user by email or username
@@ -2485,7 +2506,7 @@ def auth_login():
             'must_reset_password': bool(user['must_reset_password']),
         }
     })
-    resp.set_cookie('toabh_session', token, httponly=True, samesite='Lax', max_age=86400)
+    _set_session_cookie(resp, token)
     return resp
 
 
@@ -2498,7 +2519,7 @@ def auth_logout():
     if uid:
         log_audit(get_db(), uid, 'LOGOUT', 'User logged out', _get_client_ip())
     resp = jsonify({'ok': True})
-    resp.delete_cookie('toabh_session')
+    _clear_session_cookie(resp)
     return resp
 
 
@@ -2509,10 +2530,24 @@ def auth_me():
     payload = verify_token(token)
     if not payload:
         return jsonify({'error': 'unauthorized'}), 401
+
+    user_id = payload.get('sub')
+    if user_id == 0:
+        return jsonify({
+            'id': 0,
+            'name': 'Administrator',
+            'email': payload.get('email') or 'admin@toabh.com',
+            'role': payload.get('role') or 'admin',
+            'username': 'admin',
+            'last_login': None,
+            'invite_status': 'active',
+            'must_reset_password': False,
+        })
+
     db = get_db()
     user = db.execute(
-        'SELECT id, name, email, role, username, last_login, invite_status FROM team_members WHERE id = ?',
-        (payload.get('sub'),)
+        'SELECT id, name, email, role, username, last_login, invite_status, must_reset_password FROM team_members WHERE id = ?',
+        (user_id,)
     ).fetchone()
     if not user:
         return jsonify({'error': 'user_not_found'}), 401

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, EyeOff, Lock, AlertCircle, Loader2, Mail, ArrowLeft } from 'lucide-react'
-import { login, forgotPassword, resetPassword, isLoggedIn } from '@/lib/api'
+import { login, forgotPassword, resetPassword, checkSession } from '@/lib/api'
 
 interface ErrorWithMessage {
   message?: string
@@ -52,8 +52,18 @@ export function LoginPage() {
   const [shake, setShake] = useState(false)
 
   useEffect(() => {
-    if (isLoggedIn() && !isReset) {
-      navigate('/dashboard', { replace: true })
+    let cancelled = false
+
+    if (isReset) return
+
+    checkSession().then((ok) => {
+      if (!cancelled && ok) {
+        navigate('/dashboard', { replace: true })
+      }
+    })
+
+    return () => {
+      cancelled = true
     }
   }, [isReset, navigate])
 
@@ -67,7 +77,11 @@ export function LoginPage() {
     try {
       await login(identifier.trim(), password, remember)
       navigate('/dashboard', { replace: true })
-    } catch (err: unknown) { const error = err as ErrorWithMessage; setError(error.message || 'Invalid credentials'); triggerShake() }
+    } catch (err: unknown) {
+      const error = err as ErrorWithMessage
+      setError(error.message || 'Invalid credentials')
+      triggerShake()
+    }
     finally { setLoading(false) }
   }
 
