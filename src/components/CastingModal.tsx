@@ -15,6 +15,17 @@ import {
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import type { Casting, Client, TeamMember, PipelineStage, LeadSource } from '@/types'
+
+interface CastingCustomField {
+  id: number | string
+  name: string
+  type: 'text' | 'number' | 'date' | 'dropdown' | 'file'
+  options?: string[] | string
+}
+
+interface CastingTalentLink {
+  talent_id: number
+}
 import { TalentPicker } from './TalentPicker'
 
 interface CastingModalProps {
@@ -100,7 +111,7 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [pipeline, setPipeline] = useState<PipelineStage[]>([])
   const [sources, setSources] = useState<LeadSource[]>([])
-  const [customFields, setCustomFields] = useState<any[]>([])
+  const [customFields, setCustomFields] = useState<CastingCustomField[]>([])
   const [teamError, setTeamError] = useState('')
   const [showClientModal, setShowClientModal] = useState(false)
   const [newClient, setNewClient] = useState({ name: '', phone: '', email: '', company: '' })
@@ -182,7 +193,7 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
         // Load linked talents
         api.get(`/castings/${casting.id}/talents`)
           .then((data) => {
-            const ids = (Array.isArray(data) ? data : []).map((t: any) => t.talent_id)
+            const ids = (Array.isArray(data) ? data : []).map((t) => (t as CastingTalentLink).talent_id)
             setSelectedTalentIds(ids)
           })
           .catch(() => setSelectedTalentIds([]))
@@ -208,7 +219,7 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
         setSelectedTalentIds([])
       }
     }
-  }, [open, casting])
+  }, [open, casting, readOnly])
 
   const fetchData = async () => {
     setLoading(true)
@@ -225,7 +236,7 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
       setTeamMembers(Array.isArray(teamData) ? teamData : [])
       setPipeline(Array.isArray(pipelineData) ? pipelineData : [])
       setSources(Array.isArray(sourcesData) ? sourcesData : [])
-      setCustomFields(Array.isArray(customFieldsData) ? customFieldsData : [])
+      setCustomFields(Array.isArray(customFieldsData) ? customFieldsData as CastingCustomField[] : [])
     } catch (err) {
       console.error('Failed to fetch data:', err)
     } finally {
@@ -1012,10 +1023,10 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                       {!isEditing && casting && (
                         <div className="space-y-3 sm:space-y-4">
                           {(() => {
-                            const assigned = (casting as any).assigned_to;
-                            const ids: number[] = typeof assigned === 'string'
-                              ? assigned.split(',').map(Number).filter(Boolean)
-                              : Array.isArray(assigned) ? assigned as number[] : [];
+                            const assigned = casting.assigned_to
+                            const ids: number[] = Array.isArray(assigned)
+                              ? assigned.map((member) => member.id).filter(Boolean)
+                              : []
                             if (!ids.length) return <p className="text-sm text-slate-400 text-center py-4">No team members assigned</p>;
                             return ids.map((mid: number) => {
                               const m = teamMembers.find((tm) => tm.id === mid);

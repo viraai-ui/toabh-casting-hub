@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, User, Camera, Phone, Mail, Pencil, Trash2, Loader2, Check, Eye, EyeOff } from 'lucide-react'
+import { X, User, Camera, Phone, Mail, Pencil, Trash2, Loader2, Check } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import type { Talent } from '@/types'
@@ -17,7 +17,6 @@ export function TalentDetailModal({ open, onClose, talent, onSave }: TalentDetai
   const [mode, setMode] = useState<'view' | 'edit' | 'create'>(talent ? 'view' : 'create')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState({
     name: '',
     instagram_handle: '',

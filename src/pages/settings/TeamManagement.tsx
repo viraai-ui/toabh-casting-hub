@@ -6,6 +6,10 @@ import { cn, getInitials } from '@/lib/utils'
 import { useOverlay } from '@/hooks/useOverlayManager'
 import type { TeamMember } from '@/types'
 
+interface RolesResponse {
+  roles?: Array<{ name: string }>
+}
+
 export function TeamManagement() {
   const { openOverlay, closeOverlay } = useOverlay()
   const [team, setTeam] = useState<TeamMember[]>([])
@@ -190,8 +194,9 @@ function TeamMemberModal({
 
   useEffect(() => {
     api.get('/settings/roles')
-      .then((data: any) => {
-        const names = data?.roles?.map((r: any) => r.name) || ['Admin', 'Booker', 'Viewer']
+      .then((data: unknown) => {
+        const payload = data as RolesResponse
+        const names = payload?.roles?.map((r) => r.name) || ['Admin', 'Booker', 'Viewer']
         setRoleOptions(names)
       })
       .catch(() => setRoleOptions(['Admin', 'Booker', 'Viewer']))

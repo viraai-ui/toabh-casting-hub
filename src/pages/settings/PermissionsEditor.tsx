@@ -16,6 +16,8 @@ const PAGES = [
   { key: 'profile', label: 'Profile' },
 ]
 
+type PermissionsResponse = Record<string, Record<string, number>>
+
 export function PermissionsEditor() {
   const [permissions, setPermissions] = useState<Record<string, Record<string, number>>>({})
   const [loading, setLoading] = useState(true)
@@ -24,7 +26,7 @@ export function PermissionsEditor() {
 
   useEffect(() => {
     api.get('/settings/permissions')
-      .then((data: any) => setPermissions(data || {}))
+      .then((data: unknown) => setPermissions((data as PermissionsResponse) || {}))
       .catch(() => setPermissions({}))
       .finally(() => setLoading(false))
   }, [])

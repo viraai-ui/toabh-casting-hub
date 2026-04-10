@@ -13,6 +13,20 @@ interface EmailConfigState {
   from_name: string
 }
 
+interface EmailConfigResponse {
+  smtp_host?: string
+  smtp_port?: string | number
+  smtp_username?: string
+  smtp_password?: string
+  from_address?: string
+  from_email?: string
+  from_name?: string
+}
+
+interface ErrorWithMessage {
+  message?: string
+}
+
 const EMPTY_FORM: EmailConfigState = {
   smtp_host: '',
   smtp_port: '587',
@@ -31,14 +45,15 @@ export function EmailConfig() {
 
   useEffect(() => {
     api.get('/settings/email-config')
-      .then((data: any) => {
+      .then((data: unknown) => {
+        const payload = (data as EmailConfigResponse) || {}
         setForm({
-          smtp_host: data?.smtp_host ?? '',
-          smtp_port: String(data?.smtp_port ?? '587'),
-          smtp_username: data?.smtp_username ?? '',
-          smtp_password: data?.smtp_password ?? '',
-          from_address: data?.from_address ?? data?.from_email ?? '',
-          from_name: data?.from_name ?? '',
+          smtp_host: payload.smtp_host ?? '',
+          smtp_port: String(payload.smtp_port ?? '587'),
+          smtp_username: payload.smtp_username ?? '',
+          smtp_password: payload.smtp_password ?? '',
+          from_address: payload.from_address ?? payload.from_email ?? '',
+          from_name: payload.from_name ?? '',
         })
       })
       .catch(() => setForm(EMPTY_FORM))
@@ -81,9 +96,10 @@ export function EmailConfig() {
         msg: res?.message || 'Connection tested!',
         type: res?.success ? 'success' : 'error'
       })
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as ErrorWithMessage
       setFeedback({
-        msg: err?.message || 'Test failed — check your SMTP settings',
+        msg: error?.message || 'Test failed — check your SMTP settings',
         type: 'error'
       })
     } finally {

@@ -4,6 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, EyeOff, Lock, AlertCircle, Loader2, Mail, ArrowLeft } from 'lucide-react'
 import { login, forgotPassword, resetPassword, isLoggedIn } from '@/lib/api'
 
+interface ErrorWithMessage {
+  message?: string
+}
+
 function ToabhLogo({ size = 56 }: { size?: number }) {
   const [imgError, setImgError] = useState(false)
 
@@ -48,9 +52,10 @@ export function LoginPage() {
   const [shake, setShake] = useState(false)
 
   useEffect(() => {
-    // AUTH DISABLED — always redirect to dashboard immediately
-    navigate('/dashboard', { replace: true })
-  }, [])
+    if (isLoggedIn() && !isReset) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [isReset, navigate])
 
   const triggerShake = () => { setShake(true); setTimeout(() => setShake(false), 500) }
 
@@ -62,7 +67,7 @@ export function LoginPage() {
     try {
       await login(identifier.trim(), password, remember)
       navigate('/dashboard', { replace: true })
-    } catch (err: any) { setError(err.message || 'Invalid credentials'); triggerShake() }
+    } catch (err: unknown) { const error = err as ErrorWithMessage; setError(error.message || 'Invalid credentials'); triggerShake() }
     finally { setLoading(false) }
   }
 
@@ -74,7 +79,7 @@ export function LoginPage() {
       await forgotPassword(forgotEmail.trim())
       setSuccess('If an account exists, a reset link has been sent.')
       setForgotEmail('')
-    } catch (err: any) { setError(err.message || 'Failed to send reset email') }
+    } catch (err: unknown) { const error = err as ErrorWithMessage; setError(error.message || 'Failed to send reset email') }
     finally { setLoading(false) }
   }
 
@@ -88,7 +93,7 @@ export function LoginPage() {
       setSuccess('Password updated! Redirecting to login\u2026')
       setResetPw(''); setResetPwConfirm('')
       setTimeout(() => setMode('login'), 2000)
-    } catch (err: any) { setError(err.message || 'Failed to reset password') }
+    } catch (err: unknown) { const error = err as ErrorWithMessage; setError(error.message || 'Failed to reset password') }
     finally { setLoading(false) }
   }
 

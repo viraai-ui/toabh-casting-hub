@@ -54,6 +54,8 @@ describe('CastingDetailModal', () => {
       />
     )
 
-    expect(await screen.findByText(/internal chat, activity, and attachments/i)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /internal comments/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /attachments/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /activity/i })).toBeInTheDocument()
   })
 })

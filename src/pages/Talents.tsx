@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Search, Plus, Upload, Phone, MessageCircle, ChevronUp, ChevronDown, Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
-import { cn, getInitials } from '@/lib/utils'
+import { getInitials } from '@/lib/utils'
 import type { Talent } from '@/types'
 import { toast } from 'sonner'
 import { TalentDetailModal } from '@/components/TalentDetailModal'
@@ -77,17 +77,6 @@ export function Talents() {
         : { key, direction: 'asc' }
     )
   }
-
-  const handleDelete = useCallback(async (talent: Talent) => {
-    if (!confirm(`Delete ${talent.name}? This cannot be undone.`)) return
-    try {
-      await api.del(`/talents/${talent.id}`)
-      toast.success('Talent deleted')
-      fetchTalents()
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Failed to delete')
-    }
-  }, [fetchTalents])
 
   const openDetail = (talent: Talent | null) => {
     setSelectedTalent(talent)

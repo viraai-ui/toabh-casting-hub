@@ -6,7 +6,7 @@ function withAlpha(hex: string, alpha: string) {
   return `${hex}${alpha}`
 }
 
-export function getClientTagStyles(color: string) {
+function getClientTagStyles(color: string) {
   return {
     backgroundColor: withAlpha(color, '18'),
     borderColor: withAlpha(color, '33'),

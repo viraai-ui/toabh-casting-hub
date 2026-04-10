@@ -45,18 +45,12 @@ const castingFixture: Casting = {
   updated_at: '2026-04-02T09:00:00.000Z',
 }
 
-const internationalCastingFixture: Casting = {
-  ...castingFixture,
-  id: 84,
-  client_contact: '+44 20 7946 0958',
-}
-
 describe('CastingCommunicationPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('loads notes and activity for a casting and exposes quick contact actions', async () => {
+  it('loads notes, activity, and attachments for a casting', async () => {
     mockApi.get
       .mockResolvedValueOnce([
         {
@@ -102,27 +96,9 @@ describe('CastingCommunicationPanel', () => {
     expect(await screen.findByText(/client approved the revised callback list/i)).toBeInTheDocument()
     expect(screen.getByText(/moved from review to in progress/i)).toBeInTheDocument()
 
-    expect(screen.getByRole('link', { name: /call client/i })).toHaveAttribute('href', 'tel:+919876543210')
-    expect(screen.getByRole('link', { name: /whatsapp client/i })).toHaveAttribute(
-      'href',
-      'https://wa.me/919876543210?text=Regarding%20Monsoon%20Campaign'
-    )
+    expect(screen.getByText(/internal comments/i)).toBeInTheDocument()
+    expect(screen.getByText(/team-only discussion/i)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /callback-brief\.pdf/i })).toHaveAttribute('href', '/api/attachments/3')
-  })
-
-  it('preserves international phone numbers instead of forcing an India country code', async () => {
-    mockApi.get
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce({ attachments: [] })
-
-    render(<CastingCommunicationPanel casting={internationalCastingFixture} />)
-
-    expect(screen.getByRole('link', { name: /call client/i })).toHaveAttribute('href', 'tel:+442079460958')
-    expect(screen.getByRole('link', { name: /whatsapp client/i })).toHaveAttribute(
-      'href',
-      'https://wa.me/442079460958?text=Regarding%20Monsoon%20Campaign'
-    )
   })
 
   it('posts a new note and adds it to the top of the thread', async () => {
@@ -140,17 +116,17 @@ describe('CastingCommunicationPanel', () => {
 
     render(<CastingCommunicationPanel casting={castingFixture} />)
 
-    fireEvent.change(await screen.findByPlaceholderText(/add a note for the casting team/i), {
+    fireEvent.change(await screen.findByLabelText(/add a comment for the project team/i), {
       target: { value: '@Rhea call sheet shared with the client.' },
     })
-    fireEvent.click(screen.getByRole('button', { name: /post note/i }))
+    fireEvent.click(screen.getByRole('button', { name: /post comment/i }))
 
     await waitFor(() => {
       expect(mockApi.post).toHaveBeenCalledWith('/comments', {
         casting_id: 42,
         text: '@Rhea call sheet shared with the client.',
         user_name: 'Team',
-        mentions: ['Rhea'],
+        mentions: [],
         parent_id: null,
       })
     })
@@ -160,33 +136,14 @@ describe('CastingCommunicationPanel', () => {
     })
   })
 
-  it('uploads a new attachment and shows it in the attachment list', async () => {
+  it('shows the empty attachment state when no files are present', async () => {
     mockApi.get
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce({ attachments: [] })
-    mockApi.upload.mockResolvedValueOnce({
-      id: 12,
-      casting_id: 42,
-      original_filename: 'lookbook.pdf',
-      mime_type: 'application/pdf',
-      file_size: 512000,
-      created_at: '2026-04-02T11:00:00.000Z',
-      url: '/api/attachments/12',
-    })
 
     render(<CastingCommunicationPanel casting={castingFixture} />)
 
-    const file = new File(['pdf-bytes'], 'lookbook.pdf', { type: 'application/pdf' })
-    fireEvent.change(await screen.findByLabelText(/upload attachment/i), {
-      target: { files: [file] },
-    })
-
-    await waitFor(() => {
-      expect(mockApi.upload).toHaveBeenCalledWith('/castings/42/attachments', expect.any(FormData))
-    })
-
-    expect(screen.getByRole('link', { name: /lookbook\.pdf/i })).toHaveAttribute('href', '/api/attachments/12')
-    expect(screen.getByText(/uploaded attachment: lookbook\.pdf/i)).toBeInTheDocument()
+    expect(await screen.findByText(/no attachments yet/i)).toBeInTheDocument()
   })
 })

@@ -5,6 +5,14 @@ import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import type { CustomField } from '@/types'
 
+type CustomFieldType = 'text' | 'dropdown' | 'date' | 'number' | 'file'
+type CustomFieldGroup = 'contact_info' | 'project_info' | 'financials' | 'custom'
+
+type SettingsCustomField = CustomField & {
+  type: CustomFieldType
+  tab?: string
+}
+
 const fieldTypes = [
   { value: 'text', label: 'Text' },
   { value: 'dropdown', label: 'Dropdown' },
@@ -21,7 +29,7 @@ const groups = [
 ]
 
 export function CustomFields() {
-  const [fields, setFields] = useState<CustomField[]>([])
+  const [fields, setFields] = useState<SettingsCustomField[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeGroup, setActiveGroup] = useState('project_info')
@@ -30,8 +38,8 @@ export function CustomFields() {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     name: '',
-    field_type: 'text' as CustomField['type'],
-    group: 'project_info' as any,
+    field_type: 'text' as CustomFieldType,
+    group: 'project_info' as CustomFieldGroup,
     options: '',
     required: false,
   })
@@ -48,7 +56,7 @@ export function CustomFields() {
   const fetchFields = async () => {
     try {
       const data = await api.get('/settings/custom-fields')
-      setFields(Array.isArray(data) ? data : [])
+      setFields(Array.isArray(data) ? data as SettingsCustomField[] : [])
       setError(null)
     } catch (err) {
       console.error('Failed to fetch:', err)
@@ -116,10 +124,10 @@ export function CustomFields() {
   const resetForm = () => {
     setEditingField(null)
     setIsCreating(false)
-    setForm({ name: '', field_type: 'text' as any, group: 'project_info' as any, options: '', required: false })
+    setForm({ name: '', field_type: 'text' as CustomFieldType, group: 'project_info' as CustomFieldGroup, options: '', required: false })
   }
 
-  const startEdit = (field: CustomField) => {
+  const startEdit = (field: SettingsCustomField) => {
     setEditingField(field)
     // Normalize tab (API) to group (form)
     const groupKey = normalizeTab(field.tab) as 'custom' | 'contact_info' | 'project_info' | 'financials'
@@ -256,7 +264,7 @@ export function CustomFields() {
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Type</label>
               <select
                 value={form.field_type}
-                onChange={(e) => setForm({ ...form, field_type: e.target.value as CustomField['type'] })}
+                onChange={(e) => setForm({ ...form, field_type: e.target.value as CustomFieldType })}
                 className="w-full px-3 py-2 border border-slate-200 rounded-xl"
               >
                 {fieldTypes.map((t) => (

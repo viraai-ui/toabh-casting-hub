@@ -1,5 +1,4 @@
-// AUTH TEMPORARILY DISABLED — set to false to re-enable
-const AUTH_DISABLED = true
+const AUTH_DISABLED = false
 
 const TOKEN_KEY = 'toabh_session'
 

@@ -13,6 +13,20 @@ interface AuditEntry {
   created_at: string
 }
 
+interface AuditLogResponseEntry {
+  id: number
+  user_id: number | null
+  user_name: string | number
+  action: string
+  details: string
+  ip_address: string
+  created_at: string
+}
+
+interface AuditLogResponse {
+  entries?: AuditLogResponseEntry[]
+}
+
 function formatRelativeTime(value?: string) {
   if (!value) return ''
   const date = new Date(value + (value.endsWith('Z') ? '' : 'Z'))
@@ -33,7 +47,15 @@ export function AuditLogViewer() {
 
   useEffect(() => {
     api.get('/audit-log')
-      .then((data: any) => setEntries(Array.isArray(data) ? data : []))
+      .then((data: unknown) => {
+        const payload = data as AuditLogResponse | AuditLogResponseEntry[]
+        const entries = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.entries)
+            ? payload.entries
+            : []
+        setEntries(entries)
+      })
       .catch(() => setEntries([]))
       .finally(() => setLoading(false))
   }, [])

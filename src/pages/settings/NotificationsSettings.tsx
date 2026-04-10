@@ -11,6 +11,10 @@ interface NotificationRule {
   enabled?: boolean
 }
 
+interface NotificationRulesResponse {
+  rules?: NotificationRule[]
+}
+
 function Toggle({
   checked,
   onChange,
@@ -50,7 +54,10 @@ export function NotificationsSettings() {
 
   useEffect(() => {
     api.get('/settings/automation-rules')
-      .then((data: any) => setRules(Array.isArray(data?.rules) ? data.rules : []))
+      .then((data: unknown) => {
+        const payload = data as NotificationRulesResponse
+        setRules(Array.isArray(payload?.rules) ? payload.rules : [])
+      })
       .catch(() => setRules([]))
       .finally(() => setLoading(false))
   }, [])

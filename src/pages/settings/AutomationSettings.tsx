@@ -12,6 +12,10 @@ interface AutomationRule {
   enabled: boolean
 }
 
+interface AutomationRulesResponse {
+  rules?: AutomationRule[]
+}
+
 export function AutomationSettings() {
   const [rules, setRules] = useState<AutomationRule[]>([])
   const [loading, setLoading] = useState(true)
@@ -20,7 +24,10 @@ export function AutomationSettings() {
 
   useEffect(() => {
     api.get('/settings/automation-rules')
-      .then((data: any) => setRules(Array.isArray(data?.rules) ? data.rules : []))
+      .then((data: unknown) => {
+        const payload = data as AutomationRulesResponse
+        setRules(Array.isArray(payload?.rules) ? payload.rules : [])
+      })
       .catch(() => setRules([]))
       .finally(() => setLoading(false))
   }, [])

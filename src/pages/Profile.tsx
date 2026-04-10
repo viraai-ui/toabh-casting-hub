@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Calendar, Camera, KeyRound, Loader2, Mail, Save, Trash2, User } from 'lucide-react'
 import { api, toApiUrl } from '@/lib/api'
 import { cn, formatDate, formatRelativeTime, getInitials } from '@/lib/utils'
@@ -84,7 +84,7 @@ export function Profile() {
     { key: 'overdue', label: 'Overdue Tasks', count: taskCounts.overdue },
   ]
 
-  const applyCurrentUser = (data: UserProfile) => {
+  const applyCurrentUser = useCallback((data: UserProfile) => {
     setCurrentUser({
       name: data.name,
       role: data.role,
@@ -94,9 +94,9 @@ export function Profile() {
       date_of_birth: data.date_of_birth,
       team_member_id: data.team_member_id,
     })
-  }
+  }, [setCurrentUser])
 
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -115,11 +115,11 @@ export function Profile() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [applyCurrentUser])
 
   useEffect(() => {
     void loadProfile()
-  }, [])
+  }, [loadProfile])
 
   const saveProfile = async () => {
     setSaving(true)

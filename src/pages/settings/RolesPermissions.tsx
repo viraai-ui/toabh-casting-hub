@@ -4,6 +4,14 @@ import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import type { Role } from '@/types'
 
+interface ErrorWithResponse {
+  response?: {
+    data?: {
+      error?: string
+    }
+  }
+}
+
 const permissions = [
   { id: 'castings_view', name: 'View Castings' },
   { id: 'castings_edit', name: 'Edit Castings' },
@@ -73,9 +81,10 @@ export function RolesPermissions() {
     try {
       await api.put('/settings/roles', roles)
       setFeedback({ msg: 'Changes saved successfully!', type: 'success' })
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as ErrorWithResponse
       if (snapshot) setRoles(snapshot)
-      setFeedback({ msg: err?.response?.data?.error || 'Failed to save. Please try again.', type: 'error' })
+      setFeedback({ msg: error?.response?.data?.error || 'Failed to save. Please try again.', type: 'error' })
     } finally {
       setSaving(false)
       setSnapshot(null)

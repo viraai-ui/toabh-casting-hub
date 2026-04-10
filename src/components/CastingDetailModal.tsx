@@ -67,31 +67,49 @@ function EmptyState({ message }: { message: string }) {
   return <div className="px-4 pb-4 text-[12px] text-slate-400 italic">{message}</div>
 }
 
+interface CastingTalentLink {
+  talent_id: number
+  name: string
+  phone?: string | null
+  email?: string | null
+  instagram_handle?: string | null
+}
+
 export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDetailModalProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // Linked talents
   const [talents, setTalents] = useState<Talent[]>([])
-  const [talentsLoading, setTalentsLoading] = useState(false)
+  const [talentsLoading, setTalentsLoading] = useState(true)
   const [selectedTalent, setSelectedTalent] = useState<Talent | null>(null)
   const [talentDetailOpen, setTalentDetailOpen] = useState(false)
 
   useEffect(() => {
-    if (!casting?.id || !open) { setTalents([]); return }
-    setTalentsLoading(true)
-    api.get(`/castings/${casting.id}/talents`)
+    if (!casting?.id || !open) return
+
+    let active = true
+    void api.get(`/castings/${casting.id}/talents`)
       .then((data: unknown) => {
-        const arr = Array.isArray(data) ? data : []
-        setTalents(arr.map((t: Record<string, unknown>) => ({
-          id: t.talent_id as number,
-          name: t.name as string,
-          phone: t.phone as string | null,
-          email: t.email as string | null,
-          instagram_handle: t.instagram_handle as string | null,
+        if (!active) return
+        const arr = Array.isArray(data) ? data as CastingTalentLink[] : []
+        setTalents(arr.map((t) => ({
+          id: t.talent_id,
+          name: t.name,
+          phone: t.phone ?? null,
+          email: t.email ?? null,
+          instagram_handle: t.instagram_handle ?? null,
         })))
       })
-      .catch(() => setTalents([]))
-      .finally(() => setTalentsLoading(false))
+      .catch(() => {
+        if (active) setTalents([])
+      })
+      .finally(() => {
+        if (active) setTalentsLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
   }, [casting?.id, open])
 
   useEffect(() => {
@@ -132,8 +150,8 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
 
   // Parse assigned_to
   const assignedTo: TeamMemberInfo[] = Array.isArray(casting.assigned_to)
-    ? casting.assigned_to.map((m: any) => ({
-        id: typeof m.id === 'string' ? parseInt(m.id) : (m.id ?? 0),
+    ? casting.assigned_to.map((m) => ({
+        id: m.id,
         name: m.name || '',
         role: m.role,
       }))

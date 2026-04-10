@@ -5,12 +5,25 @@ import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import { useOverlay } from '@/hooks/useOverlayManager'
 import type { TeamMember, Casting } from '@/types'
+
+interface TeamMemberWithInviteStatus extends TeamMember {
+  invite_status?: string
+}
+
+interface RolesResponse {
+  roles?: Array<{ name: string }>
+}
+
+interface ErrorWithMessage {
+  message?: string
+}
 import Dialog from '@mui/material/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import IconButton from '@mui/material/IconButton'
 import Button from '@mui/material/Button'
 
 export function Team() {
+  const teamWithInvite = team as TeamMemberWithInviteStatus[]
   const { openOverlay, closeOverlay } = useOverlay()
   const [team, setTeam] = useState<TeamMember[]>([])
   const [castings, setCastings] = useState<Casting[]>([])
@@ -93,13 +106,14 @@ export function Team() {
       } else {
         alert(result?.message || 'Failed to resend invite. Is SMTP configured?')
       }
-    } catch (err: any) {
-      alert('Failed to resend invite: ' + (err?.message || 'Unknown error'))
+    } catch (err: unknown) {
+      const error = err as ErrorWithMessage
+      alert('Failed to resend invite: ' + (error?.message || 'Unknown error'))
     }
   }
 
   const statusBadge = (member: TeamMember) => {
-    const inviteStatus = (member as any).invite_status
+    const inviteStatus = (member as TeamMemberWithInviteStatus).invite_status
     const isActive = member.is_active !== false
     if (!isActive) {
       return <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500"><X className="h-2.5 w-2.5" />Disabled</span>
@@ -168,7 +182,7 @@ export function Team() {
         </div>
       ) : (
         <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
-          {team.map((member) => {
+          {teamWithInvite.map((member) => {
             const assignments = getMemberAssignments(member.id)
             const maxAssignments = Math.max(...team.map((m) => getMemberAssignments(m.id)), 1)
 
@@ -197,7 +211,7 @@ export function Team() {
                       <Pencil className="w-4 h-4" />
                     </button>
                     {/* Resend invite for pending members */}
-                    {(member as any).invite_status === 'pending' && (
+                    {member.invite_status === 'pending' && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
@@ -569,8 +583,9 @@ function TeamMemberModal({
 
   useEffect(() => {
     api.get('/settings/roles')
-      .then((data: any) => {
-        const roleNames = data.roles?.map((r: any) => r.name) || ['Admin', 'Booker', 'Viewer']
+      .then((data: unknown) => {
+        const payload = data as RolesResponse
+        const roleNames = payload.roles?.map((r) => r.name) || ['Admin', 'Booker', 'Viewer']
         setRoles(roleNames)
       })
       .catch(() => setRoles(['Admin', 'Booker', 'Viewer']))

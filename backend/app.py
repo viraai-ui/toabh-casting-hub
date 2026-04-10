@@ -124,6 +124,7 @@ def init_db():
             client_name TEXT,
             client_company TEXT,
             client_contact TEXT,
+            client_email TEXT,
             project_name TEXT,
             project_type TEXT,
             shoot_date_start TEXT,
@@ -264,11 +265,15 @@ def init_db():
         );
     ''')
 
-    # Add custom_fields column if it doesn't exist (for existing databases)
-    try:
-        db.execute('ALTER TABLE castings ADD COLUMN custom_fields TEXT DEFAULT "{}"')
-    except:
-        pass
+    # Add missing castings columns for existing databases
+    for col_def in [
+        'ALTER TABLE castings ADD COLUMN custom_fields TEXT DEFAULT "{}"',
+        'ALTER TABLE castings ADD COLUMN client_email TEXT',
+    ]:
+        try:
+            db.execute(col_def)
+        except:
+            pass
 
     # Add missing columns to team_members for existing databases
     for col_def in [
@@ -1131,17 +1136,18 @@ def list_castings():
 
         cursor = db.execute('''
             INSERT INTO castings (
-                source, source_detail, client_name, client_company, client_contact,
+                source, source_detail, client_name, client_company, client_contact, client_email,
                 project_name, project_type, shoot_date_start, shoot_date_end,
                 location, medium, usage, budget_min, budget_max, requirements,
                 apply_to, status, priority
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             data.get('source', 'manual'),
             data.get('source_detail'),
             data.get('client_name'),
             data.get('client_company'),
             data.get('client_contact'),
+            data.get('client_email'),
             data.get('project_name'),
             data.get('project_type'),
             data.get('shoot_date_start'),
@@ -1280,7 +1286,7 @@ def single_casting(casting_id):
         fields = []
         values = []
 
-        for field in ['source', 'source_detail', 'client_name', 'client_company', 'client_contact',
+        for field in ['source', 'source_detail', 'client_name', 'client_company', 'client_contact', 'client_email',
                       'project_name', 'project_type', 'shoot_date_start', 'shoot_date_end',
                       'location', 'medium', 'usage', 'budget_min', 'budget_max',
                       'requirements', 'apply_to', 'status', 'priority']:
@@ -1580,7 +1586,7 @@ def single_team_member(member_id):
         return jsonify({'message': 'Deleted'})
 
     elif request.method == 'PUT':
-        data = request.json
+        data = request.json or {}
 
         name = (data.get('name') or '').strip()
         role = (data.get('role') or '').strip()
@@ -1589,32 +1595,31 @@ def single_team_member(member_id):
         is_active = data.get('is_active')
         avatar_url = (data.get('avatar_url') or '').strip()
 
-        # Require email for all team members
-        if not email and request.method == 'PUT' and email == '':
-            pass  # allow blank email on PUT for existing members without email
+        updates = []
         params = []
-        if name is not None:
+        if 'name' in data:
             updates.append('name = ?')
             params.append(name)
-        if role is not None:
+        if 'role' in data:
             updates.append('role = ?')
             params.append(role)
         if is_active is not None:
             updates.append('is_active = ?')
             params.append(is_active)
-        if email is not None:
+        if 'email' in data:
             updates.append('email = ?')
             params.append(email or None)
-        if phone is not None:
+        if 'phone' in data:
             updates.append('phone = ?')
             params.append(phone or None)
-        if avatar_url is not None:
+        if 'avatar_url' in data:
             updates.append('avatar_url = ?')
             params.append(avatar_url or None)
 
         if not updates:
             return jsonify({'error': 'No fields to update'}), 400
 
+        updates.append('updated_at = CURRENT_TIMESTAMP')
         params.append(member_id)
         db.execute(f'UPDATE team_members SET {", ".join(updates)} WHERE id = ?', params)
         db.commit()
@@ -2546,10 +2551,11 @@ def auth_reset_password():
 
 @app.route('/api/auth/change-password', methods=['POST'])
 def auth_change_password():
-    from backend.auth_module import _extract_token, log_audit as _log_a
     from backend.auth_module import _extract_token
-    import secrets
-    new_pw = data.get('password', '')
+
+    data = request.json or {}
+    current_pw = data.get('current_password', '')
+    new_pw = data.get('new_password', '') or data.get('password', '')
     token = _extract_token(request)
     payload = verify_token(token)
     if not payload:
@@ -2558,6 +2564,13 @@ def auth_change_password():
     user_id = payload.get('sub')
     if not new_pw:
         return jsonify({'error': 'New password required'}), 400
+
+    user = db.execute('SELECT id, password_hash FROM team_members WHERE id = ?', (user_id,)).fetchone()
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    if user['password_hash'] and not verify_password(current_pw, user['password_hash']):
+        return jsonify({'error': 'Current password is incorrect'}), 400
+
     db.execute('UPDATE team_members SET password_hash = ?, must_reset_password = 0 WHERE id = ?',
                (hash_password(new_pw), user_id))
     db.commit()

@@ -15,9 +15,8 @@ import { Settings } from './pages/Settings'
 import { Profile } from './pages/Profile'
 import { Talents } from './pages/Talents'
 import { ErrorBoundary } from './components/ErrorBoundary'
-
-// AUTH TEMPORARILY DISABLED — set to false to re-enable
-const AUTH_DISABLED = true
+import { checkSession, isLoggedIn } from './lib/api'
+import { LoginPage } from './pages/LoginPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,8 +25,6 @@ const queryClient = new QueryClient({
 })
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  if (AUTH_DISABLED) return <>{children}</>
-
   const [authorized, setAuthorized] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -73,9 +70,9 @@ function App() {
               <Route path="/profile" element={<ErrorBoundary><Profile /></ErrorBoundary>} />
               <Route path="/tasks" element={<ErrorBoundary><Tasks /></ErrorBoundary>} />
             </Route>
-            <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/reset-password" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/forgot-password" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/login" element={isLoggedIn() ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
+            <Route path="/reset-password" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<LoginPage />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>

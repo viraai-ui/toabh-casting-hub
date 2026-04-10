@@ -54,20 +54,14 @@ def verify_password(password, stored):
 
 # ─── Super-admin (env-only, not in DB) ────────────────────────────────
 def get_super_admin_hash():
-    """Return stored hash for super-admin. Falls back to default 'admin' hash."""
+    """Return stored hash for super-admin."""
     if SUPER_ADMIN_PW:
         return hash_password(SUPER_ADMIN_PW)
     return SUPER_ADMIN_HASH_DEFAULT
 
 def verify_super_admin(password):
-    """Check password against super-admin hash. Always allows admin/admin fallback."""
-    # Hardcoded fallback — admin/admin always works
-    if password == "admin":
-        return True
-    # If env override is set, verify against that
-    if SUPER_ADMIN_PW:
-        return verify_password(password, SUPER_ADMIN_HASH_DEFAULT)
-    return verify_password(password, SUPER_ADMIN_HASH_DEFAULT)
+    """Check password against the configured super-admin hash."""
+    return verify_password(password, get_super_admin_hash())
 
 # ─── JWT tokens ───────────────────────────────────────────────────────
 def _sign(b64_payload):

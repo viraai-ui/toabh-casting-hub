@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Calendar, Loader2, MessageSquare, Plus, X } from 'lucide-react'
 import { api } from '@/lib/api'
@@ -145,11 +145,11 @@ function TaskDetail({
 
   useEffect(() => {
     if (!task) return
-    Promise.all([api.get(`/tasks/${task.id}/comments`), api.get(`/tasks/${task.id}/activities`)]).then(([commentData, activityData]) => {
+    void Promise.all([api.get(`/tasks/${task.id}/comments`), api.get(`/tasks/${task.id}/activities`)]).then(([commentData, activityData]) => {
       setComments(Array.isArray(commentData) ? commentData : [])
       setActivities(Array.isArray(activityData) ? activityData : [])
     })
-  }, [task?.id])
+  }, [task])
 
   const mentionOptions = useMemo(() => team.map((member) => ({ handle: buildMentionHandle(member.name), name: member.name })), [team])
   const mentionLookup = useMemo(() => new Map(mentionOptions.map((m) => [m.handle, m.name])), [mentionOptions])
@@ -335,7 +335,7 @@ export function Tasks() {
 
   const isAdmin = ['admin', 'founder'].includes((currentUser?.role || '').toLowerCase())
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       const query = new URLSearchParams()
@@ -352,9 +352,9 @@ export function Tasks() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filter, currentUser?.team_member_id])
 
-  useEffect(() => { void fetchData() }, [filter, currentUser?.team_member_id])
+  useEffect(() => { void fetchData() }, [fetchData])
 
   if (loading) {
     return <div className="flex items-center justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-amber-500" /></div>

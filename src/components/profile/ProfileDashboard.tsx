@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Calendar,
@@ -74,7 +74,7 @@ export function ProfileDashboard({ open, onClose }: ProfileDashboardProps) {
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -101,13 +101,13 @@ export function ProfileDashboard({ open, onClose }: ProfileDashboardProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [setCurrentUser])
 
   useEffect(() => {
     if (open) {
       void loadProfile()
     }
-  }, [open])
+  }, [open, loadProfile])
 
   const saveProfile = async () => {
     setSaving(true)

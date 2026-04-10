@@ -20,7 +20,7 @@ describe('CastingAssistant', () => {
     queryAssistantMock.mockReset()
   })
 
-  it('opens the floating panel and shows the voice-ready hook', () => {
+  it('opens the floating panel and shows the assistant shell', () => {
     render(
       <OverlayProvider>
         <CastingAssistant />
@@ -29,9 +29,9 @@ describe('CastingAssistant', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /open assistant/i }))
 
-    expect(screen.getByText('TOABH Assistant')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /voice input coming soon/i })).toBeDisabled()
-    expect(screen.getByText(/voice-ready ui hook/i)).toBeInTheDocument()
+    expect(screen.getByText(/casting concierge/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /start voice input/i })).toBeInTheDocument()
+    expect(screen.getByText(/ask about today's queue, delays, weekly work/i)).toBeInTheDocument()
   })
 
   it('submits a query and renders assistant cards from the response', async () => {

@@ -33,7 +33,7 @@ export function Dashboard() {
       setError(null)
       const data = await api.get('/dashboard')
       setStats(data)
-    } catch (err) {
+    } catch {
       setError('Failed to load dashboard')
     } finally {
       setLoading(false)

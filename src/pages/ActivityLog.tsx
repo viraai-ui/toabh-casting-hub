@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Plus, Edit, ArrowRight, UserPlus, MessageSquare, Trash2, Loader2, Filter } from 'lucide-react'
 import { api } from '@/lib/api'
@@ -40,7 +40,7 @@ export function ActivityLog() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
 
-  const fetchActivities = async (reset = false) => {
+  const fetchActivities = useCallback(async (reset = false) => {
     try {
       const params = new URLSearchParams()
       if (filters.date_from) params.append('date_from', filters.date_from)
@@ -68,9 +68,9 @@ export function ActivityLog() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters.date_from, filters.date_to, filters.user_id, filters.type, page])
 
-  const fetchTeam = async () => {
+  const fetchTeam = useCallback(async () => {
     try {
       const data = await api.get('/team')
       setTeam(Array.isArray(data) ? data : [])
@@ -78,16 +78,16 @@ export function ActivityLog() {
       console.error('Failed to fetch team:', err)
       setTeam([])
     }
-  }
-
-  useEffect(() => {
-    fetchTeam()
   }, [])
 
   useEffect(() => {
+    void fetchTeam()
+  }, [fetchTeam])
+
+  useEffect(() => {
     setLoading(true)
-    fetchActivities(true)
-  }, [filters])
+    void fetchActivities(true)
+  }, [fetchActivities, filters])
 
   const handleLoadMore = () => {
     setPage((p) => p + 1)

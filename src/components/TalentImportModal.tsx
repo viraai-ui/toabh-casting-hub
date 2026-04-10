@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, type DragEvent } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Upload, FileSpreadsheet, Check, AlertCircle, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, Upload, FileSpreadsheet, Check, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { api } from '@/lib/api'
 import type { TalentImportResult } from '@/types'
 import { toast } from 'sonner'
@@ -19,7 +19,6 @@ export function TalentImportModal({ open, onClose, onImported }: TalentImportMod
   const [importing, setImporting] = useState(false)
   const [results, setResults] = useState<TalentImportResult | null>(null)
   const [selectedUpdates, setSelectedUpdates] = useState<Map<number, boolean>>(new Map())
-  const [skipIds, setSkipIds] = useState<number[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const reset = useCallback(() => {
@@ -30,7 +29,6 @@ export function TalentImportModal({ open, onClose, onImported }: TalentImportMod
     setImporting(false)
     setResults(null)
     setSelectedUpdates(new Map())
-    setSkipIds([])
   }, [])
 
   const handleClose = () => {

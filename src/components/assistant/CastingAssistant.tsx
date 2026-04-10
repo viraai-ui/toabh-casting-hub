@@ -33,29 +33,6 @@ export function CastingAssistant() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, open, loading])
 
-  // Handle final voice transcript auto-submission
-  useEffect(() => {
-    if (voiceState === 'processing' && interimTranscript && interimTranscript !== processedRef.current) {
-      processedRef.current = interimTranscript
-      const { cleanQuery } = processVoiceQuery(interimTranscript)
-      const query = cleanQuery.trim() || interimTranscript
-      // Small delay so the user sees the processing state
-      const timer = setTimeout(() => {
-        void submitQuery(query)
-        resetState()
-        processedRef.current = ''
-      }, 400)
-      return () => clearTimeout(timer)
-    }
-  }, [voiceState, interimTranscript, resetState])
-
-  // Reset processedRef when voice returns to idle after an error
-  useEffect(() => {
-    if (voiceState === 'idle' || voiceState === 'error') {
-      processedRef.current = ''
-    }
-  }, [voiceState])
-
   const canSubmit = input.trim().length > 0 && !loading
 
   const isListening = voiceState === 'requesting' || voiceState === 'listening'
@@ -104,6 +81,28 @@ export function CastingAssistant() {
     },
     [loading],
   )
+
+  // Handle final voice transcript auto-submission
+  useEffect(() => {
+    if (voiceState === 'processing' && interimTranscript && interimTranscript !== processedRef.current) {
+      processedRef.current = interimTranscript
+      const { cleanQuery } = processVoiceQuery(interimTranscript)
+      const query = cleanQuery.trim() || interimTranscript
+      const timer = setTimeout(() => {
+        void submitQuery(query)
+        resetState()
+        processedRef.current = ''
+      }, 400)
+      return () => clearTimeout(timer)
+    }
+  }, [voiceState, interimTranscript, resetState, submitQuery])
+
+  // Reset processedRef when voice returns to idle after an error
+  useEffect(() => {
+    if (voiceState === 'idle' || voiceState === 'error') {
+      processedRef.current = ''
+    }
+  }, [voiceState])
 
   const liveTranscript = isListening ? interimTranscript : ''
 

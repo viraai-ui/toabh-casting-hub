@@ -10,11 +10,9 @@ import { cn } from '@/lib/utils'
 import { CastingAssistant } from '@/components/assistant/CastingAssistant'
 import { CastingModal } from '@/components/CastingModal'
 import { api, getSession } from '@/lib/auth'
-import type { UserProfile } from '@/types'
 
 export function AppLayout() {
   const { searchOpen, sidebarCollapsed, setCurrentUser } = useAppStore()
-  const [checked, setChecked] = useState(false)
   const [castingModalOpen, setCastingModalOpen] = useState(false)
   const mountedRef = useRef(false)
 
@@ -22,9 +20,23 @@ export function AppLayout() {
     if (mountedRef.current) return
     mountedRef.current = true
 
-      // When auth is disabled, set admin user immediately and mark checked
-    setCurrentUser({ name: 'Administrator', role: 'admin', email: 'admin@toabh.com' })
-    setChecked(true)
+    const session = getSession()
+    if (!session) {
+      setCurrentUser(null)
+      return
+    }
+
+    setCurrentUser(session.user)
+    void api.fetch('/auth/me')
+      .then((user) => {
+        if (user && typeof user === 'object') {
+          setCurrentUser(user as typeof session.user)
+        }
+      })
+      .catch(() => {
+        setCurrentUser(session.user)
+      })
+      .finally(() => undefined)
   }, [setCurrentUser])
 
   // Listen for global "open casting modal" events (from FAB, toolbar, dashboard)
@@ -41,10 +53,6 @@ export function AppLayout() {
   const handleCastingSaved = useCallback(() => {
     window.dispatchEvent(new CustomEvent('toabh-data-refresh'))
   }, [])
-
-  if (!checked) {
-    return null
-  }
 
   return (
     <OverlayProvider>

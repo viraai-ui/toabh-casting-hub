@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X, UserPlus, Search, Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
-import { cn, getInitials } from '@/lib/utils'
+import { getInitials } from '@/lib/utils'
 import type { Talent } from '@/types'
 
 interface TalentPickerProps {
@@ -12,21 +12,30 @@ interface TalentPickerProps {
 
 export function TalentPicker({ selectedIds, onChange, disabled = false }: TalentPickerProps) {
   const [talents, setTalents] = useState<Talent[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [fetching, setFetching] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
 
   // Fetch all talents on mount
   useEffect(() => {
-    if (fetching) return
-    setFetching(true)
-    setLoading(true)
-    api.get('/talents')
-      .then((data) => setTalents(Array.isArray(data) ? data : []))
+    let active = true
+    void api.get('/talents')
+      .then((data) => {
+        if (active) {
+          setTalents(Array.isArray(data) ? data : [])
+        }
+      })
       .catch(console.error)
-      .finally(() => { setLoading(false); setFetching(false) })
+      .finally(() => {
+        if (active) {
+          setLoading(false)
+        }
+      })
+
+    return () => {
+      active = false
+    }
   }, [])
 
   // Close dropdown on outside click

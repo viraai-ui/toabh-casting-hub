@@ -20,6 +20,10 @@ const viewModes = [
   { id: 'list', name: 'List View', description: 'Table view with sorting' },
 ]
 
+interface DashboardModulesResponse extends Record<string, unknown> {
+  default_view?: string
+}
+
 const defaultModulesState: Record<string, boolean> = {
   kanban: true,
   calendar: true,
@@ -37,16 +41,17 @@ export function DashboardSettings() {
 
   useEffect(() => {
     api.get('/settings/dashboard-modules')
-      .then((data: any) => {
+      .then((data: unknown) => {
         if (!data || typeof data !== 'object') return
+        const payload = data as DashboardModulesResponse
         // Backend returns flat key:value like {kanban: true, calendar: true, default_view: 'kanban', ...}
         const saved: Record<string, boolean> = {}
         for (const key of Object.keys(defaultModulesState)) {
-          saved[key] = key in data ? Boolean(data[key]) : true
+          saved[key] = key in payload ? Boolean(payload[key]) : true
         }
         setModules(saved)
-        if (data.default_view) {
-          setDefaultView(String(data.default_view))
+        if (payload.default_view) {
+          setDefaultView(String(payload.default_view))
         }
       })
       .catch(() => { /* use defaults */ })
