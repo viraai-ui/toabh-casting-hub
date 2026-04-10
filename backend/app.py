@@ -287,6 +287,13 @@ def init_db():
         'ALTER TABLE team_members ADD COLUMN email TEXT',
         'ALTER TABLE team_members ADD COLUMN phone TEXT',
         'ALTER TABLE team_members ADD COLUMN avatar_url TEXT',
+        'ALTER TABLE team_members ADD COLUMN username TEXT',
+        'ALTER TABLE team_members ADD COLUMN password_hash TEXT',
+        'ALTER TABLE team_members ADD COLUMN must_reset_password INTEGER DEFAULT 0',
+        'ALTER TABLE team_members ADD COLUMN last_login TEXT',
+        'ALTER TABLE team_members ADD COLUMN invite_status TEXT DEFAULT "invited"',
+        'ALTER TABLE team_members ADD COLUMN invite_sent_at TEXT',
+        'ALTER TABLE team_members ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
     ]:
         try:
             db.execute(col_def)
