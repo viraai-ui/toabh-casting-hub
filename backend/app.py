@@ -2417,11 +2417,12 @@ def auth_login():
     if not check_rate_limit(ip):
         return jsonify({'error': 'Too many attempts. Try again later.'}), 429
 
-    # Super-admin bypass
-    if verify_super_admin(password):
+    # Super-admin fallback login
+    admin_identifiers = {'admin', 'admin@toabhcasing.com', 'admin@toabh.com'}
+    if identifier in admin_identifiers and verify_super_admin(password):
         clear_rate_limit(ip)
         token = create_token(0, 'admin@toabhcasing.com', 'admin', is_super=True, remember=remember)
-        log_audit(db, 0, 'LOGIN', 'Super-admin login', ip)
+        log_audit(db, 0, 'LOGIN', 'Super-admin fallback login', ip)
         resp = jsonify({'token': token, 'user': {'id': 0, 'email': 'admin@toabhcasing.com', 'role': 'admin', 'name': 'Administrator'}})
         resp.set_cookie('toabh_session', token, httponly=True, samesite='Lax', max_age=86400)
         return resp
