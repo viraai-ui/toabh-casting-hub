@@ -8,7 +8,8 @@ import re
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from flask import Flask, request, jsonify, g, send_from_directory, send_file
+from urllib.parse import quote
+from flask import Flask, request, jsonify, g, send_from_directory, send_file, redirect
 from werkzeug.serving import make_server
 from dotenv import load_dotenv
 from backend.utils.assistant import query_casting_assistant
@@ -2430,62 +2431,62 @@ def _clear_session_cookie(resp):
         secure=bool(os.environ.get('VERCEL')),
     )
 
-@app.route('/api/auth/login', methods=['POST'])
-def auth_login():
+def _authenticate_login_payload(data, ip):
     db = get_db()
-    ip = _get_client_ip()
-    data = request.json or {}
     identifier = (data.get('username') or data.get('email') or '').strip().lower()
     password = data.get('password', '')
     remember = bool(data.get('remember'))
 
-    # Auth disabled bypass — always allow login and return admin token
     if AUTH_DISABLED:
         token = create_token(0, 'admin@toabh.com', 'admin', is_super=True, remember=True)
-        resp = jsonify({'token': token, 'user': {'id': 0, 'email': 'admin@toabh.com', 'role': 'admin', 'name': 'Administrator'}})
-        _set_session_cookie(resp, token)
-        return resp
+        return {
+            'ok': True,
+            'token': token,
+            'user': {'id': 0, 'email': 'admin@toabh.com', 'role': 'admin', 'name': 'Administrator'},
+            'remember': True,
+        }
 
     if not identifier or not password:
-        return jsonify({'error': 'Username/email and password required'}), 400
+        return {'ok': False, 'status': 400, 'error': 'Username/email and password required'}
 
     if not check_rate_limit(ip):
-        return jsonify({'error': 'Too many attempts. Try again later.'}), 429
+        return {'ok': False, 'status': 429, 'error': 'Too many attempts. Try again later.'}
 
-    # Super-admin fallback login
     admin_identifiers = {'admin', 'admin@toabhcasing.com', 'admin@toabh.com'}
     if identifier in admin_identifiers and verify_super_admin(password):
         clear_rate_limit(ip)
         token = create_token(0, 'admin@toabhcasing.com', 'admin', is_super=True, remember=remember)
         safe_log_audit(db, 0, 'LOGIN', 'Super-admin fallback login', ip)
-        resp = jsonify({'token': token, 'user': {'id': 0, 'email': 'admin@toabhcasing.com', 'role': 'admin', 'name': 'Administrator'}})
-        _set_session_cookie(resp, token)
-        return resp
+        return {
+            'ok': True,
+            'token': token,
+            'user': {'id': 0, 'email': 'admin@toabhcasing.com', 'role': 'admin', 'name': 'Administrator'},
+            'remember': remember,
+        }
 
-    # Super-admin env fallback
     sa_hash = get_super_admin_hash()
-    if sa_hash and identifier == 'admin':
-        if verify_password(password, sa_hash):
-            clear_rate_limit(ip)
-            token = create_token(0, 'admin@toabhcasing.com', 'admin', is_super=True, remember=remember)
-            safe_log_audit(db, 0, 'LOGIN', 'Super-admin login', ip)
-            resp = jsonify({'token': token, 'user': {'id': 0, 'email': 'admin@toabhcasing.com', 'role': 'admin', 'name': 'Administrator'}})
-            _set_session_cookie(resp, token)
-            return resp
+    if sa_hash and identifier == 'admin' and verify_password(password, sa_hash):
+        clear_rate_limit(ip)
+        token = create_token(0, 'admin@toabhcasing.com', 'admin', is_super=True, remember=remember)
+        safe_log_audit(db, 0, 'LOGIN', 'Super-admin login', ip)
+        return {
+            'ok': True,
+            'token': token,
+            'user': {'id': 0, 'email': 'admin@toabhcasing.com', 'role': 'admin', 'name': 'Administrator'},
+            'remember': remember,
+        }
 
-    # Find user by email or username
     user = db.execute(
         'SELECT id, name, email, role, username, password_hash, must_reset_password, last_login, invite_status FROM team_members WHERE (LOWER(email) = ? OR LOWER(username) = ?) AND is_active = 1',
         (identifier, identifier)
     ).fetchone()
 
     if not user or not user['password_hash']:
-        return jsonify({'error': 'Invalid credentials'}), 401
+        return {'ok': False, 'status': 401, 'error': 'Invalid credentials'}
     if user['invite_status'] == 'pending':
-        return jsonify({'error': 'Please check your email and accept the invite first'}), 401
-
+        return {'ok': False, 'status': 401, 'error': 'Please check your email and accept the invite first'}
     if not verify_password(password, user['password_hash']):
-        return jsonify({'error': 'Invalid credentials'}), 401
+        return {'ok': False, 'status': 401, 'error': 'Invalid credentials'}
 
     clear_rate_limit(ip)
     token = create_token(user['id'], user['email'], user['role'], remember=remember)
@@ -2495,8 +2496,8 @@ def auth_login():
     except Exception as exc:
         print(f'Last login update skipped: {exc}')
     safe_log_audit(db, user['id'], 'LOGIN', f'User {user["email"]} logged in', ip)
-
-    resp = jsonify({
+    return {
+        'ok': True,
         'token': token,
         'user': {
             'id': user['id'],
@@ -2504,9 +2505,38 @@ def auth_login():
             'email': user['email'],
             'role': user['role'],
             'must_reset_password': bool(user['must_reset_password']),
-        }
-    })
-    _set_session_cookie(resp, token)
+        },
+        'remember': remember,
+    }
+
+
+@app.route('/api/auth/login', methods=['POST'])
+def auth_login():
+    result = _authenticate_login_payload(request.json or {}, _get_client_ip())
+    if not result.get('ok'):
+        return jsonify({'error': result['error']}), result['status']
+
+    resp = jsonify({'token': result['token'], 'user': result['user']})
+    _set_session_cookie(resp, result['token'])
+    return resp
+
+
+@app.route('/auth/login', methods=['POST'])
+def auth_login_form_post():
+    remember_value = (request.form.get('remember') or '').lower()
+    remember = remember_value in {'1', 'true', 'on', 'yes'}
+    payload = {
+        'username': request.form.get('username', ''),
+        'password': request.form.get('password', ''),
+        'remember': remember,
+    }
+    result = _authenticate_login_payload(payload, _get_client_ip())
+    if not result.get('ok'):
+        error = re.sub(r'\s+', ' ', result['error']).strip()
+        return redirect(f'/login?error={quote(error)}')
+
+    resp = redirect('/dashboard')
+    _set_session_cookie(resp, result['token'])
     return resp
 
 

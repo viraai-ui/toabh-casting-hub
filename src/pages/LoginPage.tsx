@@ -38,6 +38,7 @@ export function LoginPage() {
   const [searchParams] = useSearchParams()
   const isReset = searchParams.get('reset') === '1'
   const resetToken = searchParams.get('token') || ''
+  const loginErrorFromUrl = searchParams.get('error') || ''
   const [mode, setMode] = useState<'login' | 'forgot' | 'reset'>(isReset ? 'reset' : 'login')
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
@@ -56,6 +57,10 @@ export function LoginPage() {
 
     if (isReset) return
 
+    if (loginErrorFromUrl) {
+      setError(loginErrorFromUrl)
+    }
+
     checkSession().then((ok) => {
       if (!cancelled && ok) {
         navigate('/dashboard', { replace: true })
@@ -65,9 +70,33 @@ export function LoginPage() {
     return () => {
       cancelled = true
     }
-  }, [isReset, navigate])
+  }, [isReset, loginErrorFromUrl, navigate])
 
   const triggerShake = () => { setShake(true); setTimeout(() => setShake(false), 500) }
+
+  const submitLoginFallback = (username: string, passwordValue: string, shouldRemember: boolean) => {
+    const form = document.createElement('form')
+    form.method = 'POST'
+    form.action = '/auth/login'
+    form.style.display = 'none'
+
+    const fields = {
+      username,
+      password: passwordValue,
+      remember: shouldRemember ? 'true' : 'false',
+    }
+
+    Object.entries(fields).forEach(([name, value]) => {
+      const input = document.createElement('input')
+      input.type = 'hidden'
+      input.name = name
+      input.value = value
+      form.appendChild(input)
+    })
+
+    document.body.appendChild(form)
+    form.submit()
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -79,7 +108,15 @@ export function LoginPage() {
       navigate('/dashboard', { replace: true })
     } catch (err: unknown) {
       const error = err as ErrorWithMessage
-      setError(error.message || 'Invalid credentials')
+      const message = error.message || 'Invalid credentials'
+      const networkLikeFailure = /failed to fetch|request failed|could not reach the server|refresh once and try again/i.test(message)
+
+      if (networkLikeFailure) {
+        submitLoginFallback(identifier.trim(), password, remember)
+        return
+      }
+
+      setError(message)
       triggerShake()
     }
     finally { setLoading(false) }
