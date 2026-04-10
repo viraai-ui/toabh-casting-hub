@@ -103,10 +103,17 @@ def _is_allowed_attachment(file_storage):
 # Database helpers
 def get_db():
     if 'db' not in g:
-        g.db = sqlite3.connect(app.config['DATABASE'])
+        g.db = sqlite3.connect(app.config['DATABASE'], timeout=10)
         g.db.row_factory = sqlite3.Row
         g.db.execute('PRAGMA foreign_keys = ON')
     return g.db
+
+
+def safe_log_audit(db, user_id, action, details='', ip=''):
+    try:
+        log_audit(db, user_id, action, details, ip)
+    except Exception as exc:
+        print(f'Audit log skipped: {exc}')
 
 @app.teardown_appcontext
 def close_db(e=None):
@@ -2422,7 +2429,7 @@ def auth_login():
     if identifier in admin_identifiers and verify_super_admin(password):
         clear_rate_limit(ip)
         token = create_token(0, 'admin@toabhcasing.com', 'admin', is_super=True, remember=remember)
-        log_audit(db, 0, 'LOGIN', 'Super-admin fallback login', ip)
+        safe_log_audit(db, 0, 'LOGIN', 'Super-admin fallback login', ip)
         resp = jsonify({'token': token, 'user': {'id': 0, 'email': 'admin@toabhcasing.com', 'role': 'admin', 'name': 'Administrator'}})
         resp.set_cookie('toabh_session', token, httponly=True, samesite='Lax', max_age=86400)
         return resp
@@ -2433,7 +2440,7 @@ def auth_login():
         if verify_password(password, sa_hash):
             clear_rate_limit(ip)
             token = create_token(0, 'admin@toabhcasing.com', 'admin', is_super=True, remember=remember)
-            log_audit(db, 0, 'LOGIN', 'Super-admin login', ip)
+            safe_log_audit(db, 0, 'LOGIN', 'Super-admin login', ip)
             resp = jsonify({'token': token, 'user': {'id': 0, 'email': 'admin@toabhcasing.com', 'role': 'admin', 'name': 'Administrator'}})
             resp.set_cookie('toabh_session', token, httponly=True, samesite='Lax', max_age=86400)
             return resp
@@ -2454,8 +2461,12 @@ def auth_login():
 
     clear_rate_limit(ip)
     token = create_token(user['id'], user['email'], user['role'], remember=remember)
-    db.execute("UPDATE team_members SET last_login = datetime('now'), invite_status = 'active' WHERE id = ?", (user['id'],))
-    log_audit(db, user['id'], 'LOGIN', f'User {user["email"]} logged in', ip)
+    try:
+        db.execute("UPDATE team_members SET last_login = datetime('now'), invite_status = 'active' WHERE id = ?", (user['id'],))
+        db.commit()
+    except Exception as exc:
+        print(f'Last login update skipped: {exc}')
+    safe_log_audit(db, user['id'], 'LOGIN', f'User {user["email"]} logged in', ip)
 
     resp = jsonify({
         'token': token,
