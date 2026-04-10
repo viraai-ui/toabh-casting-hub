@@ -2614,7 +2614,7 @@ def assistant_query():
 
 # Password verification
 @app.route('/api/auth/verify-password', methods=['POST'])
-def verify_password():
+def verify_admin_password_route():
     data = request.json
     correct = os.getenv('ADMIN_PASSWORD', 'toabh2026')
     return jsonify({'valid': data.get('password') == correct})
