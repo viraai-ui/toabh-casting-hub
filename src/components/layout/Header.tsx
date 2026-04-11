@@ -333,7 +333,7 @@ export function Header() {
                     className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-slate-100 z-50 py-1.5"
                   >
                     <div className="px-4 py-3 border-b border-slate-100 mb-1">
-                      <p className="text-sm font-semibold text-slate-900 leading-tight">{currentUser?.name || 'Toaney Bhatia'}</p>
+                      <p className="text-sm font-semibold text-slate-900 leading-tight">{currentUser?.name || 'Team Member'}</p>
                       <p className="text-[11px] text-slate-400 mt-0.5">{currentUser?.email || 'admin@toabh.com'}</p>
                     </div>
 

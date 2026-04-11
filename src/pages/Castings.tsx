@@ -427,7 +427,7 @@ export function Castings() {
           >
             <AdvancedFilters
               pipeline={pipeline}
-              currentUserName={currentUser?.name || 'Toaney Bhatia'}
+              currentUserName={currentUser?.name || 'Team Member'}
               filters={appliedFilters}
               onApply={setActiveFilters}
               onReset={() => setActiveFilters({})}

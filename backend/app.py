@@ -1547,33 +1547,77 @@ def list_team():
         if not email:
             return jsonify({'error': 'Email is required'}), 400
 
-        # Generate unique username and initial password
+        normalized_email = email.lower()
+        normalized_name = ' '.join(name.lower().split())
+
+        existing_by_email = db.execute(
+            'SELECT * FROM team_members WHERE LOWER(COALESCE(email, "")) = ? LIMIT 1',
+            (normalized_email,)
+        ).fetchone()
+        if existing_by_email:
+            return jsonify({'error': 'A team member with this email already exists', 'member_id': existing_by_email['id']}), 409
+
+        existing_same_person = db.execute(
+            '''
+            SELECT * FROM team_members
+            WHERE LOWER(TRIM(COALESCE(name, ''))) = ?
+              AND LOWER(TRIM(COALESCE(role, ''))) = ?
+            ORDER BY id ASC
+            LIMIT 1
+            ''',
+            (normalized_name, role.lower())
+        ).fetchone()
+
         existing = db.execute('SELECT username FROM team_members WHERE username IS NOT NULL').fetchall()
         existing_usernames = {r['username'].lower() for r in existing if r['username']}
-        username = generate_unique_username(name, existing_usernames)
         tmp_password = DEFAULT_PW
         pw_hash = hash_password(tmp_password)
 
-        cursor = db.execute(
-            'INSERT INTO team_members (name, role, email, phone, avatar_url, is_active, username, password_hash, must_reset_password, invite_status, invite_sent_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?, 1, "invited", datetime(\'now\'))',
-            (name, role, email, phone or None, avatar_url or None, username, pw_hash)
-        )
-        member_id = cursor.lastrowid
+        if existing_same_person:
+            username = (existing_same_person['username'] or '').strip() or generate_unique_username(name, existing_usernames)
+            db.execute(
+                '''
+                UPDATE team_members
+                SET email = ?,
+                    phone = ?,
+                    avatar_url = ?,
+                    username = ?,
+                    password_hash = ?,
+                    must_reset_password = 1,
+                    invite_status = 'invited',
+                    invite_sent_at = datetime('now'),
+                    is_active = 1,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+                ''',
+                (normalized_email, phone or None, avatar_url or None, username, pw_hash, existing_same_person['id'])
+            )
+            member_id = existing_same_person['id']
+            status_code = 200
+        else:
+            username = generate_unique_username(name, existing_usernames)
+            cursor = db.execute(
+                'INSERT INTO team_members (name, role, email, phone, avatar_url, is_active, username, password_hash, must_reset_password, invite_status, invite_sent_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?, 1, "invited", datetime(\'now\'))',
+                (name, role, normalized_email, phone or None, avatar_url or None, username, pw_hash)
+            )
+            member_id = cursor.lastrowid
+            status_code = 201
+
         db.commit()
 
         # Send invite email
-        login_url = f"https://toabh-casting-hub.vercel.app/login"
+        login_url = f"{os.environ.get('APP_BASE_URL', 'https://toabh-casting-hub.vercel.app')}/login"
         from backend.auth_module import invite_email_html, send_smtp
         html_body = invite_email_html(name, username, tmp_password, login_url)
-        sent, msg = send_smtp(email, f"Welcome to TOABH Casting Hub — {name}", html_body)
+        sent, msg = send_smtp(normalized_email, f"Welcome to TOABH Casting Hub — {name}", html_body)
         if sent:
             db.execute('UPDATE team_members SET invite_status = "active" WHERE id = ?', (member_id,))
             db.commit()
 
-        safe_log_audit(db, None, 'TEAM_INVITE', f'Invited {name} ({email}) as {role}', _get_client_ip())
+        safe_log_audit(db, None, 'TEAM_INVITE', f'Invited {name} ({normalized_email}) as {role}', _get_client_ip())
 
         member = db.execute('SELECT * FROM team_members WHERE id = ?', (member_id,)).fetchone()
-        return jsonify(dict(member)), 201
+        return jsonify(dict(member)), status_code
 
     rows = db.execute('SELECT * FROM team_members ORDER BY name').fetchall()
     team = []
@@ -1622,8 +1666,14 @@ def single_team_member(member_id):
             updates.append('is_active = ?')
             params.append(is_active)
         if 'email' in data:
+            duplicate = db.execute(
+                'SELECT id FROM team_members WHERE LOWER(COALESCE(email, "")) = ? AND id != ? LIMIT 1',
+                (email.lower(), member_id)
+            ).fetchone() if email else None
+            if duplicate:
+                return jsonify({'error': 'A team member with this email already exists', 'member_id': duplicate['id']}), 409
             updates.append('email = ?')
-            params.append(email or None)
+            params.append(email.lower() or None)
         if 'phone' in data:
             updates.append('phone = ?')
             params.append(phone or None)
@@ -1756,26 +1806,15 @@ def _get_default_profile(db):
         '''
         SELECT id, name, role, COALESCE(email, '') as email, COALESCE(phone, '') as phone, COALESCE(avatar_url, '') as avatar_url
         FROM team_members
-        WHERE LOWER(name) = LOWER(?)
-        ORDER BY id ASC
+        WHERE is_active = 1
+        ORDER BY CASE WHEN LOWER(COALESCE(role, '')) IN ('admin', 'founder') THEN 0 ELSE 1 END, id ASC
         LIMIT 1
-        ''',
-        ('Toaney Bhatia',)
+        '''
     ).fetchone()
 
     if member is None:
-        member = db.execute(
-            '''
-            SELECT id, name, role, COALESCE(email, '') as email, COALESCE(phone, '') as phone, COALESCE(avatar_url, '') as avatar_url
-            FROM team_members
-            ORDER BY id ASC
-            LIMIT 1
-            '''
-        ).fetchone()
-
-    if member is None:
         return {
-            'name': 'Toaney Bhatia',
+            'name': 'Team Member',
             'email': '',
             'phone': '',
             'date_of_birth': '',

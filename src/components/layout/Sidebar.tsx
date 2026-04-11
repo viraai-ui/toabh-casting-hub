@@ -115,7 +115,7 @@ export function Sidebar() {
             {!sidebarCollapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-slate-900 truncate">
-                  {currentUser?.name || 'Toaney Bhatia'}
+                  {currentUser?.name || 'Team Member'}
                 </p>
                 <p className="text-xs text-slate-500">{currentUser?.role || 'Admin'}</p>
               </div>
