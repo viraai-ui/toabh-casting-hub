@@ -9,7 +9,7 @@ import { useAppStore } from '@/hooks/useStore'
 import { cn } from '@/lib/utils'
 import { CastingAssistant } from '@/components/assistant/CastingAssistant'
 import { CastingModal } from '@/components/CastingModal'
-import { api, getSession } from '@/lib/auth'
+import { api, getSessionUser } from '@/lib/api'
 
 export function AppLayout() {
   const { searchOpen, sidebarCollapsed, setCurrentUser } = useAppStore()
@@ -20,21 +20,21 @@ export function AppLayout() {
     if (mountedRef.current) return
     mountedRef.current = true
 
-    const session = getSession()
-    if (!session) {
+    const sessionUser = getSessionUser()
+    if (!sessionUser) {
       setCurrentUser(null)
       return
     }
 
-    setCurrentUser(session.user)
-    void api.fetch('/auth/me')
+    setCurrentUser(sessionUser)
+    void api.get('/auth/me')
       .then((user) => {
         if (user && typeof user === 'object') {
-          setCurrentUser(user as typeof session.user)
+          setCurrentUser(user as typeof sessionUser)
         }
       })
       .catch(() => {
-        setCurrentUser(session.user)
+        setCurrentUser(sessionUser)
       })
       .finally(() => undefined)
   }, [setCurrentUser])
