@@ -1549,7 +1549,7 @@ def list_team():
 
         # Generate unique username and initial password
         existing = db.execute('SELECT username FROM team_members WHERE username IS NOT NULL').fetchall()
-        existing_usernames = {r['username'].lower() for r in existing if r.get('username')}
+        existing_usernames = {r['username'].lower() for r in existing if r['username']}
         username = generate_unique_username(name, existing_usernames)
         tmp_password = DEFAULT_PW
         pw_hash = hash_password(tmp_password)
@@ -1570,7 +1570,7 @@ def list_team():
             db.execute('UPDATE team_members SET invite_status = "active" WHERE id = ?', (member_id,))
             db.commit()
 
-        _log_audit(db, None, 'TEAM_INVITE', f'Invited {name} ({email}) as {role}', _get_client_ip())
+        safe_log_audit(db, None, 'TEAM_INVITE', f'Invited {name} ({email}) as {role}', _get_client_ip())
 
         member = db.execute('SELECT * FROM team_members WHERE id = ?', (member_id,)).fetchone()
         return jsonify(dict(member)), 201
@@ -1597,7 +1597,7 @@ def single_team_member(member_id):
     if request.method == 'DELETE':
         db.execute('DELETE FROM team_members WHERE id = ?', (member_id,))
         db.commit()
-        _log_audit(db, None, 'TEAM_DELETE', f'Deleted team member {member_id}', _get_client_ip())
+        safe_log_audit(db, None, 'TEAM_DELETE', f'Deleted team member {member_id}', _get_client_ip())
         return jsonify({'message': 'Deleted'})
 
     elif request.method == 'PUT':
@@ -3178,7 +3178,7 @@ def update_profile_password():
     # For super-admin, skip current password check
     if not payload.get('sa') and current_pw:
         user = db.execute('SELECT password_hash FROM team_members WHERE id = ?', (user_id,)).fetchone()
-        if not user or not verify_password(current_pw, user.get('password_hash', '')):
+        if not user or not verify_password(current_pw, user['password_hash'] or ''):
             return jsonify({'error': 'Current password is incorrect'}), 401
 
     db.execute('UPDATE team_members SET password_hash = ?, must_reset_password = 0 WHERE id = ?',
