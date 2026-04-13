@@ -2718,6 +2718,15 @@ def auth_change_password():
     if not new_pw:
         return jsonify({'error': 'New password required'}), 400
 
+    if user_id == 0:
+        if not verify_super_admin(current_pw):
+            return jsonify({'error': 'Current password is incorrect'}), 400
+        db.execute("UPDATE team_members SET password_hash = ?, must_reset_password = 0 WHERE username = 'admin'",
+                   (hash_password(new_pw),))
+        db.commit()
+        log_audit(db, 0, 'PASSWORD_CHANGED', 'Super-admin changed password', _get_client_ip())
+        return jsonify({'message': 'Password updated'}), 200
+
     user = db.execute('SELECT id, password_hash FROM team_members WHERE id = ?', (user_id,)).fetchone()
     if not user:
         return jsonify({'error': 'User not found'}), 404
@@ -3523,7 +3532,7 @@ def import_talents_confirm():
     db = get_db()
     data = request.json or {}
 
-    records = data.get('records', [])
+    records = data.get('records') or data.get('importable') or data.get('rows') or []
     update_existing = data.get('update_existing', [])
     skip_ids = data.get('skip_ids', [])
 
