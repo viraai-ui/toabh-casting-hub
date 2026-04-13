@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from backend.db import connect as connect_db, get_database_config, IntegrityError as DBIntegrityError
 from backend.db_schema import POSTGRES_SCHEMA_SCRIPT
 from backend.utils.assistant import query_casting_assistant
+from backend.auth_module import require_auth
 import threading
 
 BASE_DIR = os.path.dirname(__file__)
@@ -726,6 +727,7 @@ def _apply_casting_assignments(db, casting_rows):
 
 
 @app.route('/api/tasks', methods=['GET', 'POST'])
+@require_auth
 def tasks():
     db = get_db()
 
@@ -797,6 +799,7 @@ def tasks():
 
 
 @app.route('/api/tasks/<int:task_id>', methods=['GET', 'PUT', 'DELETE'])
+@require_auth
 def task_detail(task_id):
     db = get_db()
     row = db.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
@@ -839,6 +842,7 @@ def task_detail(task_id):
 
 
 @app.route('/api/tasks/<int:task_id>/status', methods=['PUT'])
+@require_auth
 def update_task_status(task_id):
     db = get_db()
     row = db.execute('SELECT id, status FROM tasks WHERE id = ?', (task_id,)).fetchone()
@@ -856,6 +860,7 @@ def update_task_status(task_id):
 
 
 @app.route('/api/tasks/<int:task_id>/comments', methods=['GET', 'POST'])
+@require_auth
 def task_comments(task_id):
     db = get_db()
     task = db.execute('SELECT id, title FROM tasks WHERE id = ?', (task_id,)).fetchone()
@@ -912,6 +917,7 @@ def task_comments(task_id):
 
 
 @app.route('/api/tasks/<int:task_id>/activities', methods=['GET'])
+@require_auth
 def task_activities(task_id):
     db = get_db()
     rows = db.execute(
@@ -1535,6 +1541,7 @@ def serve_casting_attachment(attachment_id):
 # ==================== TEAM ROUTES ====================
 
 @app.route('/api/team', methods=['GET', 'POST'])
+@require_auth
 def list_team():
     db = get_db()
 
@@ -1639,6 +1646,7 @@ def list_team():
     return jsonify(team)
 
 @app.route('/api/team/<int:member_id>', methods=['GET', 'PUT', 'DELETE'])
+@require_auth
 def single_team_member(member_id):
     db = get_db()
 
@@ -1714,6 +1722,7 @@ def single_team_member(member_id):
 
 
 @app.route('/api/team/<int:member_id>/resend-invite', methods=['POST'])
+@require_auth
 def resend_invite(member_id):
     db = get_db()
     user = db.execute('SELECT id, name, email, username, invite_status FROM team_members WHERE id = ?', (member_id,)).fetchone()
@@ -1737,6 +1746,7 @@ def resend_invite(member_id):
 
 
 @app.route('/api/team/<int:member_id>/toggle-status', methods=['POST'])
+@require_auth
 def toggle_member_status(member_id):
     db = get_db()
     user = db.execute('SELECT id, name, is_active FROM team_members WHERE id = ?', (member_id,)).fetchone()
@@ -1754,6 +1764,7 @@ def toggle_member_status(member_id):
 
 # ==================== TEAM MEMBER UPLOAD ====================
 @app.route('/api/team/<int:member_id>/avatar', methods=['POST'])
+@require_auth
 def upload_team_avatar(member_id):
     """Upload a profile picture for a team member."""
     db = get_db()
@@ -1791,6 +1802,7 @@ def upload_team_avatar(member_id):
     return jsonify({'avatar_url': avatar_url}), 200
 
 @app.route('/api/team/<int:member_id>/avatar')
+@require_auth
 def serve_team_avatar(member_id):
     """Serve the uploaded avatar image."""
     upload_dir = os.path.join(UPLOADS_DIR, 'avatars')
@@ -2197,6 +2209,7 @@ def delete_client_tag(tag_id):
 
 
 @app.route('/api/clients', methods=['GET'])
+@require_auth
 def get_clients():
     db = get_db()
     clients = db.execute('SELECT * FROM clients ORDER BY name COLLATE NOCASE ASC').fetchall()
@@ -2204,6 +2217,7 @@ def get_clients():
 
 
 @app.route('/api/clients', methods=['POST'])
+@require_auth
 def create_client():
     data = request.json or {}
     name = (data.get('name') or '').strip()
@@ -2232,6 +2246,7 @@ def create_client():
 
 
 @app.route('/api/clients/<int:client_id>', methods=['PUT'])
+@require_auth
 def update_client(client_id):
     data = request.json or {}
     db = get_db()
@@ -2278,6 +2293,7 @@ def update_client(client_id):
 
 
 @app.route('/api/clients/<int:client_id>/tags', methods=['POST'])
+@require_auth
 def add_tag_to_client(client_id):
     data = request.json or {}
     db = get_db()
@@ -2304,6 +2320,7 @@ def add_tag_to_client(client_id):
 
 
 @app.route('/api/clients/<int:client_id>/tags/<int:tag_id>', methods=['DELETE'])
+@require_auth
 def remove_tag_from_client(client_id, tag_id):
     db = get_db()
 
@@ -2322,6 +2339,7 @@ def remove_tag_from_client(client_id, tag_id):
 
 
 @app.route('/api/clients/<int:client_id>', methods=['DELETE'])
+@require_auth
 def delete_client(client_id):
     db = get_db()
     client, error = _get_client_or_404(db, client_id)
@@ -2454,7 +2472,7 @@ from backend.auth_module import (
     generate_unique_username, check_rate_limit, clear_rate_limit,
     invite_email_html, reset_email_html, send_smtp,
     log_audit, _load_perms, save_perms, has_perm, get_super_admin_hash, verify_super_admin, AUTH_DISABLED,
-    DEFAULT_PW
+    DEFAULT_PW, require_auth
 )
 
 def _get_client_ip():

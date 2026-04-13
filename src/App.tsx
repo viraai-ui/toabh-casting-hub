@@ -1,22 +1,23 @@
-import { useState, useEffect } from 'react'
+import { Suspense, lazy, useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { AppLayout } from './components/layout/AppLayout'
-import { Dashboard } from './pages/Dashboard'
-import { Castings } from './pages/Castings'
-import { Clients } from './pages/Clients'
-import { Calendar } from './pages/Calendar'
-import { Team } from './pages/Team'
-import { ActivityLog } from './pages/ActivityLog'
-import { Tasks } from './pages/Tasks'
-import { Reports } from './pages/Reports'
-import { Settings } from './pages/Settings'
-import { Profile } from './pages/Profile'
-import { Talents } from './pages/Talents'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { checkSession } from './lib/api'
 import { LoginPage } from './pages/LoginPage'
+
+const Dashboard = lazy(() => import('./pages/Dashboard').then((module) => ({ default: module.Dashboard })))
+const Castings = lazy(() => import('./pages/Castings').then((module) => ({ default: module.Castings })))
+const Clients = lazy(() => import('./pages/Clients').then((module) => ({ default: module.Clients })))
+const Calendar = lazy(() => import('./pages/Calendar').then((module) => ({ default: module.Calendar })))
+const Team = lazy(() => import('./pages/Team').then((module) => ({ default: module.Team })))
+const ActivityLog = lazy(() => import('./pages/ActivityLog').then((module) => ({ default: module.ActivityLog })))
+const Tasks = lazy(() => import('./pages/Tasks').then((module) => ({ default: module.Tasks })))
+const Reports = lazy(() => import('./pages/Reports').then((module) => ({ default: module.Reports })))
+const Settings = lazy(() => import('./pages/Settings').then((module) => ({ default: module.Settings })))
+const Profile = lazy(() => import('./pages/Profile').then((module) => ({ default: module.Profile })))
+const Talents = lazy(() => import('./pages/Talents').then((module) => ({ default: module.Talents })))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +52,24 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function RouteLoader() {
+  return (
+    <div className="min-h-[50vh] flex items-center justify-center bg-transparent">
+      <Loader2 className="w-7 h-7 text-amber-500 animate-spin" />
+    </div>
+  )
+}
+
+function RouteElement({ children }: { children: React.ReactNode }) {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<RouteLoader />}>
+        {children}
+      </Suspense>
+    </ErrorBoundary>
+  )
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -58,17 +77,17 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-              <Route path="/dashboard" element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
-              <Route path="/castings" element={<ErrorBoundary><Castings /></ErrorBoundary>} />
-              <Route path="/clients" element={<ErrorBoundary><Clients /></ErrorBoundary>} />
-              <Route path="/calendar" element={<ErrorBoundary><Calendar /></ErrorBoundary>} />
-              <Route path="/team" element={<ErrorBoundary><Team /></ErrorBoundary>} />
-              <Route path="/talents" element={<ErrorBoundary><Talents /></ErrorBoundary>} />
-              <Route path="/activity" element={<ErrorBoundary><ActivityLog /></ErrorBoundary>} />
-              <Route path="/reports" element={<ErrorBoundary><Reports /></ErrorBoundary>} />
-              <Route path="/settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
-              <Route path="/profile" element={<ErrorBoundary><Profile /></ErrorBoundary>} />
-              <Route path="/tasks" element={<ErrorBoundary><Tasks /></ErrorBoundary>} />
+              <Route path="/dashboard" element={<RouteElement><Dashboard /></RouteElement>} />
+              <Route path="/castings" element={<RouteElement><Castings /></RouteElement>} />
+              <Route path="/clients" element={<RouteElement><Clients /></RouteElement>} />
+              <Route path="/calendar" element={<RouteElement><Calendar /></RouteElement>} />
+              <Route path="/team" element={<RouteElement><Team /></RouteElement>} />
+              <Route path="/talents" element={<RouteElement><Talents /></RouteElement>} />
+              <Route path="/activity" element={<RouteElement><ActivityLog /></RouteElement>} />
+              <Route path="/reports" element={<RouteElement><Reports /></RouteElement>} />
+              <Route path="/settings" element={<RouteElement><Settings /></RouteElement>} />
+              <Route path="/profile" element={<RouteElement><Profile /></RouteElement>} />
+              <Route path="/tasks" element={<RouteElement><Tasks /></RouteElement>} />
             </Route>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/reset-password" element={<LoginPage />} />
