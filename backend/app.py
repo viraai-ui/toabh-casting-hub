@@ -772,13 +772,13 @@ def tasks():
         created = db.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
         return jsonify(_serialize_task_row(db, created)), 201
 
-    query = 'SELECT DISTINCT t.* FROM tasks t LEFT JOIN task_assignments ta ON ta.task_id = t.id'
+    query = 'SELECT t.* FROM tasks t'
     conditions = []
     params = []
 
     team_member_id = request.args.get('team_member_id')
     if team_member_id:
-        conditions.append('ta.team_member_id = ?')
+        conditions.append('EXISTS (SELECT 1 FROM task_assignments ta WHERE ta.task_id = t.id AND ta.team_member_id = ?)')
         params.append(int(team_member_id))
 
     filter_name = (request.args.get('filter') or '').strip().lower()
@@ -791,7 +791,7 @@ def tasks():
     if conditions:
         query += ' WHERE ' + ' AND '.join(conditions)
 
-    query += ' ORDER BY CASE WHEN LOWER(t.status)=LOWER(\'Completed\') THEN 1 ELSE 0 END, COALESCE(t.due_date, "9999-12-31") ASC, t.created_at DESC'
+    query += " ORDER BY CASE WHEN LOWER(t.status)=LOWER('Completed') THEN 1 ELSE 0 END, COALESCE(NULLIF(t.due_date, ''), '9999-12-31') ASC, t.created_at DESC"
     rows = db.execute(query, params).fetchall()
     return jsonify([_serialize_task_row(db, row) for row in rows])
 

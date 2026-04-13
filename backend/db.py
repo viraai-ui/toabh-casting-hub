@@ -56,13 +56,21 @@ class PostgresCursor:
         normalized = self._sql.strip().lower()
         if not normalized.startswith('insert into '):
             return None
+        try:
+            with self._conn.cursor() as seq_cur:
+                seq_cur.execute('SELECT lastval() AS id')
+                row = seq_cur.fetchone()
+                if row and row.get('id') is not None:
+                    return row['id']
+        except Exception:
+            pass
         match = re.search(r'insert\s+into\s+([a-zA-Z_][\w.]*)', normalized, re.IGNORECASE)
         if not match:
             return None
         table = match.group(1).split('.')[-1]
         try:
             with self._conn.cursor() as seq_cur:
-                seq_cur.execute(f'SELECT currval(pg_get_serial_sequence(%s, %s)) AS id', (table, 'id'))
+                seq_cur.execute('SELECT currval(pg_get_serial_sequence(%s, %s)) AS id', (table, 'id'))
                 row = seq_cur.fetchone()
                 return row['id'] if row else None
         except Exception:
