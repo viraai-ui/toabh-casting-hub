@@ -44,8 +44,8 @@ def _normalize_date(value: Any):
 
 def _row_to_casting(row):
     item = dict(row)
-    assigned_names = [name.strip() for name in (item.get('assigned_names') or '').split(',') if name and name.strip()]
-    item['assigned_team'] = assigned_names
+    assigned_team = item.get('assigned_team') or []
+    item['assigned_team'] = [name.strip() for name in assigned_team if name and str(name).strip()]
     item['start_date'] = _normalize_date(item.get('shoot_date_start'))
     item['end_date'] = _normalize_date(item.get('shoot_date_end'))
     item['is_active'] = (item.get('status') or '').upper() in ACTIVE_STATUSES
@@ -56,15 +56,37 @@ def _row_to_casting(row):
 def _load_castings(db):
     rows = db.execute(
         '''
-        SELECT c.*, GROUP_CONCAT(tm.name) AS assigned_names
+        SELECT c.*
         FROM castings c
-        LEFT JOIN casting_assignments ca ON ca.casting_id = c.id
-        LEFT JOIN team_members tm ON tm.id = ca.team_member_id
-        GROUP BY c.id
         ORDER BY c.updated_at DESC, c.created_at DESC
         '''
     ).fetchall()
-    return [_row_to_casting(row) for row in rows]
+    castings = [_row_to_casting(row) for row in rows]
+    if not castings:
+        return castings
+
+    casting_ids = [casting['id'] for casting in castings]
+    placeholders = ','.join('?' for _ in casting_ids)
+    assignment_rows = db.execute(
+        f'''
+        SELECT ca.casting_id, tm.name
+        FROM casting_assignments ca
+        LEFT JOIN team_members tm ON tm.id = ca.team_member_id
+        WHERE ca.casting_id IN ({placeholders})
+        ORDER BY tm.name COLLATE NOCASE ASC, tm.id ASC
+        ''',
+        casting_ids,
+    ).fetchall()
+
+    assigned_by_casting = defaultdict(list)
+    for row in assignment_rows:
+        if row['name']:
+            assigned_by_casting[row['casting_id']].append(row['name'])
+
+    for casting in castings:
+        casting['assigned_team'] = assigned_by_casting.get(casting['id'], [])
+
+    return castings
 
 
 def _format_money(value):

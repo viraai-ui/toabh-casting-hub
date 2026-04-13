@@ -1,3 +1,30 @@
+# TOABH Casting Hub
+
+## Database setup
+
+The backend now supports two database modes:
+
+- `DATABASE_URL` set: use Postgres/Neon
+- `DATABASE_URL` unset: fall back to the existing SQLite file at `backend/castings.db`
+
+### Typical migration flow
+
+1. Keep local/dev on SQLite.
+2. Set `DATABASE_URL` for Neon/Postgres.
+3. Initialize schema:
+   - `python3 scripts/init_postgres.py`
+4. Import current SQLite data:
+   - `python3 scripts/sqlite_to_postgres.py`
+5. Verify row counts:
+   - `python3 scripts/verify_postgres_counts.py`
+6. Start the app with `DATABASE_URL` still set so Flask uses Postgres.
+
+### Notes
+
+- SQLite remains the safe fallback when `DATABASE_URL` is absent.
+- Root `requirements.txt` now includes `psycopg[binary]` for Postgres runtime support.
+- The Postgres support is an incremental compatibility layer around the existing raw-SQL Flask app, so verify core flows after switching environments.
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

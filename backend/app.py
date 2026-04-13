@@ -1,5 +1,4 @@
 import os
-import sqlite3
 import json
 import shutil
 import smtplib
@@ -12,6 +11,8 @@ from urllib.parse import quote
 from flask import Flask, request, jsonify, g, send_from_directory, send_file, redirect
 from werkzeug.serving import make_server
 from dotenv import load_dotenv
+from backend.db import connect as connect_db, get_database_config, IntegrityError as DBIntegrityError
+from backend.db_schema import POSTGRES_SCHEMA_SCRIPT
 from backend.utils.assistant import query_casting_assistant
 import threading
 
@@ -48,6 +49,8 @@ ensure_runtime_storage()
 
 app = Flask(__name__, static_folder=None)
 app.config['DATABASE'] = DATABASE_PATH
+app.config['DATABASE_CONFIG'] = get_database_config(DATABASE_PATH)
+app.config['DB_BACKEND'] = app.config['DATABASE_CONFIG'].backend
 app.config['UPLOADS_DIR'] = UPLOADS_DIR
 
 # Path to frontend dist (now inside the same repo as this backend)
@@ -104,9 +107,7 @@ def _is_allowed_attachment(file_storage):
 # Database helpers
 def get_db():
     if 'db' not in g:
-        g.db = sqlite3.connect(app.config['DATABASE'], timeout=10)
-        g.db.row_factory = sqlite3.Row
-        g.db.execute('PRAGMA foreign_keys = ON')
+        g.db = connect_db(app.config['DATABASE_CONFIG'])
     return g.db
 
 
@@ -124,7 +125,12 @@ def close_db(e=None):
 
 def init_db():
     db = get_db()
-    db.executescript('''
+    if app.config['DB_BACKEND'] == 'postgres':
+        db.executescript(POSTGRES_SCHEMA_SCRIPT)
+        db.commit()
+        return
+    else:
+        db.executescript('''
         CREATE TABLE IF NOT EXISTS castings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             source TEXT DEFAULT 'manual',
@@ -684,6 +690,41 @@ def _create_task_activity(db, task_id, action, details, team_member_id=None):
     )
 
 
+def _apply_casting_assignments(db, casting_rows):
+    castings = [dict(row) for row in casting_rows]
+    if not castings:
+        return []
+
+    casting_ids = [casting['id'] for casting in castings]
+    placeholders = ','.join('?' for _ in casting_ids)
+    assignment_rows = db.execute(
+        f'''
+        SELECT ca.casting_id, tm.id, tm.name
+        FROM casting_assignments ca
+        LEFT JOIN team_members tm ON tm.id = ca.team_member_id
+        WHERE ca.casting_id IN ({placeholders})
+        ORDER BY tm.name COLLATE NOCASE ASC, tm.id ASC
+        ''',
+        casting_ids,
+    ).fetchall()
+
+    assignments_by_casting = {}
+    for row in assignment_rows:
+        assignments_by_casting.setdefault(row['casting_id'], []).append({
+            'id': int(row['id']) if row['id'] is not None else None,
+            'name': row['name'] or '',
+        })
+
+    for casting in castings:
+        casting['attachments_count'] = int(casting.get('attachments_count') or 0)
+        casting['assigned_to'] = [
+            item for item in assignments_by_casting.get(casting['id'], [])
+            if item['id'] is not None and item['name']
+        ]
+
+    return castings
+
+
 @app.route('/api/tasks', methods=['GET', 'POST'])
 def tasks():
     db = get_db()
@@ -1195,8 +1236,7 @@ def list_castings():
 
     # GET - list with filters
     query = '''
-        SELECT c.*, GROUP_CONCAT(ca.team_member_id) as assigned_ids,
-               GROUP_CONCAT(tm.name) as assigned_names,
+        SELECT c.*,
                (SELECT COUNT(*) FROM casting_attachments ca2 WHERE ca2.casting_id = c.id) as attachments_count,
                (SELECT '/api/attachments/' || id
                 FROM casting_attachments ca2
@@ -1204,8 +1244,6 @@ def list_castings():
                 ORDER BY created_at DESC, id DESC
                 LIMIT 1) as latest_attachment_url
         FROM castings c
-        LEFT JOIN casting_assignments ca ON c.id = ca.casting_id
-        LEFT JOIN team_members tm ON ca.team_member_id = tm.id
     '''
 
     conditions = []
@@ -1223,7 +1261,7 @@ def list_castings():
 
     team_member_id = request.args.get('team_member_id')
     if team_member_id:
-        conditions.append('ca.team_member_id = ?')
+        conditions.append('EXISTS (SELECT 1 FROM casting_assignments ca WHERE ca.casting_id = c.id AND ca.team_member_id = ?)')
         params.append(int(team_member_id))
 
     search = request.args.get('search')
@@ -1234,27 +1272,10 @@ def list_castings():
     if conditions:
         query += ' WHERE ' + ' AND '.join(conditions)
 
-    query += ' GROUP BY c.id ORDER BY c.created_at DESC'
+    query += ' ORDER BY c.created_at DESC'
 
     rows = db.execute(query, params).fetchall()
-    castings = []
-    for row in rows:
-        casting = dict(row)
-        if casting.get('attachments_count') is not None:
-            try:
-                casting['attachments_count'] = int(casting['attachments_count'])
-            except Exception:
-                casting['attachments_count'] = 0
-        if casting['assigned_ids']:
-            casting['assigned_to'] = [
-                {'id': int(id), 'name': name}
-                for id, name in zip(casting['assigned_ids'].split(','), casting['assigned_names'].split(','))
-            ]
-        else:
-            casting['assigned_to'] = []
-        castings.append(casting)
-
-    return jsonify(castings)
+    return jsonify(_apply_casting_assignments(db, rows))
 
 @app.route('/api/castings/<int:casting_id>', methods=['GET', 'PUT', 'DELETE'])
 def single_casting(casting_id):
@@ -1262,8 +1283,7 @@ def single_casting(casting_id):
 
     if request.method == 'GET':
         row = db.execute('''
-            SELECT c.*, GROUP_CONCAT(ca.team_member_id) as assigned_ids,
-                   GROUP_CONCAT(tm.name) as assigned_names,
+            SELECT c.*,
                    (SELECT COUNT(*) FROM casting_attachments ca2 WHERE ca2.casting_id = c.id) as attachments_count,
                    (SELECT '/api/attachments/' || id
                     FROM casting_attachments ca2
@@ -1271,29 +1291,13 @@ def single_casting(casting_id):
                     ORDER BY created_at DESC, id DESC
                     LIMIT 1) as latest_attachment_url
             FROM castings c
-            LEFT JOIN casting_assignments ca ON c.id = ca.casting_id
-            LEFT JOIN team_members tm ON ca.team_member_id = tm.id
             WHERE c.id = ?
-            GROUP BY c.id
         ''', (casting_id,)).fetchone()
 
         if not row:
             return jsonify({'error': 'Not found'}), 404
 
-        casting = dict(row)
-        if casting.get('attachments_count') is not None:
-            try:
-                casting['attachments_count'] = int(casting['attachments_count'])
-            except Exception:
-                casting['attachments_count'] = 0
-        if casting['assigned_ids']:
-            casting['assigned_to'] = [
-                {'id': int(id), 'name': name}
-                for id, name in zip(casting['assigned_ids'].split(','), casting['assigned_names'].split(','))
-            ]
-        else:
-            casting['assigned_to'] = []
-
+        casting = _apply_casting_assignments(db, [row])[0]
         return jsonify(casting)
 
     elif request.method == 'PUT':
@@ -2120,7 +2124,7 @@ def create_client_tag():
             (name, color),
         )
         db.commit()
-    except sqlite3.IntegrityError:
+    except DBIntegrityError:
         return jsonify({'error': 'A client tag with this name already exists'}), 400
 
     row = db.execute(
@@ -2154,7 +2158,7 @@ def update_client_tag(tag_id):
             (name, color, tag_id),
         )
         db.commit()
-    except sqlite3.IntegrityError:
+    except DBIntegrityError:
         return jsonify({'error': 'A client tag with this name already exists'}), 400
 
     row = db.execute(
@@ -3593,4 +3597,3 @@ def catch_all(path):
     return send_from_directory(FRONTEND_DIST, 'index.html')
 
 # ==================== SEARCH ROUTE ====================
-
