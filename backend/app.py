@@ -3208,7 +3208,7 @@ def get_audit_log():
     db = get_db()
     rows = db.execute(
         'SELECT a.id, a.user_id, a.action, a.details, a.ip_address, a.created_at, '\
-        'COALESCE(tm.name, a.user_id) as user_name '\
+        'COALESCE(tm.name, CAST(a.user_id AS TEXT)) as user_name '\
         'FROM audit_log a '\
         'LEFT JOIN team_members tm ON tm.id = a.user_id '\
         'ORDER BY a.created_at DESC LIMIT 200'
