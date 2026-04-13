@@ -1555,7 +1555,7 @@ def list_team():
         normalized_name = ' '.join(name.lower().split())
 
         existing_by_email = db.execute(
-            'SELECT * FROM team_members WHERE LOWER(COALESCE(email, "")) = ? LIMIT 1',
+            "SELECT * FROM team_members WHERE LOWER(COALESCE(email, '')) = ? LIMIT 1",
             (normalized_email,)
         ).fetchone()
         if existing_by_email:
@@ -1601,7 +1601,7 @@ def list_team():
         else:
             username = generate_unique_username(name, existing_usernames)
             cursor = db.execute(
-                'INSERT INTO team_members (name, role, email, phone, avatar_url, is_active, username, password_hash, must_reset_password, invite_status, invite_sent_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?, 1, "invited", datetime(\'now\'))',
+                "INSERT INTO team_members (name, role, email, phone, avatar_url, is_active, username, password_hash, must_reset_password, invite_status, invite_sent_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?, 1, 'invited', datetime('now'))",
                 (name, role, normalized_email, phone or None, avatar_url or None, username, pw_hash)
             )
             member_id = cursor.lastrowid
@@ -1615,7 +1615,7 @@ def list_team():
         html_body = invite_email_html(name, username, tmp_password, login_url)
         sent, msg = send_smtp(normalized_email, f"Welcome to TOABH Casting Hub — {name}", html_body)
         if sent:
-            db.execute('UPDATE team_members SET invite_status = "active" WHERE id = ?', (member_id,))
+            db.execute("UPDATE team_members SET invite_status = 'active' WHERE id = ?", (member_id,))
             db.commit()
 
         safe_log_audit(db, None, 'TEAM_INVITE', f'Invited {name} ({normalized_email}) as {role}', _get_client_ip())
@@ -1671,7 +1671,7 @@ def single_team_member(member_id):
             params.append(is_active)
         if 'email' in data:
             duplicate = db.execute(
-                'SELECT id FROM team_members WHERE LOWER(COALESCE(email, "")) = ? AND id != ? LIMIT 1',
+                "SELECT id FROM team_members WHERE LOWER(COALESCE(email, '')) = ? AND id != ? LIMIT 1",
                 (email.lower(), member_id)
             ).fetchone() if email else None
             if duplicate:

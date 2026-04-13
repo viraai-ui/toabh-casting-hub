@@ -195,4 +195,22 @@ CREATE TABLE IF NOT EXISTS casting_talents (
 CREATE INDEX IF NOT EXISTS idx_talents_name ON talents(name);
 CREATE INDEX IF NOT EXISTS idx_talents_phone ON talents(phone);
 CREATE INDEX IF NOT EXISTS idx_talents_email ON talents(email);
+
+CREATE SEQUENCE IF NOT EXISTS audit_log_id_seq;
+ALTER TABLE audit_log ALTER COLUMN id SET DEFAULT nextval('audit_log_id_seq');
+ALTER SEQUENCE audit_log_id_seq OWNED BY audit_log.id;
+ALTER TABLE audit_log ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP;
+SELECT setval('audit_log_id_seq', COALESCE((SELECT MAX(id) FROM audit_log), 1), true);
+
+CREATE SEQUENCE IF NOT EXISTS password_reset_tokens_id_seq;
+ALTER TABLE password_reset_tokens ALTER COLUMN id SET DEFAULT nextval('password_reset_tokens_id_seq');
+ALTER SEQUENCE password_reset_tokens_id_seq OWNED BY password_reset_tokens.id;
+ALTER TABLE password_reset_tokens ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP;
+SELECT setval('password_reset_tokens_id_seq', COALESCE((SELECT MAX(id) FROM password_reset_tokens), 1), true);
+
+CREATE SEQUENCE IF NOT EXISTS casting_attachments_id_seq;
+ALTER TABLE casting_attachments ALTER COLUMN id SET DEFAULT nextval('casting_attachments_id_seq');
+ALTER SEQUENCE casting_attachments_id_seq OWNED BY casting_attachments.id;
+ALTER TABLE casting_attachments ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP;
+SELECT setval('casting_attachments_id_seq', COALESCE((SELECT MAX(id) FROM casting_attachments), 1), true);
 '''
