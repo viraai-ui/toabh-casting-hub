@@ -752,7 +752,7 @@ def tasks():
         )
         task_id = cursor.lastrowid
         for member_id in assignee_ids:
-            db.execute('INSERT OR IGNORE INTO task_assignments (task_id, team_member_id) VALUES (?, ?)', (task_id, member_id))
+            _insert_assignment_if_missing(db, 'task_assignments', 'task_id', 'team_member_id', task_id, member_id)
 
         _create_task_activity(db, task_id, 'CREATED', f'Task created: {title}')
         if assignee_ids:
@@ -829,7 +829,7 @@ def task_detail(task_id):
         assignee_ids = [int(item) for item in data.get('assignee_ids', []) if str(item).isdigit()]
         db.execute('DELETE FROM task_assignments WHERE task_id = ?', (task_id,))
         for member_id in assignee_ids:
-            db.execute('INSERT OR IGNORE INTO task_assignments (task_id, team_member_id) VALUES (?, ?)', (task_id, member_id))
+            _insert_assignment_if_missing(db, 'task_assignments', 'task_id', 'team_member_id', task_id, member_id)
         _create_task_activity(db, task_id, 'ASSIGNED', 'Task assignment updated')
 
     _create_task_activity(db, task_id, 'UPDATED', f'Task updated: {title}')
@@ -2068,6 +2068,18 @@ def _get_client_or_404(db, client_id):
     return client, None
 
 
+def _insert_assignment_if_missing(db, table, left_column, right_column, left_value, right_value):
+    existing = db.execute(
+        f'SELECT 1 FROM {table} WHERE {left_column} = ? AND {right_column} = ? LIMIT 1',
+        (left_value, right_value),
+    ).fetchone()
+    if existing is None:
+        db.execute(
+            f'INSERT INTO {table} ({left_column}, {right_column}) VALUES (?, ?)',
+            (left_value, right_value),
+        )
+
+
 def _sync_client_tags(db, client_id, raw_tag_ids):
     tag_ids = _coerce_tag_ids(raw_tag_ids)
     if tag_ids:
@@ -2082,10 +2094,8 @@ def _sync_client_tags(db, client_id, raw_tag_ids):
 
     db.execute('DELETE FROM client_tag_assignments WHERE client_id = ?', (client_id,))
     if valid_tag_ids:
-        db.executemany(
-            'INSERT OR IGNORE INTO client_tag_assignments (client_id, tag_id) VALUES (?, ?)',
-            [(client_id, tag_id) for tag_id in valid_tag_ids],
-        )
+        for tag_id in valid_tag_ids:
+            _insert_assignment_if_missing(db, 'client_tag_assignments', 'client_id', 'tag_id', client_id, tag_id)
 
 
 @app.route('/api/settings/client-tags', methods=['GET'])
@@ -2286,10 +2296,7 @@ def add_tag_to_client(client_id):
     if tag_exists is None:
         return jsonify({'error': 'Client tag not found'}), 404
 
-    db.execute(
-        'INSERT OR IGNORE INTO client_tag_assignments (client_id, tag_id) VALUES (?, ?)',
-        (client_id, tag_id),
-    )
+    _insert_assignment_if_missing(db, 'client_tag_assignments', 'client_id', 'tag_id', client_id, tag_id)
     db.commit()
 
     client = db.execute('SELECT * FROM clients WHERE id = ?', (client_id,)).fetchone()
