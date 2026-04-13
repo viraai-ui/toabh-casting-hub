@@ -70,7 +70,12 @@ class PostgresCursor:
         table = match.group(1).split('.')[-1]
         try:
             with self._conn.cursor() as seq_cur:
-                seq_cur.execute('SELECT currval(pg_get_serial_sequence(%s, %s)) AS id', (table, 'id'))
+                seq_cur.execute('SELECT pg_get_serial_sequence(%s, %s) AS seq', (table, 'id'))
+                row = seq_cur.fetchone()
+                sequence_name = row['seq'] if row else None
+                if not sequence_name:
+                    return None
+                seq_cur.execute('SELECT currval(%s) AS id', (sequence_name,))
                 row = seq_cur.fetchone()
                 return row['id'] if row else None
         except Exception:
