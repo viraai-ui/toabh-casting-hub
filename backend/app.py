@@ -544,6 +544,7 @@ def health():
 
 
 @app.route('/api/search', methods=['GET'])
+@require_auth
 def global_search():
     db = get_db()
     q = request.args.get('q', '').strip()
@@ -572,6 +573,7 @@ def global_search():
 
 
 @app.route('/api/activities', methods=['GET'])
+@require_auth
 def list_activities():
     db = get_db()
     casting_id = request.args.get('casting_id')
@@ -935,6 +937,7 @@ def task_activities(task_id):
 
 
 @app.route('/api/settings/task-stages', methods=['GET', 'PUT', 'POST'])
+@require_auth
 def task_stages():
     if request.method == 'GET':
         return jsonify(_load_task_stages())
@@ -969,6 +972,7 @@ def task_stages():
 
 
 @app.route('/api/notifications', methods=['GET'])
+@require_auth
 def list_notifications():
     db = get_db()
     rows = db.execute('''
@@ -1085,6 +1089,7 @@ def _build_notification_from_activity(activity):
 
 
 @app.route('/api/comments/<int:casting_id>', methods=['GET'])
+@require_auth
 def get_comments(casting_id):
     db = get_db()
     rows = db.execute('''
@@ -1112,6 +1117,7 @@ def get_comments(casting_id):
     return jsonify(comments)
 
 @app.route('/api/comments', methods=['POST'])
+@require_auth
 def add_comment():
     db = get_db()
     data = request.json or {}
@@ -1146,6 +1152,7 @@ def add_comment():
 # ==================== ROLES SETTINGS ====================
 
 @app.route('/api/settings/roles', methods=['GET'])
+@require_auth
 def get_roles():
     os.makedirs(SETTINGS_DIR, exist_ok=True)
     try:
@@ -1178,6 +1185,7 @@ def get_roles():
         })
 
 @app.route('/api/settings/roles', methods=['PUT'])
+@require_auth
 def update_roles():
     data = request.json
     os.makedirs(SETTINGS_DIR, exist_ok=True)
@@ -2114,6 +2122,7 @@ def _sync_client_tags(db, client_id, raw_tag_ids):
 
 
 @app.route('/api/settings/client-tags', methods=['GET'])
+@require_auth
 def list_client_tags():
     db = get_db()
     rows = db.execute(
@@ -2133,6 +2142,7 @@ def list_client_tags():
 
 
 @app.route('/api/settings/client-tags', methods=['POST'])
+@require_auth
 def create_client_tag():
     db = get_db()
     data = request.json or {}
@@ -2164,6 +2174,7 @@ def create_client_tag():
 
 
 @app.route('/api/settings/client-tags/<int:tag_id>', methods=['PUT'])
+@require_auth
 def update_client_tag(tag_id):
     db = get_db()
     existing = db.execute('SELECT id FROM settings_client_tags WHERE id = ?', (tag_id,)).fetchone()
@@ -2200,6 +2211,7 @@ def update_client_tag(tag_id):
 
 
 @app.route('/api/settings/client-tags/<int:tag_id>', methods=['DELETE'])
+@require_auth
 def delete_client_tag(tag_id):
     db = get_db()
     existing = db.execute('SELECT id FROM settings_client_tags WHERE id = ?', (tag_id,)).fetchone()
@@ -2363,6 +2375,7 @@ def delete_client(client_id):
 # ==================== DASHBOARD ROUTES ====================
 
 @app.route('/api/dashboard', methods=['GET'])
+@require_auth
 def dashboard():
     db = get_db()
 
@@ -2792,12 +2805,14 @@ def verify_admin_password_route():
 
 # Pipeline stages
 @app.route('/api/settings/pipeline', methods=['GET'])
+@require_auth
 def get_pipeline():
     db = get_db()
     rows = db.execute('SELECT id, name, color FROM settings_pipeline ORDER BY sort_order, id').fetchall()
     return jsonify([dict(r) for r in rows])
 
 @app.route('/api/settings/pipeline', methods=['POST'])
+@require_auth
 def create_pipeline():
     data = request.get_json() or {}
     name = (data.get('name') or '').strip()
@@ -2821,6 +2836,7 @@ def create_pipeline():
     return jsonify({'id': cursor.lastrowid, 'name': name, 'color': color})
 
 @app.route('/api/settings/pipeline/<int:item_id>', methods=['PUT'])
+@require_auth
 def update_pipeline_item(item_id):
     data = request.get_json() or {}
     name = (data.get('name') or '').strip()
@@ -2840,6 +2856,7 @@ def update_pipeline_item(item_id):
     return jsonify({'id': item_id, 'name': name, 'color': color})
 
 @app.route('/api/settings/pipeline/<int:item_id>', methods=['DELETE'])
+@require_auth
 def delete_pipeline_item(item_id):
     db = get_db()
     # Minimum guard: prevent deleting last stage
@@ -2851,6 +2868,7 @@ def delete_pipeline_item(item_id):
     return jsonify({'success': True})
 
 @app.route('/api/settings/pipeline/reorder', methods=['PUT'])
+@require_auth
 def reorder_pipeline():
     data = request.get_json()
     stages = data.get('stages', [])
@@ -2863,12 +2881,14 @@ def reorder_pipeline():
 
 # Lead sources
 @app.route('/api/settings/sources', methods=['GET'])
+@require_auth
 def get_sources():
     db = get_db()
     rows = db.execute('SELECT id, name FROM settings_sources ORDER BY id').fetchall()
     return jsonify([dict(r) for r in rows])
 
 @app.route('/api/settings/sources', methods=['POST'])
+@require_auth
 def create_source():
     data = request.get_json() or {}
     name = (data.get('name') or '').strip()
@@ -2886,6 +2906,7 @@ def create_source():
     return jsonify({'id': cursor.lastrowid, 'name': name})
 
 @app.route('/api/settings/sources/<int:item_id>', methods=['PUT'])
+@require_auth
 def update_source_item(item_id):
     data = request.get_json() or {}
     name = (data.get('name') or '').strip()
@@ -2904,6 +2925,7 @@ def update_source_item(item_id):
     return jsonify({'id': item_id, 'name': name})
 
 @app.route('/api/settings/sources/<int:item_id>', methods=['DELETE'])
+@require_auth
 def delete_source_item(item_id):
     db = get_db()
     # Minimum guard: prevent deleting last source
@@ -3046,6 +3068,7 @@ def update_automation_rules():
 
 # Email config (store SMTP settings - basic)
 @app.route('/api/settings/email-config', methods=['GET'])
+@require_auth
 def get_email_config():
     os.makedirs(SETTINGS_DIR, exist_ok=True)
     try:
@@ -3055,6 +3078,7 @@ def get_email_config():
         return jsonify({'from_email':'noreply@toabh.com','from_name':'TOABH Casting','smtp_host':'','smtp_port':587})
 
 @app.route('/api/settings/email-config', methods=['PUT'])
+@require_auth
 def update_email_config():
     data = request.json
     os.makedirs(SETTINGS_DIR, exist_ok=True)
@@ -3063,6 +3087,7 @@ def update_email_config():
     return jsonify({'message':'Email config saved'})
 
 @app.route('/api/settings/email-config/test', methods=['POST'])
+@require_auth
 def test_email_config():
     data = request.get_json() or {}
     host = data.get('smtp_host', '')
@@ -3317,6 +3342,7 @@ def list_talents():
 
 
 @app.route('/api/talents/search', methods=['GET'])
+@require_auth
 def search_talents():
     db = get_db()
     q = request.args.get('q', '').strip()
@@ -3362,6 +3388,7 @@ def create_talent():
 
 
 @app.route('/api/talents/<int:talent_id>', methods=['PUT'])
+@require_auth
 def update_talent(talent_id):
     db = get_db()
     existing = db.execute('SELECT * FROM talents WHERE id = ?', (talent_id,)).fetchone()
@@ -3392,6 +3419,7 @@ def update_talent(talent_id):
 
 
 @app.route('/api/talents/<int:talent_id>', methods=['DELETE'])
+@require_auth
 def delete_talent(talent_id):
     db = get_db()
     existing = db.execute('SELECT * FROM talents WHERE id = ?', (talent_id,)).fetchone()
@@ -3404,6 +3432,7 @@ def delete_talent(talent_id):
 
 
 @app.route('/api/castings/<int:casting_id>/talents', methods=['GET'])
+@require_auth
 def get_casting_talents(casting_id):
     db = get_db()
     rows = db.execute('''
@@ -3417,6 +3446,7 @@ def get_casting_talents(casting_id):
 
 
 @app.route('/api/castings/<int:casting_id>/talents', methods=['POST'])
+@require_auth
 def update_casting_talents(casting_id):
     db = get_db()
     data = request.json or {}
