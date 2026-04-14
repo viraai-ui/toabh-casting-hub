@@ -32,7 +32,7 @@ export function TalentImportModal({ open, onClose, onImported }: TalentImportMod
   }, [])
 
   const handleClose = () => {
-    if (importing) return
+    if (uploading || importing) return
     reset()
     onClose()
   }
@@ -113,7 +113,13 @@ export function TalentImportModal({ open, onClose, onImported }: TalentImportMod
 
     try {
       await api.post('/talents/import/confirm', { records, update_existing: updateExisting, skip_ids: skip })
-      toast.success(results.importable.length > 0 ? `Imported ${results.importable.length} talent${results.importable.length > 1 ? 's' : ''}` : 'Import complete')
+      const createdCount = records.length
+      const updatedCount = updateExisting.length
+      const summaryParts = [
+        createdCount > 0 ? `${createdCount} new talent${createdCount > 1 ? 's' : ''}` : '',
+        updatedCount > 0 ? `${updatedCount} existing record${updatedCount > 1 ? 's' : ''} updated` : '',
+      ].filter(Boolean)
+      toast.success(summaryParts.length > 0 ? `Import complete, ${summaryParts.join(' and ')}` : 'Import complete')
       setStep(3)
       onImported()
     } catch (err: unknown) {
@@ -153,7 +159,7 @@ export function TalentImportModal({ open, onClose, onImported }: TalentImportMod
                     <FileSpreadsheet className="w-5 h-5 text-amber-500" />
                     <h2 className="text-lg font-semibold text-slate-900">Import CSV</h2>
                   </div>
-                  <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
+                  <button onClick={handleClose} disabled={uploading || importing} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
@@ -353,7 +359,17 @@ export function TalentImportModal({ open, onClose, onImported }: TalentImportMod
                     </div>
                     <h3 className="text-lg font-semibold text-slate-900 mb-1">Import Complete!</h3>
                     <p className="text-sm text-slate-500">
-                      {results ? `${results.importable.length} new talent${results.importable.length !== 1 ? 's' : ''} added` : 'Talents imported successfully'}
+                      {results
+                        ? (() => {
+                            const createdCount = results.importable.length
+                            const updatedCount = Array.from(selectedUpdates.values()).filter(Boolean).length
+                            const summaryParts = [
+                              createdCount > 0 ? `${createdCount} new talent${createdCount !== 1 ? 's' : ''} added` : '',
+                              updatedCount > 0 ? `${updatedCount} existing record${updatedCount !== 1 ? 's' : ''} updated` : '',
+                            ].filter(Boolean)
+                            return summaryParts.length > 0 ? summaryParts.join(' and ') : 'Talents imported successfully'
+                          })()
+                        : 'Talents imported successfully'}
                     </p>
                     <p className="text-xs text-slate-400 mt-2">Your talent database has been updated.</p>
                   </div>
@@ -367,7 +383,8 @@ export function TalentImportModal({ open, onClose, onImported }: TalentImportMod
                     <>
                       <button
                         onClick={handleClose}
-                        className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                        disabled={uploading || importing}
+                        className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Cancel
                       </button>
