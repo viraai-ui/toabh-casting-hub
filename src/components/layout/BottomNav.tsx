@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useOverlay } from '@/hooks/useOverlayManager'
-import { logout } from '@/lib/api'
+import { getSessionUser, isAdminUser, logout } from '@/lib/api'
 
 // Main bottom nav: Home, Jobs, + (FAB), Clients, More
 const mainItems = [
@@ -44,6 +44,8 @@ export function BottomNav() {
   const navigate = useNavigate()
   const [moreOpen, setMoreOpen] = useState(false)
   const { openOverlay, closeOverlay } = useOverlay()
+  const currentUser = getSessionUser()
+  const visibleMoreItems = moreItems.filter((item) => item.path !== '/settings' || isAdminUser(currentUser))
 
   // Register/unregister More sheet with overlay manager
   useEffect(() => {
@@ -209,7 +211,7 @@ export function BottomNav() {
               </div>
 
               <div className="space-y-1">
-                {moreItems.map((item) => {
+                {visibleMoreItems.map((item) => {
                   const isActive = location.pathname === item.path
                   return (
                     <button

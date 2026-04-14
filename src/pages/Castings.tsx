@@ -241,6 +241,18 @@ export function Castings() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
+  useEffect(() => {
+    const targetId = Number(searchParams.get('id'))
+    if (!targetId || !castings.length) return
+
+    const match = castings.find((casting) => casting.id === targetId)
+    if (!match) return
+
+    setSelectedCasting(match)
+    setDetailModalOpen(true)
+    navigate('/castings', { replace: true })
+  }, [castings, navigate, searchParams])
+
   // Register CastingDetailModal with overlay manager
   useEffect(() => {
     if (detailModalOpen) {
@@ -446,6 +458,11 @@ export function Castings() {
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+        </div>
+      ) : filteredCastings.length === 0 ? (
+        <div className="rounded-[28px] border border-slate-200 bg-white px-5 py-16 text-center shadow-sm">
+          <p className="text-sm font-medium text-slate-700">No castings found</p>
+          <p className="mt-1 text-sm text-slate-500">Try clearing filters, changing search, or creating a new casting.</p>
         </div>
       ) : castingViewMode === 'kanban' ? (
         <KanbanBoard

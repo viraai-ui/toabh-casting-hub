@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, EyeOff, Lock, AlertCircle, Loader2, Mail, ArrowLeft } from 'lucide-react'
 import { login, forgotPassword, resetPassword, checkSession } from '@/lib/api'
@@ -35,8 +35,9 @@ function ToabhLogo({ size = 56 }: { size?: number }) {
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
-  const isReset = searchParams.get('reset') === '1'
+  const isReset = location.pathname === '/reset-password' || searchParams.get('reset') === '1'
   const resetToken = searchParams.get('token') || ''
   const loginErrorFromUrl = searchParams.get('error') || ''
   const [mode, setMode] = useState<'login' | 'forgot' | 'reset'>(isReset ? 'reset' : 'login')
@@ -72,7 +73,7 @@ export function LoginPage() {
     }
   }, [isReset, loginErrorFromUrl, navigate])
 
-  const triggerShake = () => { setShake(true); setTimeout(() => setShake(false), 500) }
+  const triggerShake = () => { setShake(true); window.setTimeout(() => setShake(false), 500) }
 
   const submitLoginFallback = (username: string, passwordValue: string, shouldRemember: boolean) => {
     const form = document.createElement('form')
@@ -143,14 +144,17 @@ export function LoginPage() {
       await resetPassword(resetToken, resetPw)
       setSuccess('Password updated! Redirecting to login\u2026')
       setResetPw(''); setResetPwConfirm('')
-      setTimeout(() => setMode('login'), 2000)
+      window.setTimeout(() => {
+        setMode('login')
+        navigate('/login', { replace: true })
+      }, 2000)
     } catch (err: unknown) { const error = err as ErrorWithMessage; setError(error.message || 'Failed to reset password') }
     finally { setLoading(false) }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-amber-50 to-slate-100 flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
+    <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-slate-100 via-amber-50 to-slate-100 px-4 py-6 sm:flex sm:items-center sm:justify-center">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mx-auto w-full max-w-sm sm:my-0 my-4">
         <AnimatePresence mode="wait">
           {mode === 'login' && (
             <motion.div key="login" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="glass rounded-[2rem] border border-white/60 p-8 shadow-2xl shadow-slate-200/70 backdrop-blur-xl">

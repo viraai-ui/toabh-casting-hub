@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type ChangeEvent, type DragEvent } from 'react'
+import { useState, useEffect, useRef, useCallback, type ChangeEvent, type DragEvent } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X,
@@ -502,10 +502,10 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
     }
   }
 
-  const handleModalClose = () => {
+  const handleModalClose = useCallback(() => {
     if (saving) return
     onClose()
-  }
+  }, [onClose, saving])
 
   // Handle escape key
   useEffect(() => {

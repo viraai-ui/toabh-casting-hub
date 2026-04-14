@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Briefcase,
@@ -35,6 +36,8 @@ type ClientViewMode = 'grid' | 'list'
 const CLIENT_VIEW_STORAGE_KEY = 'toabh-clients-view-mode'
 
 export function Clients() {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { openOverlay, closeOverlay } = useOverlay()
   const [clients, setClients] = useState<Client[]>([])
   const [castings, setCastings] = useState<Casting[]>([])
@@ -93,6 +96,18 @@ export function Clients() {
       closeOverlay('client-modal')
     }
   }, [modalOpen, openOverlay, closeOverlay])
+
+  useEffect(() => {
+    const targetId = Number(searchParams.get('id'))
+    if (!targetId || !clients.length) return
+
+    const match = clients.find((client) => client.id === targetId)
+    if (!match) return
+
+    setDetailClient(match)
+    setDetailOpen(true)
+    navigate('/clients', { replace: true })
+  }, [clients, navigate, searchParams])
 
   useEffect(() => {
     window.localStorage.setItem(CLIENT_VIEW_STORAGE_KEY, viewMode)
@@ -336,7 +351,7 @@ export function Clients() {
       ) : filteredClients.length === 0 ? (
         <div className="rounded-[28px] border border-slate-200 bg-white px-4 py-16 text-center shadow-sm">
           <p className="text-sm font-medium text-slate-700">No clients found</p>
-          <p className="mt-1 text-sm text-slate-500">Try changing the search or tag filters.</p>
+          <p className="mt-1 text-sm text-slate-500">{clients.length === 0 && !searchQuery.trim() && selectedFilterTagIds.length === 0 ? 'Add your first client to start building the workspace.' : 'Try changing the search or tag filters.'}</p>
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">

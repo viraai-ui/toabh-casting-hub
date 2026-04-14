@@ -8,6 +8,7 @@ import { api, toApiUrl } from '@/lib/api'
 import { getInitials } from '@/lib/utils'
 import type { Activity } from '@/types'
 import { logout } from '@/lib/api'
+import { useDataRefresh } from '@/hooks/useDataRefresh'
 
 const pageTitles: { [key: string]: string } = {
   '/dashboard': 'Dashboard',
@@ -158,10 +159,14 @@ export function Header() {
   }
 
   useEffect(() => {
-    fetchNotifications(true)
-    const interval = window.setInterval(() => fetchNotifications(false), 45000)
+    void fetchNotifications(true)
+    const interval = window.setInterval(() => void fetchNotifications(false), 45000)
     return () => window.clearInterval(interval)
   }, [])
+
+  useDataRefresh(() => {
+    void fetchNotifications(false)
+  })
 
   const unreadCount = useMemo(
     () => notifications.filter((item) => !readIds.includes(item.id)).length,

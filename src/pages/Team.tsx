@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Pencil, Trash2, Loader2, Mail, Phone, X, Camera, User, MailQuestion, Shield, ShieldCheck, ShieldAlert } from 'lucide-react'
 import { api } from '@/lib/api'
@@ -24,6 +25,8 @@ import IconButton from '@mui/material/IconButton'
 import Button from '@mui/material/Button'
 
 export function Team() {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const teamWithInvite = team as TeamMemberWithInviteStatus[]
   const { openOverlay, closeOverlay } = useOverlay()
   const [team, setTeam] = useState<TeamMember[]>([])
@@ -82,6 +85,17 @@ export function Team() {
       closeOverlay('team-member-view')
     }
   }, [viewMember, openOverlay, closeOverlay])
+
+  useEffect(() => {
+    const targetId = Number(searchParams.get('id'))
+    if (!targetId || !team.length) return
+
+    const match = team.find((member) => member.id === targetId)
+    if (!match) return
+
+    setViewMember(match)
+    navigate('/team', { replace: true })
+  }, [navigate, searchParams, team])
 
   const getMemberAssignments = (memberId: string | number) => {
     return castings.filter((c) => {
@@ -187,7 +201,7 @@ export function Team() {
           <p className="text-slate-500">No team members yet</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
           {teamWithInvite.map((member) => {
             const assignments = getMemberAssignments(member.id)
             const maxAssignments = Math.max(...team.map((m) => getMemberAssignments(m.id)), 1)

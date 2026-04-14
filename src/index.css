@@ -53,6 +53,10 @@
       0 18px 45px rgba(15, 23, 42, 0.08),
       0 1px 0 rgba(255, 255, 255, 0.75) inset;
   }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
 
 /* Scrollbar styling */
