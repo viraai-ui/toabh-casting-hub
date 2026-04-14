@@ -1,5 +1,11 @@
 import { create } from 'zustand'
 
+function getInitialCastingViewMode(): 'list' | 'grid' | 'kanban' {
+  if (typeof window === 'undefined') return 'grid'
+  const stored = window.localStorage.getItem('casting_view_mode')
+  return stored === 'list' || stored === 'kanban' ? stored : 'grid'
+}
+
 interface AppState {
   sidebarCollapsed: boolean
   toggleSidebar: () => void
@@ -42,7 +48,7 @@ export const useAppStore = create<AppState>((set) => ({
   currentUser: null,
   setCurrentUser: (user) => set({ currentUser: user }),
   
-  castingViewMode: 'grid',
+  castingViewMode: getInitialCastingViewMode(),
   setCastingViewMode: (mode) => {
     localStorage.setItem('casting_view_mode', mode)
     set({ castingViewMode: mode })

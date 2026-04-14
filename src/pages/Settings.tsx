@@ -27,7 +27,7 @@ import { ClientTags } from './settings/ClientTags'
 import { PermissionsEditor } from './settings/PermissionsEditor'
 import { AuditLogViewer } from './settings/AuditLogViewer'
 import { cn } from '@/lib/utils'
-import { checkSession } from '@/lib/api'
+import { checkSession, getSessionUser, isAdminUser } from '@/lib/api'
 
 const tabs = [
   { id: 'pipeline', label: 'Pipeline', icon: Workflow },
@@ -53,7 +53,7 @@ export function Settings() {
     let cancelled = false
     checkSession().then((ok: boolean) => {
       if (!cancelled) {
-        setIsVerified(ok)
+        setIsVerified(ok && isAdminUser(getSessionUser()))
         setChecking(false)
       }
     })
@@ -72,7 +72,7 @@ export function Settings() {
     return (
       <div className="max-w-md mx-auto bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center">
         <h2 className="text-xl font-semibold text-slate-900 mb-2">Admin Access Required</h2>
-        <p className="text-slate-500 mb-6 text-sm">Please verify your identity to access settings.</p>
+        <p className="text-slate-500 mb-6 text-sm">Only administrator accounts can access workspace settings.</p>
         <button
           onClick={() => navigate('/login')}
           className="btn-primary w-full justify-center"

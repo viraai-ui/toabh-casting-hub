@@ -156,17 +156,19 @@ export async function checkSession(): Promise<boolean> {
   if (AUTH_DISABLED) return true
 
   const stored = getStoredSession()
-  if (stored?.ts && Date.now() - stored.ts < 30 * 24 * 60 * 60 * 1000) {
-    return true
-  }
+  const headers = stored?.token ? { Authorization: `Bearer ${stored.token}` } : undefined
 
   try {
-    const r = await fetch(toApiUrl('/api/auth/me'), { credentials: 'include' })
-    if (!r.ok) return false
+    const r = await fetch(toApiUrl('/api/auth/me'), { credentials: 'include', headers })
+    if (!r.ok) {
+      clearSession()
+      return false
+    }
     const user = await r.json()
-    persistSession({ user }, true)
+    persistSession({ token: stored?.token, user }, Boolean(localStorage.getItem('toabh_session')))
     return true
   } catch {
+    clearSession()
     return false
   }
 }
@@ -176,6 +178,10 @@ export function getSessionUser() {
     const raw = sessionStorage.getItem('toabh_user') || localStorage.getItem('toabh_user')
     return raw ? JSON.parse(raw) : null
   } catch { return null }
+}
+
+export function isAdminUser(user: SessionUser | null | undefined) {
+  return String(user?.role || '').toLowerCase() === 'administrator'
 }
 
 export function clearSession() {

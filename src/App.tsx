@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { AppLayout } from './components/layout/AppLayout'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { checkSession } from './lib/api'
+import { checkSession, getSessionUser, isAdminUser } from './lib/api'
 import { LoginPage } from './pages/LoginPage'
 
 const Dashboard = lazy(() => import('./pages/Dashboard').then((module) => ({ default: module.Dashboard })))
@@ -25,17 +25,20 @@ const queryClient = new QueryClient({
   },
 })
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) {
   const [authorized, setAuthorized] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
     checkSession().then((ok) => {
-      if (!cancelled) { setAuthorized(ok); setLoading(false) }
+      if (cancelled) return
+      const user = getSessionUser()
+      setAuthorized(ok && (!adminOnly || isAdminUser(user)))
+      setLoading(false)
     })
     return () => { cancelled = true }
-  }, [])
+  }, [adminOnly])
 
   if (loading) {
     return (
@@ -85,7 +88,7 @@ function App() {
               <Route path="/talents" element={<RouteElement><Talents /></RouteElement>} />
               <Route path="/activity" element={<RouteElement><ActivityLog /></RouteElement>} />
               <Route path="/reports" element={<RouteElement><Reports /></RouteElement>} />
-              <Route path="/settings" element={<RouteElement><Settings /></RouteElement>} />
+              <Route path="/settings" element={<ProtectedRoute adminOnly><RouteElement><Settings /></RouteElement></ProtectedRoute>} />
               <Route path="/profile" element={<RouteElement><Profile /></RouteElement>} />
               <Route path="/tasks" element={<RouteElement><Tasks /></RouteElement>} />
             </Route>

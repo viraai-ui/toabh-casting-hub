@@ -4,9 +4,6 @@ import sqlite3
 from dataclasses import dataclass
 from typing import Any, Iterable, Optional
 
-import psycopg
-from psycopg.rows import dict_row
-
 
 @dataclass(frozen=True)
 class DatabaseConfig:
@@ -106,6 +103,13 @@ class PostgresCursor:
 
 class PostgresConnection:
     def __init__(self, database_url: str):
+        try:
+            import psycopg
+            from psycopg.rows import dict_row
+        except ImportError as exc:
+            raise DatabaseError('Postgres driver is unavailable. Install psycopg[binary] or unset DATABASE_URL to use SQLite fallback.') from exc
+
+        self._psycopg = psycopg
         self._conn = psycopg.connect(database_url, row_factory=dict_row)
         self._conn.autocommit = False
 
@@ -114,7 +118,7 @@ class PostgresConnection:
         try:
             cur.execute(translate_sql(sql), normalize_params(params))
             return PostgresCursor(self._conn, cur, translate_sql(sql))
-        except psycopg.IntegrityError as exc:
+        except self._psycopg.IntegrityError as exc:
             cur.close()
             raise IntegrityError(str(exc)) from exc
 
@@ -123,7 +127,7 @@ class PostgresConnection:
         try:
             cur.executemany(translate_sql(sql), [normalize_params(p) for p in seq_of_params])
             return PostgresCursor(self._conn, cur, translate_sql(sql))
-        except psycopg.IntegrityError as exc:
+        except self._psycopg.IntegrityError as exc:
             cur.close()
             raise IntegrityError(str(exc)) from exc
 

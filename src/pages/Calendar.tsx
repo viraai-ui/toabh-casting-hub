@@ -28,7 +28,10 @@ export function Calendar() {
   const [pipeline, setPipeline] = useState<PipelineStage[]>([])
   const [loading, setLoading] = useState(true)
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [view, setView] = useState<'month' | 'week' | 'day'>('month')
+  const [view, setView] = useState<'month' | 'week' | 'day'>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return 'day'
+    return 'month'
+  })
   const [selectedCasting, setSelectedCasting] = useState<Casting | null>(null)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
@@ -125,7 +128,7 @@ export function Calendar() {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-7.5rem)] min-h-[600px] w-full flex-col lg:h-[calc(100dvh-6rem)]">
+    <div className="flex min-h-[calc(100dvh-7rem)] w-full flex-col lg:h-[calc(100dvh-6rem)]">
       {/* ── Header: month nav + today + view tabs ────────────────────── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-3">
         {/* Left: month nav */}
@@ -192,7 +195,7 @@ export function Calendar() {
         {/* Filter controls — shown when open, always visible on sm+ */}
         <div className={cn(
           'overflow-hidden transition-all duration-200',
-          filtersOpen ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0 sm:max-h-20 sm:opacity-100'
+          filtersOpen ? 'max-h-28 opacity-100' : 'max-h-0 opacity-0 sm:max-h-28 sm:opacity-100'
         )}>
           <div className="flex gap-2 flex-wrap">
             <select

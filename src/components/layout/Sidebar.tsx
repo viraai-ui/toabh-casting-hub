@@ -17,8 +17,7 @@ import {
 } from 'lucide-react'
 import { cn, getInitials } from '@/lib/utils'
 import { useAppStore } from '@/hooks/useStore'
-import { toApiUrl } from '@/lib/api'
-import { logout } from '@/lib/api'
+import { isAdminUser, logout, toApiUrl } from '@/lib/api'
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
@@ -37,6 +36,7 @@ export function Sidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { sidebarCollapsed, toggleSidebar, currentUser } = useAppStore()
+  const visibleNavItems = navItems.filter((item) => item.path !== '/settings' || isAdminUser(currentUser))
 
   const handleLogout = () => {
     logout()
@@ -66,7 +66,7 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = location.pathname === item.path || 
               (item.path !== '/dashboard' && location.pathname.startsWith(item.path))
             return (
