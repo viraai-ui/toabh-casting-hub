@@ -311,15 +311,18 @@ function TaskDetail({
           <div className="rounded-3xl border border-slate-200 bg-white p-4 h-max">
             <h4 className="text-sm font-semibold text-slate-900">Activity</h4>
             <div className="mt-4 space-y-3">
-              {activities.map((activity) => (
-                <div key={activity.id} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-slate-800">{activity.description || activity.action}</p>
-                    <span className="text-xs text-slate-400">{formatRelativeTime(activity.created_at)}</span>
+              {activities.map((activity) => {
+                const activityUserName = activity.user_name?.trim() || 'System'
+                return (
+                  <div key={activity.id} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-medium text-slate-800">{activity.description || activity.action}</p>
+                      <span className="text-xs text-slate-400">{formatRelativeTime(activity.created_at)}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">{activityUserName}</p>
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">{activity.user_name}</p>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>
