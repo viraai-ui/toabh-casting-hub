@@ -300,15 +300,18 @@ export function Profile() {
               <div className="mt-4 space-y-3">
                 {profile.recent_activity.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">No recent activity yet.</div>
-                ) : profile.recent_activity.map((item) => (
-                  <div key={item.id} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="min-w-0 text-sm font-medium text-slate-800">{item.description || item.action}</p>
-                      <span className="shrink-0 text-xs text-slate-400">{formatRelativeTime(item.created_at)}</span>
+                ) : profile.recent_activity.map((item) => {
+                  const activityUserName = item.user_name?.trim() || 'System'
+                  return (
+                    <div key={item.id} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="min-w-0 text-sm font-medium text-slate-800">{item.description || item.action}</p>
+                        <span className="shrink-0 text-xs text-slate-400">{formatRelativeTime(item.created_at)}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-500">{activityUserName} • {formatDate(item.created_at)}</p>
                     </div>
-                    <p className="mt-1 text-xs text-slate-500">{item.user_name} • {formatDate(item.created_at)}</p>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
 
