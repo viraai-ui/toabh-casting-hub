@@ -502,14 +502,19 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
     }
   }
 
+  const handleModalClose = () => {
+    if (saving) return
+    onClose()
+  }
+
   // Handle escape key
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape' && !saving) handleModalClose()
     }
     window.addEventListener('keydown', handleEsc)
     return () => window.removeEventListener('keydown', handleEsc)
-  }, [onClose])
+  }, [handleModalClose, saving])
 
   return (
     <AnimatePresence mode="sync">
@@ -522,7 +527,7 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
         >
           {/* Backdrop */}
-          <div onClick={onClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div onClick={handleModalClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
           {/* Modal */}
           <motion.div
@@ -537,8 +542,9 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                 {!casting ? 'New Casting' : isEditing ? 'Edit Casting' : 'Casting Details'}
               </h2>
               <button
-                onClick={onClose}
-                className="p-2 rounded-lg hover:bg-slate-200 transition-colors"
+                onClick={handleModalClose}
+                disabled={saving}
+                className="p-2 rounded-lg hover:bg-slate-200 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <X className="w-5 h-5 text-slate-500" />
               </button>
@@ -1227,10 +1233,12 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                   <button
                     type="button"
                     onClick={() => {
+                      if (saving) return
                       setIsEditing(false)
-                      onClose()
+                      handleModalClose()
                     }}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
+                    disabled={saving}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Cancel
                   </button>
