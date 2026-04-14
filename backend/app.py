@@ -1567,6 +1567,13 @@ def serve_casting_attachment(attachment_id):
 
 # ==================== TEAM ROUTES ====================
 
+def _serialize_team_member(member_row, active_castings_count=None):
+    member = dict(member_row)
+    member.pop('password_hash', None)
+    if active_castings_count is not None:
+        member['active_castings_count'] = active_castings_count
+    return member
+
 @app.route('/api/team', methods=['GET', 'POST'])
 @require_auth
 def list_team():
@@ -1655,7 +1662,7 @@ def list_team():
         safe_log_audit(db, None, 'TEAM_INVITE', f'Invited {name} ({normalized_email}) as {role}', _get_client_ip())
 
         member = db.execute('SELECT * FROM team_members WHERE id = ?', (member_id,)).fetchone()
-        return jsonify(dict(member)), status_code
+        return jsonify(_serialize_team_member(member)), status_code
 
     rows = db.execute('SELECT * FROM team_members ORDER BY name').fetchall()
     team = []
@@ -1667,8 +1674,7 @@ def list_team():
             JOIN castings c ON ca.casting_id = c.id
             WHERE ca.team_member_id = ? AND c.status NOT IN ('WON', 'LOST', 'INVOICED', 'PAID')
         ''', (member['id'],)).fetchone()
-        member['active_castings_count'] = count['cnt'] if count else 0
-        team.append(member)
+        team.append(_serialize_team_member(member, count['cnt'] if count else 0))
 
     return jsonify(team)
 
@@ -1729,7 +1735,7 @@ def single_team_member(member_id):
         db.commit()
 
         member = db.execute('SELECT * FROM team_members WHERE id = ?', (member_id,)).fetchone()
-        return jsonify(dict(member))
+        return jsonify(_serialize_team_member(member))
 
     row = db.execute('SELECT * FROM team_members WHERE id = ?', (member_id,)).fetchone()
     if not row:
