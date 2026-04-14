@@ -3435,6 +3435,7 @@ def update_casting_talents(casting_id):
 
 
 @app.route('/api/talents/import', methods=['POST'])
+@require_auth
 def import_talents_dry_run():
     """Dry-run CSV import: parse, validate, deduplicate, return results without inserting."""
     if 'file' not in request.files:
@@ -3545,6 +3546,7 @@ def import_talents_dry_run():
 
 
 @app.route('/api/talents/import/confirm', methods=['POST'])
+@require_auth
 def import_talents_confirm():
     """Actually import talents after user reviews the dry-run results."""
     db = get_db()
