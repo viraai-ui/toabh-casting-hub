@@ -1922,6 +1922,40 @@ def _sync_profile_to_team_member(db, profile):
     )
 
 
+def _get_request_profile(db):
+    auth_user = getattr(g, 'user', {}) or {}
+    user_id = auth_user.get('sub')
+    if not user_id:
+        return _load_profile_settings(db)
+
+    member = db.execute(
+        '''
+        SELECT id, name, role, COALESCE(email, '') as email, COALESCE(phone, '') as phone, COALESCE(avatar_url, '') as avatar_url
+        FROM team_members
+        WHERE id = ?
+        ''',
+        (user_id,)
+    ).fetchone()
+    if member is None:
+        return _load_profile_settings(db)
+
+    profile = {
+        'name': member['name'] or '',
+        'email': member['email'] or '',
+        'phone': member['phone'] or '',
+        'date_of_birth': '',
+        'role': member['role'] or 'Admin',
+        'avatar_url': member['avatar_url'] or '',
+        'team_member_id': member['id'],
+    }
+
+    saved = _load_profile_settings(db)
+    if saved.get('team_member_id') == member['id']:
+        profile['date_of_birth'] = saved.get('date_of_birth') or ''
+
+    return profile
+
+
 def _build_profile_payload(db, profile):
     team_member_id = profile.get('team_member_id')
     active_statuses = ('NEW', 'REVIEWING', 'PROPOSED', 'NEGOTIATING', 'CONFIRMED', 'IN_PROGRESS')
@@ -2002,10 +2036,10 @@ def profile():
     db = get_db()
 
     if request.method == 'GET':
-        return jsonify(_build_profile_payload(db, _load_profile_settings(db)))
+        return jsonify(_build_profile_payload(db, _get_request_profile(db)))
 
     data = request.get_json() or {}
-    profile = _load_profile_settings(db)
+    profile = _get_request_profile(db)
     name = (data.get('name') or '').strip()
     email = (data.get('email') or '').strip()
     phone = (data.get('phone') or '').strip()
@@ -2032,7 +2066,7 @@ def profile():
 @require_auth
 def profile_avatar():
     db = get_db()
-    profile = _load_profile_settings(db)
+    profile = _get_request_profile(db)
     team_member_id = profile.get('team_member_id')
 
     if request.method == 'DELETE':
