@@ -144,6 +144,7 @@ function TaskDetail({
   const [activities, setActivities] = useState<Array<{ id: number; description?: string; action?: string; user_name?: string; created_at: string }>>([])
   const [draft, setDraft] = useState('')
   const [posting, setPosting] = useState(false)
+  const [statusUpdating, setStatusUpdating] = useState(false)
   const [activeMention, setActiveMention] = useState<{ start: number; end: number; query: string } | null>(null)
   const [selectedMentionIndex, setSelectedMentionIndex] = useState(0)
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -166,6 +167,11 @@ function TaskDetail({
 
   if (!task) return null
 
+  const handleDetailClose = () => {
+    if (posting || statusUpdating) return
+    onClose()
+  }
+
   const postComment = async () => {
     if (!draft.trim()) return
     setPosting(true)
@@ -184,21 +190,26 @@ function TaskDetail({
   }
 
   const updateStatus = async (status: string) => {
-    await api.put(`/tasks/${task.id}/status`, { status })
-    onRefresh()
-    const activityData = await api.get(`/tasks/${task.id}/activities`)
-    setActivities(Array.isArray(activityData) ? activityData : [])
+    setStatusUpdating(true)
+    try {
+      await api.put(`/tasks/${task.id}/status`, { status })
+      onRefresh()
+      const activityData = await api.get(`/tasks/${task.id}/activities`)
+      setActivities(Array.isArray(activityData) ? activityData : [])
+    } finally {
+      setStatusUpdating(false)
+    }
   }
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/40 p-4" onClick={handleDetailClose}>
       <div className="max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
           <div>
             <h3 className="text-lg font-semibold text-slate-900">{task.title}</h3>
             <p className="mt-1 text-sm text-slate-500">{task.description || 'No description added.'}</p>
           </div>
-          <button onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100"><X className="h-4 w-4" /></button>
+          <button onClick={handleDetailClose} disabled={posting || statusUpdating} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"><X className="h-4 w-4" /></button>
         </div>
 
         <div className="grid max-h-[calc(90vh-76px)] gap-6 overflow-y-auto p-5 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -206,7 +217,7 @@ function TaskDetail({
             <div className="rounded-3xl border border-slate-200 bg-white p-4">
               <div className="flex flex-wrap gap-2">
                 {stages.map((stage) => (
-                  <button key={stage.id} onClick={() => updateStatus(stage.name)} className={cn('rounded-full border px-3 py-1.5 text-sm transition', task.status === stage.name ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-200 bg-white text-slate-600')}>
+                  <button key={stage.id} onClick={() => updateStatus(stage.name)} disabled={statusUpdating} className={cn('rounded-full border px-3 py-1.5 text-sm transition disabled:cursor-not-allowed disabled:opacity-50', task.status === stage.name ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-200 bg-white text-slate-600')}>
                     {stage.name}
                   </button>
                 ))}
