@@ -1040,6 +1040,11 @@ function ClientFormModal({
     }
   }
 
+  const handleModalClose = () => {
+    if (saving) return
+    onClose()
+  }
+
   return (
     <AnimatePresence>
       {open && (
@@ -1049,7 +1054,7 @@ function ClientFormModal({
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
         >
-          <div onClick={onClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div onClick={handleModalClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
           <motion.div
             initial={{ scale: 0.96, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -1061,7 +1066,7 @@ function ClientFormModal({
                 <h2 className="text-lg font-semibold text-slate-900">{client ? 'Edit Client' : 'Add Client'}</h2>
                 <p className="text-sm text-slate-500">Manage contact details and attach multiple tags.</p>
               </div>
-              <button onClick={onClose} className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
+              <button onClick={handleModalClose} disabled={saving} className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50">
                 ×
               </button>
             </div>
@@ -1173,7 +1178,7 @@ function ClientFormModal({
               </div>
 
               <div className="mt-6 flex justify-end gap-3">
-                <button type="button" onClick={onClose} className="btn-secondary">
+                <button type="button" onClick={handleModalClose} disabled={saving} className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50">
                   Cancel
                 </button>
                 <button
