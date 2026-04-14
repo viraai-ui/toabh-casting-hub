@@ -1293,6 +1293,7 @@ def list_castings():
     return jsonify(_apply_casting_assignments(db, rows))
 
 @app.route('/api/castings/<int:casting_id>', methods=['GET', 'PUT', 'DELETE'])
+@require_auth
 def single_casting(casting_id):
     db = get_db()
 
@@ -1375,6 +1376,7 @@ def single_casting(casting_id):
         return jsonify({'message': 'Deleted'})
 
 @app.route('/api/castings/<int:casting_id>/status', methods=['PUT'])
+@require_auth
 def update_status(casting_id):
     db = get_db()
     data = request.json
@@ -1396,6 +1398,7 @@ def update_status(casting_id):
     return jsonify({'message': 'Status updated'})
 
 @app.route('/api/castings/<int:casting_id>/assign', methods=['PUT'])
+@require_auth
 def assign_casting(casting_id):
     db = get_db()
     data = request.json
@@ -1420,6 +1423,7 @@ def assign_casting(casting_id):
     return jsonify({'message': 'Assigned'})
 
 @app.route('/api/castings/<int:casting_id>/activities', methods=['GET'])
+@require_auth
 def get_activities(casting_id):
     db = get_db()
     rows = db.execute('''
@@ -1433,6 +1437,7 @@ def get_activities(casting_id):
     return jsonify([_activity_row_to_dict(row) for row in rows])
 
 @app.route('/api/castings/<int:casting_id>/notes', methods=['POST'])
+@require_auth
 def add_note(casting_id):
     db = get_db()
     data = request.json
@@ -1447,6 +1452,7 @@ def add_note(casting_id):
 
 
 @app.route('/api/castings/<int:casting_id>/attachments', methods=['GET'])
+@require_auth
 def list_casting_attachments(casting_id):
     db = get_db()
     casting = db.execute('SELECT id FROM castings WHERE id = ?', (casting_id,)).fetchone()
@@ -1471,6 +1477,7 @@ def list_casting_attachments(casting_id):
 
 
 @app.route('/api/castings/<int:casting_id>/attachments', methods=['POST'])
+@require_auth
 def upload_casting_attachment(casting_id):
     db = get_db()
     casting = db.execute('SELECT id FROM castings WHERE id = ?', (casting_id,)).fetchone()
@@ -1528,6 +1535,7 @@ def upload_casting_attachment(casting_id):
 
 
 @app.route('/api/attachments/<int:attachment_id>', methods=['GET'])
+@require_auth
 def serve_casting_attachment(attachment_id):
     db = get_db()
     attachment = db.execute('''
