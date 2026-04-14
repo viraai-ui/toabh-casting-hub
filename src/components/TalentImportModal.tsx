@@ -104,7 +104,7 @@ export function TalentImportModal({ open, onClose, onImported }: TalentImportMod
           name: d.name,
           phone: d.phone,
           email: d.email,
-          instagram_handle: d.name || '',
+          instagram_handle: (d.raw_data?.instagram_handle as string | undefined) || '',
         })
       } else {
         skip.push(d.row_num)

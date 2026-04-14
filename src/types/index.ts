@@ -206,7 +206,7 @@ export interface TalentImportResult {
   total_rows: number
   valid: number
   errors: Array<{ row_num: number; reason: string; raw_data: Record<string, string> }>
-  duplicates_existing: Array<{ row_num: number; name: string; phone: string; email: string; existing_id: number; existing_name: string; matched_on: string }>
+  duplicates_existing: Array<{ row_num: number; name: string; phone: string; email: string; existing_id: number; existing_name: string; matched_on: string; raw_data?: Record<string, string> }>
   importable: Array<{ name: string; instagram_handle: string | null; phone: string; email: string }>
 }
 
