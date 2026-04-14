@@ -184,6 +184,12 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
   }
 
   const pb = (text: string | null | undefined) => text ?? null
+  const closeDisabled = talentDetailOpen
+
+  const handleModalClose = () => {
+    if (closeDisabled) return
+    onClose()
+  }
 
   return (
     <AnimatePresence>
@@ -195,7 +201,7 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            onClick={onClose}
+            onClick={handleModalClose}
             className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px]"
           />
 
@@ -214,8 +220,9 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100/80 shrink-0">
                 <button
-                  onClick={onClose}
-                  className="p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-700"
+                  onClick={handleModalClose}
+                  disabled={closeDisabled}
+                  className="p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <X size={18} />
                 </button>
