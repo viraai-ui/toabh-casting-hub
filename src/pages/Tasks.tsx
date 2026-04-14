@@ -77,7 +77,7 @@ function TaskComposer({
         await api.post('/tasks', form)
       }
       onSaved()
-      handleComposerClose()
+      onClose()
     } finally {
       setSaving(false)
     }
