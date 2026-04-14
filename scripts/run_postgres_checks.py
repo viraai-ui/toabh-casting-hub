@@ -1,23 +1,18 @@
-import os
-from backend.app import app
+#!/usr/bin/env python3
+"""Compatibility wrapper for the canonical full Postgres smoke suite."""
 
-with app.test_client() as c:
-    login = c.post('/api/auth/login', json={'username': 'tony', 'password': 'Tony@TOABH2026'})
-    print('login', login.status_code, login.get_data(as_text=True)[:200])
-    for path in [
-        '/api/auth/me',
-        '/api/dashboard',
-        '/api/castings',
-        '/api/clients',
-        '/api/team',
-        '/api/tasks',
-        '/api/talents',
-        '/api/settings/pipeline',
-        '/api/settings/sources',
-        '/api/settings/client-tags',
-        '/api/notifications',
-        '/api/activities',
-        '/api/search?q=tony',
-    ]:
-        r = c.get(path)
-        print(path, r.status_code, r.get_data(as_text=True)[:220].replace('\n', ' '))
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def main():
+    target = ROOT / 'scripts' / 'smoke_postgres_full.py'
+    print('run_postgres_checks.py is now a wrapper for scripts/smoke_postgres_full.py')
+    subprocess.run([sys.executable, str(target)], cwd=ROOT, check=True)
+
+
+if __name__ == '__main__':
+    main()

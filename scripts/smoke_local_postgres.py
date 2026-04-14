@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
+import atexit
+import shutil
+import tempfile
 import time
 from pathlib import Path
+
+import os
 
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / '.env')
 load_dotenv(ROOT / '.env.staging.local')
+
+RUNTIME_ROOT = Path(tempfile.mkdtemp(prefix='toabh-pg-smoke-'))
+atexit.register(lambda: shutil.rmtree(RUNTIME_ROOT, ignore_errors=True))
+os.environ['APP_RUNTIME_ROOT'] = str(RUNTIME_ROOT)
 
 from backend.app import app  # noqa: E402
 

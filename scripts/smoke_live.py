@@ -1,8 +1,11 @@
+import os
 import requests
 
-base = 'https://tch.toabh.com'
+base = os.environ.get('TOABH_BASE_URL', 'https://tch.toabh.com')
+username = os.environ.get('TOABH_SMOKE_USERNAME', 'boss')
+password = os.environ.get('TOABH_SMOKE_PASSWORD', 'Boss@2026!')
 s = requests.Session()
-login = s.post(base + '/api/auth/login', json={'username': 'tony', 'password': 'Tony@TOABH2026'}, timeout=20)
+login = s.post(base + '/api/auth/login', json={'username': username, 'password': password}, timeout=20)
 print('login', login.status_code, login.text[:200])
 for path in [
     '/api/auth/me',

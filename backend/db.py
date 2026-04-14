@@ -44,6 +44,14 @@ class HybridRow(dict):
             return super().__getitem__(self._keys[key])
         return super().__getitem__(key)
 
+    def get(self, key, default=None):
+        return super().get(key, default)
+
+
+def sqlite_hybrid_row_factory(cursor, row):
+    data = {col[0]: row[idx] for idx, col in enumerate(cursor.description)}
+    return HybridRow(data)
+
 
 class PostgresCursor:
     def __init__(self, conn, cur, sql: str):
@@ -137,7 +145,7 @@ def connect(config: DatabaseConfig):
     if config.is_postgres:
         return PostgresConnection(config.database_url)
     conn = sqlite3.connect(config.sqlite_path, timeout=10)
-    conn.row_factory = sqlite3.Row
+    conn.row_factory = sqlite_hybrid_row_factory
     conn.execute('PRAGMA foreign_keys = ON')
     return conn
 

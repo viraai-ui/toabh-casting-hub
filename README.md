@@ -17,13 +17,25 @@ The backend now supports two database modes:
    - `python3 scripts/sqlite_to_postgres.py`
 5. Verify row counts:
    - `python3 scripts/verify_postgres_counts.py`
-6. Start the app with `DATABASE_URL` still set so Flask uses Postgres.
+6. Run the full Postgres smoke suite:
+   - `python3 scripts/smoke_postgres_full.py`
+   - legacy alias: `python3 scripts/run_postgres_checks.py`
+   - coverage reference: `docs/postgres-smoke-suite.md`
+7. Start the app with `DATABASE_URL` still set so Flask uses Postgres.
+8. Use the staging rollout checklist:
+   - `docs/postgres-staging-cutover-checklist.md`
+   - staging env template: `.env.staging.example`
+   - quick env preflight: `python3 scripts/check_staging_env.py`
+   - cutover readiness summary: `python3 scripts/check_cutover_readiness.py`
+   - restore canonical Postgres baseline: `python3 scripts/restore_postgres_baseline.py`
+   - final migration validation: `python3 scripts/final_migration_check.py`
 
 ### Notes
 
 - SQLite remains the safe fallback when `DATABASE_URL` is absent.
 - Root `requirements.txt` now includes `psycopg[binary]` for Postgres runtime support.
 - The Postgres support is an incremental compatibility layer around the existing raw-SQL Flask app, so verify core flows after switching environments.
+- The smoke suite uses an isolated temporary `APP_RUNTIME_ROOT`, so it does not dirty checked-in `backend/settings` or `backend/uploads` while validating Postgres flows.
 
 # React + TypeScript + Vite
 

@@ -54,8 +54,9 @@ def parse_casting_message(text):
         if date_match:
             date_str = date_match.group(1).strip()
             parsed_dates = parse_date_flexible(date_str)
-            result['shoot_date_start'] = parsed_dates[0]
-            result['shoot_date_end'] = parsed_dates[1] if len(parsed_dates) > 1 else None
+            if parsed_dates:
+                result['shoot_date_start'] = parsed_dates[0]
+                result['shoot_date_end'] = parsed_dates[1] if len(parsed_dates) > 1 else None
         
         # Location: Mumbai
         location_match = re.search(r'Location:\s*(.+?)(?:\n|$)', text, re.IGNORECASE)
@@ -113,7 +114,9 @@ def parse_casting_message(text):
         # Shoot date - 26th March
         date_match = re.search(r'Shoot\s*date\s*[-–]\s*(.+?)(?:\n|$)', text, re.IGNORECASE)
         if date_match:
-            result['shoot_date_start'] = parse_date_flexible(date_match.group(1).strip())[0]
+            parsed_dates = parse_date_flexible(date_match.group(1).strip())
+            if parsed_dates:
+                result['shoot_date_start'] = parsed_dates[0]
         
         # Apply to: 7045445998
         apply_match = re.search(r'Apply\s*to:\s*(\d+)', text, re.IGNORECASE)
@@ -137,7 +140,9 @@ def parse_casting_message(text):
         location_date_match = re.search(r'Shoot(?:ing)?\s+(?:in\s+)?(.+?)\s+(?:on|in)\s+(\d+\w+\s+\w+)', text, re.IGNORECASE)
         if location_date_match:
             result['location'] = location_date_match.group(1).strip().rstrip(',')
-            result['shoot_date_start'] = parse_date_flexible(location_date_match.group(2).strip())[0]
+            parsed_dates = parse_date_flexible(location_date_match.group(2).strip())
+            if parsed_dates:
+                result['shoot_date_start'] = parsed_dates[0]
     
     # ---- Common extractions ----
     
@@ -214,7 +219,14 @@ def parse_date_flexible(date_str):
         'dec': '12', 'december': '12',
     }
     
-    current_year = datetime.now().year
+    now = datetime.now()
+    current_year = now.year
+
+    if date_str in {'today', 'tdy'}:
+        return [now.strftime('%Y-%m-%d')]
+    if date_str in {'tomorrow', 'tmrw', 'tmr'}:
+        from datetime import timedelta
+        return [(now + timedelta(days=1)).strftime('%Y-%m-%d')]
     
     # Pattern: "28th or 29th March"
     or_match = re.match(r'(\d+)(?:st|nd|rd|th)?\s*(?:or|and)?\s*(\d+)?\s*(?:st|nd|rd|th)?\s*(\w+)', date_str)

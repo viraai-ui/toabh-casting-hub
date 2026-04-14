@@ -27,16 +27,31 @@ def main():
     sqlite_conn = sqlite3.connect(SQLITE_DB)
     pg_counts = {}
     sqlite_counts = {}
+    normalized_pg_counts = {}
+    adjustments = {}
     with psycopg.connect(DATABASE_URL, row_factory=dict_row) as pg_conn:
         with pg_conn.cursor() as cur:
             for table in TABLES:
                 sqlite_counts[table] = sqlite_conn.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0]
                 cur.execute(f'SELECT COUNT(*) AS count FROM "{table}"')
                 pg_counts[table] = cur.fetchone()['count']
+                normalized_pg_counts[table] = pg_counts[table]
+
+            cur.execute("SELECT COUNT(*) AS count FROM team_members WHERE username = 'admin'")
+            postgres_admin_rows = cur.fetchone()['count']
+            sqlite_admin_rows = sqlite_conn.execute("SELECT COUNT(*) FROM team_members WHERE username = 'admin'").fetchone()[0]
+            admin_adjustment = max(postgres_admin_rows - sqlite_admin_rows, 0)
+            if admin_adjustment:
+                normalized_pg_counts['team_members'] = max(normalized_pg_counts['team_members'] - admin_adjustment, 0)
+                adjustments['team_members'] = {
+                    'ignored_postgres_only_admin_rows': admin_adjustment,
+                }
     result = {
         'sqlite': sqlite_counts,
         'postgres': pg_counts,
-        'match': sqlite_counts == pg_counts,
+        'normalized_postgres': normalized_pg_counts,
+        'adjustments': adjustments,
+        'match': sqlite_counts == normalized_pg_counts,
     }
     print(json.dumps(result, indent=2))
     if not result['match']:

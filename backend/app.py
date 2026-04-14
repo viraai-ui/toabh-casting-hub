@@ -82,6 +82,16 @@ def _ensure_uploads_dir(*parts):
     return path
 
 
+def _get_app_base_url():
+    configured = (os.environ.get('APP_BASE_URL') or '').strip().rstrip('/')
+    if configured:
+        return configured
+    try:
+        return request.url_root.rstrip('/')
+    except RuntimeError:
+        return 'https://toabh-casting-hub.vercel.app'
+
+
 def _attachment_storage_dir(casting_id):
     return _ensure_uploads_dir('castings', str(casting_id))
 
@@ -1634,7 +1644,7 @@ def list_team():
         db.commit()
 
         # Send invite email
-        login_url = f"{os.environ.get('APP_BASE_URL', 'https://toabh-casting-hub.vercel.app')}/login"
+        login_url = f"{_get_app_base_url()}/login"
         from backend.auth_module import invite_email_html, send_smtp
         html_body = invite_email_html(name, username, tmp_password, login_url)
         sent, msg = send_smtp(normalized_email, f"Welcome to TOABH Casting Hub — {name}", html_body)
@@ -1748,7 +1758,7 @@ def resend_invite(member_id):
     if not user['email']:
         return jsonify({'error': 'No email on file'}), 400
     tmp_password = DEFAULT_PW
-    login_url = f"{os.environ.get('APP_BASE_URL', 'https://toabh-casting-hub.vercel.app')}/login"
+    login_url = f"{_get_app_base_url()}/login"
     from backend.auth_module import invite_email_html
     html_body = invite_email_html(user['name'], user['username'] or user['name'], tmp_password, login_url)
     sent, msg = send_smtp(user['email'], f"TOABH Casting Hub invite (resend) — {user['name']}", html_body)
@@ -2711,7 +2721,7 @@ def auth_forgot_password():
     db.execute('INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)',
                (user['id'], reset_token, expires))
     db.commit()
-    reset_url = f"{__import__('os').environ.get('APP_BASE_URL', 'https://toabh-casting-hub.vercel.app')}/reset-password?token={reset_token}"
+    reset_url = f"{_get_app_base_url()}/reset-password?token={reset_token}"
     from backend.auth_module import reset_email_html, send_smtp
     html = reset_email_html(user['name'], reset_url)
     sent, msg = send_smtp(user['email'], 'Reset your TOABH Casting Hub password', html)
