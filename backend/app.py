@@ -1188,6 +1188,7 @@ def update_roles():
 # ==================== CASTING ROUTES ====================
 
 @app.route('/api/castings', methods=['GET', 'POST'])
+@require_auth
 def list_castings():
     db = get_db()
     if request.method == 'POST':
@@ -1970,6 +1971,7 @@ def _build_profile_payload(db, profile):
 
 
 @app.route('/api/profile', methods=['GET', 'PUT'])
+@require_auth
 def profile():
     db = get_db()
 
@@ -2001,6 +2003,7 @@ def profile():
 
 
 @app.route('/api/profile/avatar', methods=['POST', 'DELETE'])
+@require_auth
 def profile_avatar():
     db = get_db()
     profile = _load_profile_settings(db)
@@ -3083,6 +3086,7 @@ def test_email_config():
 
 # Email templates
 @app.route('/api/settings/email-templates', methods=['GET'])
+@require_auth
 def get_email_templates():
     os.makedirs(SETTINGS_DIR, exist_ok=True)
     try:
@@ -3097,6 +3101,7 @@ def get_email_templates():
     return jsonify(templates)
 
 @app.route('/api/settings/email-templates', methods=['PUT'])
+@require_auth
 def update_email_templates():
     data = request.json
     os.makedirs(SETTINGS_DIR, exist_ok=True)
@@ -3105,6 +3110,7 @@ def update_email_templates():
     return jsonify({'message':'Templates saved'})
 
 @app.route('/api/settings/email-templates', methods=['POST'])
+@require_auth
 def create_email_template():
     data = request.get_json()
     if not data:
@@ -3129,6 +3135,7 @@ def create_email_template():
     return jsonify(new_template), 201
 
 @app.route('/api/settings/email-templates/<int:template_id>', methods=['PUT'])
+@require_auth
 def update_single_email_template(template_id):
     data = request.get_json()
     if not data:
@@ -3155,6 +3162,7 @@ def update_single_email_template(template_id):
     return jsonify({'id': template_id, 'name': name, 'subject': subject, 'body': body})
 
 @app.route('/api/settings/email-templates/<int:template_id>', methods=['DELETE'])
+@require_auth
 def delete_email_template(template_id):
     os.makedirs(SETTINGS_DIR, exist_ok=True)
     try:
@@ -3174,10 +3182,12 @@ USERS = [
 ]
 
 @app.route('/api/users', methods=['GET'])
+@require_auth
 def get_users():
     return jsonify(USERS)
 
 @app.route('/api/users', methods=['POST'])
+@require_auth
 def create_user():
     data = request.json
     new_user = {
@@ -3191,6 +3201,7 @@ def create_user():
     return jsonify(new_user), 201
 
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
+@require_auth
 def update_user(user_id):
     data = request.json
     for u in USERS:
@@ -3200,6 +3211,7 @@ def update_user(user_id):
     return jsonify({'error':'Not found'}), 404
 
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
+@require_auth
 def delete_user(user_id):
     global USERS
     USERS = [u for u in USERS if u['id'] != user_id]
@@ -3222,6 +3234,7 @@ def update_permissions():
 
 # ==================== AUDIT LOG ====================
 @app.route('/api/audit-log', methods=['GET'])
+@require_auth
 def get_audit_log():
     db = get_db()
     rows = db.execute(
@@ -3236,6 +3249,7 @@ def get_audit_log():
 
 # ==================== PROFILE PASSWORD CHANGE ====================
 @app.route('/api/profile/password', methods=['PUT'])
+@require_auth
 def update_profile_password():
     from backend.auth_module import _extract_token, verify_token
     token = _extract_token(request)
@@ -3286,6 +3300,7 @@ def sanitize_instagram(handle):
     return h or None
 
 @app.route('/api/talents', methods=['GET'])
+@require_auth
 def list_talents():
     db = get_db()
     q = request.args.get('q', '').strip()
@@ -3321,6 +3336,7 @@ def search_talents():
 
 
 @app.route('/api/talents', methods=['POST'])
+@require_auth
 def create_talent():
     db = get_db()
     data = request.json or {}
