@@ -661,6 +661,11 @@ function TeamMemberModal({
     ? (form.avatar_url.startsWith('/') ? `${import.meta.env.VITE_API_URL || ''}${form.avatar_url}` : form.avatar_url)
     : null
 
+  const handleModalClose = () => {
+    if (saving || uploading) return
+    onClose()
+  }
+
   return (
     <AnimatePresence>
       {open && (
@@ -670,7 +675,7 @@ function TeamMemberModal({
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
         >
-          <div onClick={onClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div onClick={handleModalClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -681,7 +686,7 @@ function TeamMemberModal({
               <h2 className="text-lg font-semibold text-slate-900">
                 {member ? 'Edit Member' : 'Add Member'}
               </h2>
-              <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500">
+              <button onClick={handleModalClose} disabled={saving || uploading} className="p-2 rounded-lg hover:bg-slate-100 text-slate-500 disabled:cursor-not-allowed disabled:opacity-50">
                 ×
               </button>
             </div>
@@ -801,7 +806,7 @@ function TeamMemberModal({
                 </button>
               </div>
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={onClose} className="btn-secondary">
+                <button type="button" onClick={handleModalClose} disabled={saving || uploading} className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50">
                   Cancel
                 </button>
                 <button type="submit" disabled={saving} className="btn-primary">
