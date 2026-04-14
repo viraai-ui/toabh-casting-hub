@@ -14,15 +14,20 @@ export function formatCurrency(amount: number | null | undefined): string {
   }).format(amount)
 }
 
-export function formatDate(date: string | null | undefined): string {
+export function formatDate(date: string | Date | null | undefined): string {
   if (!date) return '-'
   const d = new Date(date)
+  if (Number.isNaN(d.getTime())) return '-'
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export function formatRelativeTime(date: string | Date): string {
+export function formatRelativeTime(date: string | Date | null | undefined): string {
+  if (!date) return '-'
+
   const now = new Date()
   const d = new Date(date)
+  if (Number.isNaN(d.getTime())) return '-'
+
   const diffMs = now.getTime() - d.getTime()
   const diffSecs = Math.floor(diffMs / 1000)
   const diffMins = Math.floor(diffSecs / 60)
@@ -33,7 +38,7 @@ export function formatRelativeTime(date: string | Date): string {
   if (diffMins < 60) return `${diffMins}m ago`
   if (diffHours < 24) return `${diffHours}h ago`
   if (diffDays < 7) return `${diffDays}d ago`
-  return formatDate(date.toString())
+  return formatDate(d)
 }
 
 export function getInitials(name: string): string {

@@ -280,7 +280,7 @@ export function Dashboard() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium leading-6 text-slate-800">{summarizeActivity(activity.description ?? '')}</p>
                       <p className="mt-1 text-xs font-medium text-slate-500">
-                        {activity.user_name} • {formatRelativeTime(activity.created_at)}
+                        {activity.user_name || 'System'} • {formatRelativeTime(activity.created_at)}
                       </p>
                     </div>
                   </div>
@@ -386,16 +386,17 @@ export function Dashboard() {
             />
           ) : (
             <div className="space-y-3">
-              {workload.slice(0, 6).map((member: { id?: number; name: string; count: number }, i: number) => {
+              {workload.slice(0, 6).map((member: { id?: number; name?: string | null; count: number }, i: number) => {
                 const maxCount = Math.max(...(workload.map((m: { count: number }) => m.count) || [1]))
+                const memberName = member.name?.trim() || 'Unassigned'
                 return (
                   <div key={i} className="space-y-1.5 rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-2">
                         <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-[10px] font-medium text-white">
-                          {getInitials(member.name)}
+                          {getInitials(memberName)}
                         </div>
-                        <span className="truncate text-sm font-medium text-slate-700">{member.name}</span>
+                        <span className="truncate text-sm font-medium text-slate-700">{memberName}</span>
                       </div>
                       <span className="text-sm font-semibold text-slate-900">{member.count}</span>
                     </div>
