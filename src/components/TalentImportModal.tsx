@@ -85,6 +85,9 @@ export function TalentImportModal({ open, onClose, onImported }: TalentImportMod
     }
   }
 
+  const updateSelectionCount = Array.from(selectedUpdates.values()).filter(Boolean).length
+  const pendingImportCount = (results?.importable.length || 0) + updateSelectionCount
+
   const handleImport = async () => {
     if (!results) return
     setImporting(true)
@@ -362,7 +365,7 @@ export function TalentImportModal({ open, onClose, onImported }: TalentImportMod
                       {results
                         ? (() => {
                             const createdCount = results.importable.length
-                            const updatedCount = Array.from(selectedUpdates.values()).filter(Boolean).length
+                            const updatedCount = updateSelectionCount
                             const summaryParts = [
                               createdCount > 0 ? `${createdCount} new talent${createdCount !== 1 ? 's' : ''} added` : '',
                               updatedCount > 0 ? `${updatedCount} existing record${updatedCount !== 1 ? 's' : ''} updated` : '',
@@ -408,11 +411,11 @@ export function TalentImportModal({ open, onClose, onImported }: TalentImportMod
                       </button>
                       <button
                         onClick={handleImport}
-                        disabled={importing || results?.importable.length === 0}
+                        disabled={importing || pendingImportCount === 0}
                         className="flex items-center gap-2 px-5 py-2 bg-amber-500 text-white text-sm font-medium rounded-xl hover:bg-amber-600 transition-colors disabled:opacity-50 shadow-sm"
                       >
                         {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                        {importing ? 'Importing...' : `Import ${results?.importable.length || 0}`}
+                        {importing ? 'Importing...' : `Import ${pendingImportCount}`}
                       </button>
                     </>
                   )}
