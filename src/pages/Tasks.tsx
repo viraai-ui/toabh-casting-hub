@@ -48,6 +48,11 @@ function TaskComposer({
   const [form, setForm] = useState({ title: '', description: '', status: 'Not Started', due_date: '', assignee_ids: [] as number[] })
   const [saving, setSaving] = useState(false)
 
+  const handleComposerClose = () => {
+    if (saving) return
+    onClose()
+  }
+
   useEffect(() => {
     if (!open) return
     setForm({
@@ -71,18 +76,18 @@ function TaskComposer({
         await api.post('/tasks', form)
       }
       onSaved()
-      onClose()
+      handleComposerClose()
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/40 p-4" onClick={handleComposerClose}>
       <div className="w-full max-w-xl rounded-3xl bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-slate-900">{task ? 'Edit Task' : 'New Task'}</h3>
-          <button onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100"><X className="h-4 w-4" /></button>
+          <button onClick={handleComposerClose} disabled={saving} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"><X className="h-4 w-4" /></button>
         </div>
         <div className="mt-4 space-y-4">
           <input value={form.title} onChange={(e) => setForm((c) => ({ ...c, title: e.target.value }))} placeholder="Task title" className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-100" />
@@ -113,7 +118,7 @@ function TaskComposer({
           </div>
         </div>
         <div className="mt-5 flex justify-end gap-3">
-          <button onClick={onClose} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600">Cancel</button>
+          <button onClick={handleComposerClose} disabled={saving} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 disabled:cursor-not-allowed disabled:opacity-50">Cancel</button>
           <button onClick={save} disabled={saving} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white">{saving ? 'Saving...' : 'Save Task'}</button>
         </div>
       </div>
