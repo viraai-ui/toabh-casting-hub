@@ -235,6 +235,11 @@ function TeamMemberModal({
     }
   }
 
+  const handleModalClose = () => {
+    if (saving) return
+    onClose()
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -242,7 +247,7 @@ function TeamMemberModal({
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
     >
-      <div onClick={onClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div onClick={handleModalClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -294,7 +299,7 @@ function TeamMemberModal({
             </select>
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
+            <button type="button" onClick={handleModalClose} disabled={saving} className="btn-secondary disabled:cursor-not-allowed disabled:opacity-50">Cancel</button>
             <button type="submit" disabled={saving} className="btn-primary">
               {saving ? 'Saving...' : 'Save'}
             </button>
