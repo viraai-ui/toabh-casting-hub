@@ -2693,11 +2693,12 @@ def auth_me():
             'last_login': None,
             'invite_status': 'active',
             'must_reset_password': False,
+            'team_member_id': 0,
         })
 
     db = get_db()
     user = db.execute(
-        'SELECT id, name, email, role, username, last_login, invite_status, must_reset_password FROM team_members WHERE id = ?',
+        'SELECT id, name, email, role, username, last_login, invite_status, must_reset_password, id AS team_member_id FROM team_members WHERE id = ?',
         (user_id,)
     ).fetchone()
     if not user:
