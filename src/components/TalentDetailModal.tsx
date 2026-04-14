@@ -41,6 +41,13 @@ export function TalentDetailModal({ open, onClose, talent, onSave }: TalentDetai
     }
   }, [open, talent])
 
+  const isBusy = saving || deleting
+
+  const handleModalClose = () => {
+    if (isBusy) return
+    onClose()
+  }
+
   const handleSave = async () => {
     if (!form.name.trim()) {
       toast.error('Name is required')
@@ -102,7 +109,7 @@ export function TalentDetailModal({ open, onClose, talent, onSave }: TalentDetai
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={handleModalClose}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999]"
           />
 
@@ -132,7 +139,7 @@ export function TalentDetailModal({ open, onClose, talent, onSave }: TalentDetai
                     </p>
                   </div>
                 </div>
-                <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
+                <button onClick={handleModalClose} disabled={isBusy} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -288,7 +295,8 @@ export function TalentDetailModal({ open, onClose, talent, onSave }: TalentDetai
                           email: talent?.email || '',
                         })
                       }}
-                      className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                      disabled={isBusy}
+                      className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Cancel
                     </button>
@@ -305,8 +313,9 @@ export function TalentDetailModal({ open, onClose, talent, onSave }: TalentDetai
                   )}
                   {mode === 'view' && (
                     <button
-                      onClick={onClose}
-                      className="px-5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                      onClick={handleModalClose}
+                      disabled={isBusy}
+                      className="px-5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Close
                     </button>
