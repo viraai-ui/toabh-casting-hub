@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Search, Plus, Upload, Phone, MessageCircle, ChevronUp, ChevronDown, Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
+import { useDataRefresh } from '@/hooks/useDataRefresh'
 import { getInitials } from '@/lib/utils'
 import type { Talent } from '@/types'
 import { toast } from 'sonner'
@@ -35,8 +36,12 @@ export function Talents() {
   }, [])
 
   useEffect(() => {
-    fetchTalents()
+    void fetchTalents()
   }, [fetchTalents])
+
+  useDataRefresh(() => {
+    void fetchTalents()
+  })
 
   const filteredTalents = useMemo(() => {
     let results = talents

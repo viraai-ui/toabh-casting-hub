@@ -3,6 +3,7 @@ import { Calendar, Camera, KeyRound, Loader2, Mail, Save, Trash2, User } from 'l
 import { api, toApiUrl } from '@/lib/api'
 import { cn, formatDate, formatRelativeTime, getInitials } from '@/lib/utils'
 import { useAppStore } from '@/hooks/useStore'
+import { useDataRefresh } from '@/hooks/useDataRefresh'
 import type { UserProfile } from '@/types'
 import { toast } from 'sonner'
 
@@ -54,6 +55,9 @@ export function Profile() {
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [taskFilter, setTaskFilter] = useState<TaskFilter>('all')
+  const [passwordOpen, setPasswordOpen] = useState(false)
+  const [passwordSaving, setPasswordSaving] = useState(false)
+  const [passwordForm, setPasswordForm] = useState({ current_password: '', new_password: '', confirm_password: '' })
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const infoSectionRef = useRef<HTMLDivElement | null>(null)
 
@@ -120,6 +124,10 @@ export function Profile() {
   useEffect(() => {
     void loadProfile()
   }, [loadProfile])
+
+  useDataRefresh(() => {
+    void loadProfile()
+  })
 
   const saveProfile = async () => {
     setSaving(true)
@@ -212,11 +220,15 @@ export function Profile() {
               Edit Profile
             </button>
             <button
-              onClick={() => toast.info('Password change can be added next.')}
+              onClick={() => {
+                setMessage(null)
+                setError(null)
+                setPasswordOpen((current) => !current)
+              }}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
               <KeyRound className="h-4 w-4" />
-              Change Password
+              {passwordOpen ? 'Close Password' : 'Change Password'}
             </button>
           </div>
         </div>
@@ -257,6 +269,67 @@ export function Profile() {
         </div>
 
         <div className="space-y-6 min-w-0">
+          {passwordOpen && (
+            <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900">Password & access</h2>
+                  <p className="mt-1 text-sm text-slate-500">Update your password directly from profile, no placeholder action.</p>
+                </div>
+                <button
+                  onClick={async () => {
+                    setMessage(null)
+                    setError(null)
+                    if (!passwordForm.new_password || passwordForm.new_password.length < 6) {
+                      setError('Password must be at least 6 characters.')
+                      return
+                    }
+                    if (passwordForm.new_password !== passwordForm.confirm_password) {
+                      setError('New password and confirm password do not match.')
+                      return
+                    }
+                    setPasswordSaving(true)
+                    try {
+                      await api.put('/profile/password', {
+                        current_password: passwordForm.current_password,
+                        new_password: passwordForm.new_password,
+                      })
+                      setPasswordForm({ current_password: '', new_password: '', confirm_password: '' })
+                      setMessage('Password updated successfully.')
+                      toast.success('Password updated')
+                      setPasswordOpen(false)
+                    } catch (err) {
+                      const errorMessage = err instanceof Error ? err.message : 'Could not update password.'
+                      setError(errorMessage)
+                    } finally {
+                      setPasswordSaving(false)
+                    }
+                  }}
+                  disabled={passwordSaving}
+                  className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
+                >
+                  {passwordSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+                  {passwordSaving ? 'Updating...' : 'Update Password'}
+                </button>
+              </div>
+
+              <div className="mt-5 grid gap-4 sm:grid-cols-3">
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">Current Password</label>
+                  <input type="password" value={passwordForm.current_password} onChange={(e) => setPasswordForm((current) => ({ ...current, current_password: e.target.value }))} className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-100" />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">New Password</label>
+                  <input type="password" value={passwordForm.new_password} onChange={(e) => setPasswordForm((current) => ({ ...current, new_password: e.target.value }))} className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-100" />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">Confirm Password</label>
+                  <input type="password" value={passwordForm.confirm_password} onChange={(e) => setPasswordForm((current) => ({ ...current, confirm_password: e.target.value }))} className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-100" />
+                </div>
+              </div>
+            </div>
+          )}
+
           <div ref={infoSectionRef} className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">

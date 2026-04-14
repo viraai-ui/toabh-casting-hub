@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { CastingAssistant } from '@/components/assistant/CastingAssistant'
 import { CastingModal } from '@/components/CastingModal'
 import { api, getSessionUser } from '@/lib/api'
+import { emitDataRefresh } from '@/hooks/useDataRefresh'
 
 export function AppLayout() {
   const { searchOpen, sidebarCollapsed, setCurrentUser } = useAppStore()
@@ -51,12 +52,12 @@ export function AppLayout() {
   }, [])
 
   const handleCastingSaved = useCallback(() => {
-    window.dispatchEvent(new CustomEvent('toabh-data-refresh'))
+    emitDataRefresh('casting-saved')
   }, [])
 
   return (
     <OverlayProvider>
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-transparent">
         <Sidebar />
         <BottomNav />
         <Header />
@@ -69,7 +70,9 @@ export function AppLayout() {
           )}
         >
           <div className="p-4 lg:px-6 lg:pt-6 lg:pb-10 lg:pr-32 xl:pr-36">
-            <Outlet />
+            <div className="mx-auto w-full max-w-[1600px]">
+              <Outlet />
+            </div>
           </div>
         </main>
 

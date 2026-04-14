@@ -1,3 +1,5 @@
+import { emitDataRefresh } from '@/hooks/useDataRefresh'
+
 const BASE = import.meta.env.VITE_API_URL || ''
 const AUTH_DISABLED = false
 
@@ -103,8 +105,15 @@ async function request(method: string, path: string, body?: object) {
   }
 
   const text = await r.text()
-  if (!text) return null
-  try { return JSON.parse(text) } catch { return text }
+  const parsed = !text ? null : (() => {
+    try { return JSON.parse(text) } catch { return text }
+  })()
+
+  if (method !== 'GET') {
+    emitDataRefresh(path)
+  }
+
+  return parsed
 }
 
 async function upload(path: string, formData: FormData) {
@@ -124,8 +133,9 @@ async function upload(path: string, formData: FormData) {
   }
 
   const text = await r.text()
-  if (!text) return null
-  return JSON.parse(text)
+  const parsed = !text ? null : JSON.parse(text)
+  emitDataRefresh(path)
+  return parsed
 }
 
 export const api = {
@@ -195,6 +205,7 @@ export async function login(identifier: string, password: string, remember = fal
 
   const data = await r.json()
   persistSession({ token: data.token, user: data.user }, remember)
+  emitDataRefresh('/auth/login')
   return data
 }
 
@@ -209,6 +220,7 @@ export async function logout() {
     })
   } catch { /* ignore */ }
   clearSession()
+  emitDataRefresh('/auth/logout')
 }
 
 export async function forgotPassword(email: string) {

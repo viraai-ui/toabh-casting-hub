@@ -32,6 +32,7 @@ import { api } from '@/lib/api'
 import { cn, formatDate, formatCurrency, getInitials } from '@/lib/utils'
 import { useAppStore } from '@/hooks/useStore'
 import { useOverlay } from '@/hooks/useOverlayManager'
+import { useDataRefresh } from '@/hooks/useDataRefresh'
 import { toast } from 'sonner'
 import { CastingModal } from '@/components/CastingModal'
 import { CastingDetailModal } from '@/components/CastingDetailModal'
@@ -207,9 +208,14 @@ export function Castings() {
   }, [])
 
   useEffect(() => {
-    fetchCastings()
-    fetchPipeline()
+    void fetchCastings()
+    void fetchPipeline()
   }, [fetchCastings, fetchPipeline])
+
+  useDataRefresh(() => {
+    void fetchCastings()
+    void fetchPipeline()
+  })
 
   // Register CastingModal with overlay manager
   useEffect(() => {

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Plus, Edit, ArrowRight, UserPlus, MessageSquare, Trash2, Loader2, Filter } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, formatDate, formatRelativeTime, getInitials } from '@/lib/utils'
+import { useDataRefresh } from '@/hooks/useDataRefresh'
 import type { Activity, TeamMember } from '@/types'
 
 const activityIcons: { [key: string]: React.ElementType } = {
@@ -89,9 +90,35 @@ export function ActivityLog() {
     void fetchActivities(true)
   }, [fetchActivities, filters])
 
+  useDataRefresh(() => {
+    void fetchTeam()
+    void fetchActivities(true)
+  })
+
   const handleLoadMore = () => {
-    setPage((p) => p + 1)
-    fetchActivities()
+    const nextPage = page + 1
+    setPage(nextPage)
+    void (async () => {
+      try {
+        const params = new URLSearchParams()
+        if (filters.date_from) params.append('date_from', filters.date_from)
+        if (filters.date_to) params.append('date_to', filters.date_to)
+        if (filters.user_id) params.append('user_id', filters.user_id)
+        if (filters.type) params.append('type', filters.type)
+        params.append('page', String(nextPage))
+        params.append('limit', '20')
+        const data = await api.get(`/activities?${params.toString()}`)
+        const safeData = Array.isArray(data)
+          ? data
+          : data && typeof data === 'object' && Array.isArray((data as { activities?: Activity[] }).activities)
+            ? (data as { activities: Activity[] }).activities
+            : []
+        setActivities((prev) => [...prev, ...safeData])
+        setHasMore(safeData.length === 20)
+      } catch (err) {
+        console.error('Failed to load more activities:', err)
+      }
+    })()
   }
 
   return (

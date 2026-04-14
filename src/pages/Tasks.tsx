@@ -4,6 +4,7 @@ import { Calendar, Loader2, MessageSquare, Plus, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, formatDate, formatRelativeTime, getInitials } from '@/lib/utils'
 import { useAppStore } from '@/hooks/useStore'
+import { useDataRefresh } from '@/hooks/useDataRefresh'
 import type { Comment, Task, TaskStage, TeamMember } from '@/types'
 
 function buildMentionHandle(name: string) {
@@ -377,6 +378,10 @@ export function Tasks() {
   }, [filter, currentUser?.team_member_id])
 
   useEffect(() => { void fetchData() }, [fetchData])
+
+  useDataRefresh(() => {
+    void fetchData()
+  })
 
   if (loading) {
     return <div className="flex items-center justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-amber-500" /></div>

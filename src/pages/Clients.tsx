@@ -21,6 +21,7 @@ import {
 import { api } from '@/lib/api'
 import { cn, formatDate, getInitials } from '@/lib/utils'
 import { useOverlay } from '@/hooks/useOverlayManager'
+import { useDataRefresh } from '@/hooks/useDataRefresh'
 import type { Casting, Client, ClientTag } from '@/types'
 import { ClientTagPill } from '@/components/clients/ClientTagPill'
 import { ClientDetailModal } from '@/components/clients/ClientDetailModal'
@@ -71,8 +72,12 @@ export function Clients() {
   }
 
   useEffect(() => {
-    fetchPageData()
+    void fetchPageData()
   }, [])
+
+  useDataRefresh(() => {
+    void fetchPageData()
+  })
 
   useEffect(() => {
     const savedView = window.localStorage.getItem(CLIENT_VIEW_STORAGE_KEY)

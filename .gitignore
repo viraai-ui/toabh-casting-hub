@@ -40,3 +40,6 @@ coverage
 .vercel
 .vercel_python_packages
 migration_backups/
+.venv/
+__pycache__/
+*.pyc

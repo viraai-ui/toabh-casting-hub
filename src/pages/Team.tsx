@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash2, Loader2, Mail, Phone, X, Camera, User, MailQuesti
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import { useOverlay } from '@/hooks/useOverlayManager'
+import { useDataRefresh } from '@/hooks/useDataRefresh'
 import type { TeamMember, Casting } from '@/types'
 
 interface TeamMemberWithInviteStatus extends TeamMember {
@@ -55,9 +56,14 @@ export function Team() {
   }, [])
 
   useEffect(() => {
-    fetchTeam()
-    fetchCastings()
+    void fetchTeam()
+    void fetchCastings()
   }, [fetchTeam, fetchCastings])
+
+  useDataRefresh(() => {
+    void fetchTeam()
+    void fetchCastings()
+  })
 
   // Register Add/Edit Team Member modal with overlay manager
   useEffect(() => {

@@ -5,6 +5,7 @@ import { cn, getInitials } from '@/lib/utils'
 import { CastingModal } from '@/components/CastingModal'
 import { CastingDetailModal } from '@/components/CastingDetailModal'
 import { useOverlay } from '@/hooks/useOverlayManager'
+import { useDataRefresh } from '@/hooks/useDataRefresh'
 import type { Casting, PipelineStage } from '@/types'
 import {
   startOfMonth,
@@ -52,8 +53,12 @@ export function Calendar() {
   }
 
   useEffect(() => {
-    fetchData()
+    void fetchData()
   }, [])
+
+  useDataRefresh(() => {
+    void fetchData()
+  })
 
   useEffect(() => {
     if (detailModalOpen) {
