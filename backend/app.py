@@ -3581,6 +3581,12 @@ def import_talents_dry_run():
                 'existing_id': existing['id'],
                 'existing_name': existing['name'],
                 'matched_on': matched_on,
+                'raw_data': {
+                    'name': name,
+                    'instagram_handle': instagram,
+                    'phone': phone,
+                    'email': email,
+                },
             })
         else:
             importable.append({
