@@ -295,15 +295,18 @@ function TaskDetail({
                 <button onClick={postComment} disabled={posting || !draft.trim()} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white">{posting ? 'Posting...' : 'Post Comment'}</button>
               </div>
               <div className="mt-4 space-y-3">
-                {comments.map((comment) => (
-                  <div key={comment.id} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-medium text-slate-800">{comment.user_name}</p>
-                      <span className="text-xs text-slate-400">{formatRelativeTime(comment.created_at)}</span>
+                {comments.map((comment) => {
+                  const commentUserName = comment.user_name?.trim() || 'System'
+                  return (
+                    <div key={comment.id} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-medium text-slate-800">{commentUserName}</p>
+                        <span className="text-xs text-slate-400">{formatRelativeTime(comment.created_at)}</span>
+                      </div>
+                      <div className="mt-2 text-sm text-slate-600">{renderMentionText(comment.text || '', mentionLookup)}</div>
                     </div>
-                    <div className="mt-2 text-sm text-slate-600">{renderMentionText(comment.text || '', mentionLookup)}</div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           </div>
