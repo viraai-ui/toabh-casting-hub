@@ -163,6 +163,7 @@ export function ActivityLog() {
             {activities.map((activity) => {
               const Icon = activityIcons[activity.action] || MessageSquare
               const colorClass = activityColors[activity.action] || 'bg-slate-100 text-slate-600'
+              const activityUserName = activity.user_name?.trim() || 'System'
 
               return (
                 <motion.div
@@ -180,9 +181,9 @@ export function ActivityLog() {
                       <div className="flex items-center gap-3 mt-1.5 text-sm text-slate-500">
                         <span className="flex items-center gap-1">
                           <div className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-[10px] font-medium">
-                            {getInitials(activity.user_name)}
+                            {getInitials(activityUserName)}
                           </div>
-                          {activity.user_name}
+                          {activityUserName}
                         </span>
                         <span>•</span>
                         <span>{formatDate(activity.created_at)}</span>
