@@ -195,7 +195,7 @@ export function Reports() {
       </div>
 
       {/* Date Range Selector */}
-      <div className="card p-4">
+      <div className="card p-4 space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
           {[
             { id: 'week', label: 'This Week' },
@@ -235,6 +235,9 @@ export function Reports() {
             </div>
           )}
         </div>
+        <p className="text-sm text-slate-500">
+          {filteredCastings.length} {filteredCastings.length === 1 ? 'casting' : 'castings'} in this report range
+        </p>
       </div>
 
       {filteredCastings.length === 0 ? (
