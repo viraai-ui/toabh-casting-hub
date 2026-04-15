@@ -159,6 +159,7 @@ export function Reports() {
       .map(([, value]) => ({ month: value.label, revenue: value.revenue }))
   }
 
+  const statusData = getStatusData()
   const teamData = getTeamData()
   const revenueData = getRevenueData()
 
@@ -319,7 +320,7 @@ export function Reports() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={getStatusData()}
+                  data={statusData}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -327,7 +328,7 @@ export function Reports() {
                   paddingAngle={2}
                   dataKey="value"
                 >
-                  {getStatusData().map((_, index) => (
+                  {statusData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
