@@ -2513,11 +2513,10 @@ def dashboard():
     ''').fetchone()
     total_revenue = revenue_row['total'] if revenue_row else 0
 
-    # Total clients (unique client names)
+    # Total clients (actual client records)
     clients_row = db.execute('''
-        SELECT COUNT(DISTINCT client_name) as total
-        FROM castings
-        WHERE client_name IS NOT NULL AND client_name != ''
+        SELECT COUNT(*) as total
+        FROM clients
     ''').fetchone()
     total_clients = clients_row['total'] if clients_row else 0
 
