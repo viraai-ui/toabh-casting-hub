@@ -590,7 +590,7 @@ def list_activities():
 
     query = '''
         SELECT a.id, a.casting_id, a.action, a.details as description,
-               COALESCE(tm.name, a.details) as user_name, a.timestamp as created_at
+               COALESCE(NULLIF(TRIM(tm.name), ''), 'System') as user_name, a.timestamp as created_at
         FROM activities a
         LEFT JOIN team_members tm ON a.team_member_id = tm.id
     '''
@@ -935,7 +935,7 @@ def task_activities(task_id):
     rows = db.execute(
         '''
         SELECT ta.id, ta.task_id, ta.action, ta.details as description,
-               COALESCE(tm.name, ta.details) as user_name, ta.timestamp as created_at
+               COALESCE(NULLIF(TRIM(tm.name), ''), 'System') as user_name, ta.timestamp as created_at
         FROM task_activities ta
         LEFT JOIN team_members tm ON ta.team_member_id = tm.id
         WHERE ta.task_id = ?
@@ -987,7 +987,7 @@ def list_notifications():
     db = get_db()
     rows = db.execute('''
         SELECT a.id, a.casting_id, a.action, a.details as description,
-               COALESCE(tm.name, a.details) as user_name, a.timestamp as created_at
+               COALESCE(NULLIF(TRIM(tm.name), ''), 'System') as user_name, a.timestamp as created_at
         FROM activities a
         LEFT JOIN team_members tm ON a.team_member_id = tm.id
         ORDER BY a.timestamp DESC
@@ -1983,7 +1983,7 @@ def _build_profile_payload(db, profile):
         activity_rows = db.execute(
             '''
             SELECT a.id, a.casting_id, a.action, a.details as description,
-                   COALESCE(tm.name, a.details) as user_name, a.timestamp as created_at
+                   COALESCE(NULLIF(TRIM(tm.name), ''), 'System') as user_name, a.timestamp as created_at
             FROM activities a
             LEFT JOIN team_members tm ON a.team_member_id = tm.id
             WHERE a.team_member_id = ? OR LOWER(COALESCE(tm.name, '')) = LOWER(?)
@@ -2473,7 +2473,7 @@ def dashboard():
     # Recent activity
     recent = db.execute('''
         SELECT a.id, a.casting_id, a.action, a.details as description,
-               COALESCE(tm.name, a.details) as user_name, a.timestamp as created_at
+               COALESCE(NULLIF(TRIM(tm.name), ''), 'System') as user_name, a.timestamp as created_at
         FROM activities a
         LEFT JOIN team_members tm ON a.team_member_id = tm.id
         ORDER BY a.timestamp DESC
