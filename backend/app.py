@@ -1749,7 +1749,7 @@ def single_team_member(member_id):
         ORDER BY c.created_at DESC
     ''', (member_id,)).fetchall()
 
-    member = dict(row)
+    member = _serialize_team_member(row)
     member['castings'] = [dict(c) for c in castings]
     return jsonify(member)
 
