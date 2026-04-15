@@ -466,6 +466,12 @@ export function Castings() {
     const assignedJobs = normalized.filter((casting) => parseAssignedNames((casting as { assigned_names?: string | null }).assigned_names).length > 0).length
     const readyForTalent = normalized.filter((casting) => Boolean(casting.project_name) && Boolean(casting.client_name)).length
     const incompleteIntake = normalized.filter((casting) => !casting.project_name || !casting.client_name).length
+    const phaseDistribution = {
+      intake: normalized.filter((casting) => ['NEW'].includes(casting.normalizedStatus)).length,
+      submission: normalized.filter((casting) => ['IN_PROGRESS', 'ACTIVE'].includes(casting.normalizedStatus)).length,
+      decision: decisionQueue,
+      confirmed: normalized.filter((casting) => ['COMPLETED', 'CONFIRMED', 'BOOKED', 'WON'].includes(casting.normalizedStatus)).length,
+    }
 
     return {
       activeQueue,
@@ -473,6 +479,7 @@ export function Castings() {
       assignedJobs,
       readyForTalent,
       incompleteIntake,
+      phaseDistribution,
       total: normalized.length,
     }
   }, [filteredCastings])
@@ -631,6 +638,19 @@ export function Castings() {
 
       <section className={cn('rounded-3xl border px-5 py-4 shadow-sm', workflowHealth.tone)}>
         <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap gap-2">
+            {[
+              { label: 'Intake', value: workflowSummary.phaseDistribution.intake, tone: 'bg-blue-50 text-blue-700 border-blue-200' },
+              { label: 'Submission', value: workflowSummary.phaseDistribution.submission, tone: 'bg-amber-50 text-amber-700 border-amber-200' },
+              { label: 'Decision', value: workflowSummary.phaseDistribution.decision, tone: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
+              { label: 'Confirmed', value: workflowSummary.phaseDistribution.confirmed, tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+            ].map((phase) => (
+              <div key={phase.label} className={cn('inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold', phase.tone)}>
+                <span>{phase.label}</span>
+                <span className="rounded-full bg-white/80 px-1.5 py-0.5 text-[11px]">{phase.value}</span>
+              </div>
+            ))}
+          </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-75">Workflow health</p>
