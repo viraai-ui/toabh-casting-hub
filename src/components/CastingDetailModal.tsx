@@ -247,6 +247,15 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
     }
   }
 
+  const readinessChecklist = [
+    { label: 'Project name captured', done: Boolean(casting.project_name?.trim()) },
+    { label: 'Client attached', done: Boolean(casting.client_name?.trim()) },
+    { label: 'Internal owner assigned', done: assignedTo.length > 0 },
+    { label: 'Brief notes added', done: Boolean(casting.requirements?.trim()) },
+    { label: 'Shoot timing locked', done: Boolean(casting.shoot_date_start) },
+    { label: 'Talent linked', done: talents.length > 0 },
+  ]
+
   const pb = (text: string | null | undefined) => text ?? null
   const closeDisabled = talentDetailOpen
 
@@ -359,6 +368,33 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                           <p className="text-[12px] font-semibold text-slate-700">Outcome path</p>
                           <p className="mt-1 text-[11px] leading-5 text-slate-500">Use this record as the future base for submissions, holds, and confirmed booking flow.</p>
                         </div>
+                      </div>
+                    </div>
+                    <div className="border-t border-slate-100 px-4 py-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[12px] font-semibold text-slate-700">Submission checklist</p>
+                          <p className="mt-1 text-[11px] leading-5 text-slate-500">Makes missing workflow inputs explicit before the job moves deeper into ops.</p>
+                        </div>
+                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
+                          {readinessChecklist.filter((item) => item.done).length}/{readinessChecklist.length} ready
+                        </span>
+                      </div>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                        {readinessChecklist.map((item) => (
+                          <div
+                            key={item.label}
+                            className={`rounded-2xl border px-3 py-2.5 ${item.done ? 'border-emerald-200 bg-emerald-50/70' : 'border-slate-200 bg-slate-50'}`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <CheckCircle2 className={`mt-0.5 h-4 w-4 shrink-0 ${item.done ? 'text-emerald-600' : 'text-slate-300'}`} />
+                              <div>
+                                <p className="text-[12px] font-semibold text-slate-700">{item.label}</p>
+                                <p className="mt-0.5 text-[11px] text-slate-500">{item.done ? 'Ready' : 'Missing'}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </SectionCard>
