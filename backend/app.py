@@ -1481,6 +1481,10 @@ def assign_casting(casting_id):
     data = request.json
     team_member_ids = data.get('team_member_ids', [])
 
+    casting = db.execute('SELECT id FROM castings WHERE id = ?', (casting_id,)).fetchone()
+    if not casting:
+        return jsonify({'error': 'Casting not found'}), 404
+
     db.execute('DELETE FROM casting_assignments WHERE casting_id = ?', (casting_id,))
 
     names = []
@@ -1522,6 +1526,10 @@ def get_activities(casting_id):
 def add_note(casting_id):
     db = get_db()
     data = request.json
+
+    casting = db.execute('SELECT id FROM castings WHERE id = ?', (casting_id,)).fetchone()
+    if not casting:
+        return jsonify({'error': 'Casting not found'}), 404
 
     db.execute('''
         INSERT INTO activities (casting_id, team_member_id, action, details)
