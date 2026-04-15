@@ -1987,6 +1987,10 @@ def _build_profile_payload(db, profile):
     team_member_id = profile.get('team_member_id')
     active_statuses = ('NEW', 'New Lead', 'REVIEWING', 'PROPOSED', 'NEGOTIATING', 'CONFIRMED', 'IN_PROGRESS', 'Talents Shortlisted', 'SHORTLISTED', 'INTERVIEW', 'OFFERED', 'Options Sent')
     completed_statuses = ('WON', 'PAID', 'COMPLETED', 'LOST', 'DECLINED', 'INVOICED')
+    is_admin_profile = str(profile.get('role') or '').lower() == 'admin'
+
+    assigned_rows = []
+    activity_rows = []
 
     if team_member_id:
         assigned_rows = db.execute(
@@ -2015,9 +2019,30 @@ def _build_profile_payload(db, profile):
             ''',
             (team_member_id, profile.get('name') or ''),
         ).fetchall()
-    else:
-        assigned_rows = []
-        activity_rows = []
+
+    if is_admin_profile and not assigned_rows:
+        assigned_rows = db.execute(
+            '''
+            SELECT c.id, COALESCE(c.project_name, '') as project_name, COALESCE(c.client_name, '') as client_name,
+                   COALESCE(c.status, '') as status, c.shoot_date_start
+            FROM castings c
+            ORDER BY COALESCE(c.updated_at, c.created_at) DESC, c.id DESC
+            LIMIT 8
+            '''
+        ).fetchall()
+
+        activity_rows = db.execute(
+            '''
+            SELECT a.id, a.casting_id, a.action, a.details as description,
+                   COALESCE(NULLIF(TRIM(tm.name), ''), 'System') as user_name,
+                   COALESCE(a.timestamp, c.updated_at, c.created_at) as created_at
+            FROM activities a
+            LEFT JOIN team_members tm ON a.team_member_id = tm.id
+            LEFT JOIN castings c ON a.casting_id = c.id
+            ORDER BY COALESCE(a.timestamp, c.updated_at, c.created_at) DESC, a.id DESC
+            LIMIT 8
+            '''
+        ).fetchall()
 
     from datetime import date as _date
     total_jobs = len(assigned_rows)
