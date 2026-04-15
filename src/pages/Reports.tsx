@@ -186,7 +186,8 @@ export function Reports() {
         </div>
         <button
           onClick={exportCSV}
-          className="btn-primary flex items-center gap-2"
+          disabled={filteredCastings.length === 0}
+          className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Download className="w-4 h-4" />
           Export CSV
@@ -236,7 +237,15 @@ export function Reports() {
         </div>
       </div>
 
-      {/* Charts */}
+      {filteredCastings.length === 0 ? (
+        <div className="card p-8 text-center">
+          <h3 className="text-lg font-semibold text-slate-900">No castings in this date range</h3>
+          <p className="mt-2 text-sm text-slate-500">
+            Try a broader range or adjust the custom dates to see report data.
+          </p>
+        </div>
+      ) : (
+      /* Charts */
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Casting Performance */}
         <motion.div
@@ -372,6 +381,7 @@ export function Reports() {
           </div>
         </motion.div>
       </div>
+      )}
     </div>
   )
 }
