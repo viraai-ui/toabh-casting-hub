@@ -35,6 +35,7 @@ export function Reports() {
   const [customRange, setCustomRange] = useState({ from: '', to: '' })
 
   const isCustomRangeIncomplete = dateRange === 'custom' && (!customRange.from || !customRange.to)
+  const isCustomRangeInvalid = dateRange === 'custom' && !!customRange.from && !!customRange.to && customRange.from > customRange.to
 
   const fetchCastings = async () => {
     try {
@@ -72,6 +73,7 @@ export function Reports() {
     }
     if (dateRange === 'custom') {
       if (!customRange.from || !customRange.to) return false
+      if (customRange.from > customRange.to) return false
       const from = startOfDay(parseISO(customRange.from))
       const to = endOfDay(parseISO(customRange.to))
       return isWithinInterval(shootDate, { start: from, end: to })
@@ -196,7 +198,7 @@ export function Reports() {
         </div>
         <button
           onClick={exportCSV}
-          disabled={filteredCastings.length === 0 || isCustomRangeIncomplete}
+          disabled={filteredCastings.length === 0 || isCustomRangeIncomplete || isCustomRangeInvalid}
           className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Download className="w-4 h-4" />
@@ -249,6 +251,10 @@ export function Reports() {
           <p className="text-sm text-amber-600">
             Select both custom dates to generate a report.
           </p>
+        ) : isCustomRangeInvalid ? (
+          <p className="text-sm text-amber-600">
+            The start date must be on or before the end date.
+          </p>
         ) : (
           <p className="text-sm text-slate-500">
             {filteredCastings.length} {filteredCastings.length === 1 ? 'casting' : 'castings'} in this report range
@@ -256,7 +262,7 @@ export function Reports() {
         )}
       </div>
 
-      {filteredCastings.length === 0 ? (
+      {filteredCastings.length === 0 && !isCustomRangeInvalid ? (
         <div className="card p-8 text-center">
           <h3 className="text-lg font-semibold text-slate-900">No castings in this date range</h3>
           <p className="mt-2 text-sm text-slate-500">
