@@ -2629,6 +2629,12 @@ def dashboard():
         'trend': months
     })
 
+@app.route('/api/reports', methods=['GET'])
+@app.route('/api/reports/summary', methods=['GET'])
+@require_auth
+def reports_summary():
+    return dashboard()
+
 # ==================== AUTH MODULE ====================
 from backend.auth_module import (
     hash_password, verify_password, create_token, verify_token,
