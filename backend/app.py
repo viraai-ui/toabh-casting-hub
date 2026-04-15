@@ -2468,7 +2468,7 @@ def dashboard():
 
     # Team workload
     workload = db.execute('''
-        SELECT tm.id, tm.name, COUNT(ca.casting_id) as count
+        SELECT tm.id, tm.name, COUNT(c.id) as count
         FROM team_members tm
         LEFT JOIN casting_assignments ca ON tm.id = ca.team_member_id
         LEFT JOIN castings c ON ca.casting_id = c.id AND c.status NOT IN ('WON', 'LOST', 'INVOICED', 'PAID')
