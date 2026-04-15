@@ -476,6 +476,12 @@ export function Castings() {
     )
     const readyForTalent = normalized.filter((casting) => Boolean(casting.project_name) && Boolean(casting.client_name)).length
     const incompleteIntake = normalized.filter((casting) => !casting.project_name || !casting.client_name).length
+    const staleQueue = normalized.filter((casting) => {
+      const sourceDate = casting.updated_at || casting.created_at
+      if (!sourceDate) return false
+      const ageMs = Date.now() - new Date(sourceDate).getTime()
+      return ageMs > 1000 * 60 * 60 * 24 * 3
+    }).length
     const phaseDistribution = {
       intake: normalized.filter((casting) => ['NEW'].includes(casting.normalizedStatus)).length,
       submission: normalized.filter((casting) => ['IN_PROGRESS', 'ACTIVE'].includes(casting.normalizedStatus)).length,
@@ -489,6 +495,7 @@ export function Castings() {
       assignedJobs,
       readyForTalent,
       incompleteIntake,
+      staleQueue,
       readinessBreakdown,
       ownershipCoverage: readyForTalent > 0 ? Math.round((assignedJobs / readyForTalent) * 100) : 0,
       phaseDistribution,
@@ -518,6 +525,14 @@ export function Castings() {
         label: `${workflowSummary.decisionQueue} job${workflowSummary.decisionQueue === 1 ? '' : 's'} in decision stage`,
         note: 'This queue needs fast follow-through on shortlist, review, or offer movement.',
         tone: 'border-cyan-200 bg-cyan-50 text-cyan-700',
+      }
+    }
+
+    if (workflowSummary.staleQueue > 0) {
+      return {
+        label: `${workflowSummary.staleQueue} job${workflowSummary.staleQueue === 1 ? '' : 's'} need a freshness check`,
+        note: 'Some records look stale and may need a status refresh or owner nudge.',
+        tone: 'border-violet-200 bg-violet-50 text-violet-700',
       }
     }
 
@@ -553,6 +568,14 @@ export function Castings() {
         label: 'Assign internal ownership',
         note: `${unassignedJobs} ready job${unassignedJobs === 1 ? '' : 's'} can move faster with a named owner.`,
         tone: 'border-blue-200 bg-blue-50 text-blue-700',
+      })
+    }
+
+    if (workflowSummary.staleQueue > 0) {
+      actions.push({
+        label: 'Refresh stale jobs',
+        note: `${workflowSummary.staleQueue} job${workflowSummary.staleQueue === 1 ? '' : 's'} have not been touched in more than 3 days.`,
+        tone: 'border-violet-200 bg-violet-50 text-violet-700',
       })
     }
 
@@ -691,7 +714,7 @@ export function Castings() {
 
       <section className={cn('rounded-3xl border px-5 py-4 shadow-sm', workflowHealth.tone)}>
         <div className="flex flex-col gap-4">
-          <div className="grid gap-2 lg:grid-cols-3">
+          <div className="grid gap-2 lg:grid-cols-4">
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-3 shadow-sm">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700/80">Readiness</p>
               <p className="mt-1 text-sm font-semibold text-slate-950">{workflowSummary.readinessBreakdown.submissionReady} ready now</p>
@@ -706,6 +729,11 @@ export function Castings() {
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-600/80">Intake incomplete</p>
               <p className="mt-1 text-sm font-semibold text-slate-950">{workflowSummary.readinessBreakdown.intakeIncomplete} still blocked at intake</p>
               <p className="mt-1 text-xs leading-5 text-slate-600">These jobs still need basic setup before the workflow can really move.</p>
+            </div>
+            <div className="rounded-2xl border border-violet-200 bg-violet-50 px-3 py-3 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-violet-700/80">Stale queue</p>
+              <p className="mt-1 text-sm font-semibold text-slate-950">{workflowSummary.staleQueue} need freshness check</p>
+              <p className="mt-1 text-xs leading-5 text-slate-600">Jobs untouched for more than 3 days and likely need follow-up.</p>
             </div>
           </div>
 
