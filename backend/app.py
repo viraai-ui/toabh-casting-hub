@@ -2611,24 +2611,22 @@ def dashboard():
             year -= 1
         return datetime(year, month, 1)
 
+    created_at_rows = db.execute('SELECT created_at FROM castings').fetchall()
+    month_counts = {}
+    for row in created_at_rows:
+        created_at = (row['created_at'] if row else None) or ''
+        month_key = str(created_at)[:7]
+        if len(month_key) == 7:
+            month_counts[month_key] = month_counts.get(month_key, 0) + 1
+
     for i in range(5, -1, -1):
         month_start = _shift_month_start(current_month_start, i)
-        if month_start.month == 12:
-            month_end = datetime(month_start.year + 1, 1, 1)
-        else:
-            month_end = datetime(month_start.year, month_start.month + 1, 1)
-
         month_name = month_start.strftime('%b')
-
         month_key = month_start.strftime('%Y-%m')
-        count_row = db.execute('''
-            SELECT COUNT(*) as cnt FROM castings
-            WHERE SUBSTR(COALESCE(CAST(created_at AS TEXT), ''), 1, 7) = ?
-        ''', (month_key,)).fetchone()
 
         months.append({
             'month': month_name,
-            'count': count_row['cnt'] if count_row else 0
+            'count': month_counts.get(month_key, 0)
         })
 
     return jsonify({
