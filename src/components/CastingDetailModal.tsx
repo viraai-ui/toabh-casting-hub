@@ -247,6 +247,41 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
     }
   }
 
+  const freshnessSignal = useMemo(() => {
+    const sourceDate = casting.updated_at || casting.created_at
+    if (!sourceDate) {
+      return {
+        label: 'No activity date',
+        note: 'This record has no visible freshness signal yet.',
+        tone: 'bg-white text-slate-700 border-slate-200',
+      }
+    }
+
+    const ageHours = (Date.now() - new Date(sourceDate).getTime()) / (1000 * 60 * 60)
+
+    if (ageHours <= 24) {
+      return {
+        label: 'Touched today',
+        note: 'Recently worked and still fresh.',
+        tone: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      }
+    }
+
+    if (ageHours <= 72) {
+      return {
+        label: 'Touched this week',
+        note: 'Still active, but should keep moving.',
+        tone: 'bg-amber-50 text-amber-700 border-amber-200',
+      }
+    }
+
+    return {
+      label: 'Stale',
+      note: 'Untouched for more than 3 days and likely needs follow-up.',
+      tone: 'bg-violet-50 text-violet-700 border-violet-200',
+    }
+  }, [casting.created_at, casting.updated_at])
+
   const readinessChecklist = [
     { label: 'Project name captured', done: Boolean(casting.project_name?.trim()) },
     { label: 'Client attached', done: Boolean(casting.client_name?.trim()) },
@@ -404,7 +439,7 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                         </div>
                       </div>
                     </div>
-                    <div className="grid gap-3 px-4 pb-4 pt-1 sm:grid-cols-3">
+                    <div className="grid gap-3 px-4 pb-4 pt-1 sm:grid-cols-2 xl:grid-cols-4">
                       <WorkflowStat
                         label="Current phase"
                         value={workflowStage.phase}
@@ -422,6 +457,12 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                         value={casting.status || 'NEW'}
                         note={timelineNote}
                         tone="bg-white text-slate-700 border-slate-200"
+                      />
+                      <WorkflowStat
+                        label="Freshness"
+                        value={freshnessSignal.label}
+                        note={freshnessSignal.note}
+                        tone={freshnessSignal.tone}
                       />
                     </div>
                     <div className="border-t border-slate-100 px-4 py-4">
