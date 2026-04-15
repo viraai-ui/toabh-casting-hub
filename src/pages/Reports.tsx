@@ -240,6 +240,7 @@ export function Reports() {
                 <input
                   type="date"
                   value={customRange.from}
+                  max={customRange.to || undefined}
                   onChange={(e) => setCustomRange({ ...customRange, from: e.target.value })}
                   className="px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-900"
                 />
@@ -249,6 +250,7 @@ export function Reports() {
                 <input
                   type="date"
                   value={customRange.to}
+                  min={customRange.from || undefined}
                   onChange={(e) => setCustomRange({ ...customRange, to: e.target.value })}
                   className="px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-900"
                 />
