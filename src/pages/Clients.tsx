@@ -228,6 +228,31 @@ export function Clients() {
 
   return (
     <div className="space-y-4">
+      <section className="card overflow-hidden p-5 sm:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700">
+              Clients
+            </div>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]">
+              The relationship layer behind every job and booking.
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              Phase 1 keeps this page cleaner and more operational, with faster scanning for contacts and active work.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 shadow-sm">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Tagged clients</div>
+              <div className="mt-1 font-medium text-slate-800">{taggedClientsCount}</div>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 shadow-sm">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Tag assignments</div>
+              <div className="mt-1 font-medium text-slate-800">{totalClientTagAssignments}</div>
+            </div>
+          </div>
+        </div>
+      </section>
       <section className="rounded-[30px] border border-slate-200 bg-gradient-to-br from-white via-amber-50/70 to-orange-50 px-5 py-5 shadow-sm sm:px-6">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-2xl">

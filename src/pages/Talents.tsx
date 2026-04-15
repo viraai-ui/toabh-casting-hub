@@ -104,6 +104,41 @@ export function Talents() {
 
   return (
     <div className="space-y-4">
+      <section className="card overflow-hidden p-5 sm:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700">
+              Talents
+            </div>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]">
+              The visual roster, ready for fast search and action.
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              Phase 1 keeps this list efficient while setting up the stronger premium talent experience to come.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => setImportOpen(true)}
+              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+            >
+              <Upload className="h-4 w-4" />
+              Import CSV
+            </button>
+            <button
+              onClick={() => {
+                setSelectedTalent(null)
+                openDetail(null)
+              }}
+              className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-[0_16px_30px_rgba(15,23,42,0.18)] transition hover:bg-slate-800"
+            >
+              <Plus className="h-4 w-4" />
+              Add talent
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
@@ -112,30 +147,12 @@ export function Talents() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name, phone, email, or Instagram..."
+            placeholder="Search talent by name, phone, email, or Instagram..."
             className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 text-sm"
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setImportOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-          >
-            <Upload className="w-4 h-4" />
-            Import CSV
-          </button>
-          <button
-            onClick={() => {
-              setSelectedTalent(null)
-              openDetail(null)
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white text-sm font-medium rounded-xl hover:bg-amber-600 transition-colors shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            Add Talent
-          </button>
-        </div>
+        <div className="hidden sm:block h-10 w-px bg-slate-200" aria-hidden="true" />
       </div>
 
       {/* Results count */}
@@ -155,7 +172,7 @@ export function Talents() {
         {filteredTalents.length === 0 ? (
           <div className="py-16 text-center">
             <p className="text-5xl mb-3">🎭</p>
-            <p className="text-sm font-medium text-slate-700">No talents yet</p>
+            <p className="text-sm font-medium text-slate-700">No talent yet</p>
             <p className="text-xs text-slate-500 mt-1">
               {searchQuery ? 'No results match your search.' : 'Add your first talent or import a CSV to get started.'}
             </p>

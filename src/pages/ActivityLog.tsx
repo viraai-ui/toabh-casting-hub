@@ -123,6 +123,26 @@ export function ActivityLog() {
 
   return (
     <div className="space-y-4">
+      <section className="card overflow-hidden p-5 sm:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700">
+              Inbox
+            </div>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]">
+              Recent movement, decisions, and team activity.
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              Phase 1 reframes this page as the workspace inbox, a cleaner feed of what changed and who touched it.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 shadow-sm">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Feed size</div>
+            <div className="mt-1 font-medium text-slate-800">{activities.length} loaded item{activities.length === 1 ? '' : 's'}</div>
+          </div>
+        </div>
+      </section>
+
       {/* Filters */}
       <div className="card p-4">
         <div className="flex items-center gap-3 flex-wrap">
@@ -146,7 +166,7 @@ export function ActivityLog() {
             onChange={(e) => setFilters({ ...filters, user_id: e.target.value || undefined })}
             className="px-3 py-2 border border-slate-200 rounded-xl bg-white/50 text-sm"
           >
-            <option value="">All Users</option>
+            <option value="">All teammates</option>
             {team.map((m) => (
               <option key={m.id} value={m.id}>{m.name}</option>
             ))}
@@ -156,7 +176,7 @@ export function ActivityLog() {
             onChange={(e) => setFilters({ ...filters, type: e.target.value || undefined })}
             className="px-3 py-2 border border-slate-200 rounded-xl bg-white/50 text-sm"
           >
-            <option value="">All Types</option>
+            <option value="">All activity types</option>
             <option value="CREATED">Created</option>
             <option value="UPDATED">Updated</option>
             <option value="STATUS_CHANGED">Status Changed</option>
@@ -182,7 +202,7 @@ export function ActivityLog() {
         </div>
       ) : activities.length === 0 ? (
         <div className="card p-12 text-center">
-          <p className="text-slate-500">No activities found</p>
+          <p className="text-slate-500">No inbox activity found</p>
         </div>
       ) : (
         <>
@@ -236,7 +256,7 @@ export function ActivityLog() {
                 onClick={handleLoadMore}
                 className="btn-secondary"
               >
-                Load More
+                Load more activity
               </button>
             </div>
           )}

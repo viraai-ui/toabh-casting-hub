@@ -389,13 +389,22 @@ export function Tasks() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Tasks</h1>
-          <p className="text-sm text-slate-500">Fast internal task management for the team.</p>
+      <section className="card overflow-hidden p-5 sm:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700">
+              Tasks
+            </div>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]">
+              Follow-ups, reminders, and internal actions in one queue.
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              Phase 1 keeps tasks lightweight and actionable, especially for daily execution on mobile.
+            </p>
+          </div>
+          <button onClick={() => { setSelectedTask(null); setComposerOpen(true) }} className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-[0_16px_30px_rgba(15,23,42,0.18)]"><Plus className="h-4 w-4" />New task</button>
         </div>
-        <button onClick={() => { setSelectedTask(null); setComposerOpen(true) }} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white"><Plus className="h-4 w-4" />New Task</button>
-      </div>
+      </section>
 
       <div className="flex flex-wrap gap-2">
         <button onClick={() => setFilter('my')} className={cn('rounded-full border px-3 py-1.5 text-sm', filter === 'my' ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-200 bg-white text-slate-600')}>My Tasks</button>
