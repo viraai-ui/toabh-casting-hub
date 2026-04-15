@@ -176,7 +176,12 @@ export function Reports() {
         : 'Export this report as CSV'
   const exportRangeLabel = dateRange === 'custom'
     ? `${customRange.from || 'from'}_to_${customRange.to || 'to'}`
-    : dateRange
+    : {
+        week: 'this-week',
+        month: 'this-month',
+        '30days': 'last-30-days',
+        quarter: 'this-quarter',
+      }[dateRange]
 
   const exportCSV = () => {
     const csv = Papa.unparse(filteredCastings.map((c) => ({
