@@ -2387,6 +2387,16 @@ def create_client():
     return jsonify(_serialize_client_row(db, client)), 201
 
 
+@app.route('/api/clients/<int:client_id>', methods=['GET'])
+@require_auth
+def get_client(client_id):
+    db = get_db()
+    client, error = _get_client_or_404(db, client_id)
+    if error:
+        return error
+    return jsonify(_serialize_client_row(db, client))
+
+
 @app.route('/api/clients/<int:client_id>', methods=['PUT'])
 @require_auth
 def update_client(client_id):
