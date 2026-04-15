@@ -36,7 +36,7 @@ export function Calendar() {
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [filters, setFilters] = useState<{ team?: string; status?: string; client?: string }>({})
-  const [scheduleFocus, setScheduleFocus] = useState<'all' | 'unscheduled' | 'unassigned' | 'upcoming'>('all')
+  const [scheduleFocus, setScheduleFocus] = useState<'all' | 'today' | 'unscheduled' | 'unassigned' | 'upcoming'>('all')
   const [filtersOpen, setFiltersOpen] = useState(false) // collapsed on mobile by default
 
   const fetchData = async () => {
@@ -104,6 +104,10 @@ export function Calendar() {
     return castings.filter((c) => {
       if (filters.status && c.status !== filters.status) return false
       if (filters.client && !c.client_name?.toLowerCase().includes(filters.client.toLowerCase())) return false
+
+      if (scheduleFocus === 'today') {
+        return Boolean(c.shoot_date_start) && isSameDay(parseISO(c.shoot_date_start), new Date())
+      }
 
       if (scheduleFocus === 'unscheduled') {
         return !c.shoot_date_start
@@ -324,6 +328,7 @@ export function Calendar() {
       <div className="flex flex-wrap items-center gap-2">
         {[
           { key: 'all', label: `All schedule (${scheduleSummary.total})` },
+          { key: 'today', label: `Today (${scheduleSummary.todayCount})` },
           { key: 'unscheduled', label: `Unscheduled (${scheduleSummary.unscheduled})` },
           { key: 'unassigned', label: `Unassigned (${scheduleSummary.unassigned})` },
           { key: 'upcoming', label: `Next 7 days (${scheduleSummary.nextSevenDays})` },
@@ -332,7 +337,7 @@ export function Calendar() {
           return (
             <button
               key={option.key}
-              onClick={() => setScheduleFocus(option.key as 'all' | 'unscheduled' | 'unassigned' | 'upcoming')}
+              onClick={() => setScheduleFocus(option.key as 'all' | 'today' | 'unscheduled' | 'unassigned' | 'upcoming')}
               className={`rounded-full border px-3 py-2 text-xs font-semibold transition-colors ${active ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
             >
               {option.label}
@@ -406,11 +411,13 @@ export function Calendar() {
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Focus queue</p>
               <p className="mt-1 text-sm font-semibold text-slate-900">
-                {scheduleFocus === 'unscheduled'
-                  ? 'Jobs waiting for dates'
-                  : scheduleFocus === 'unassigned'
-                    ? 'Scheduled jobs waiting for ownership'
-                    : 'Upcoming jobs needing close tracking'}
+                {scheduleFocus === 'today'
+                  ? 'Jobs scheduled for today'
+                  : scheduleFocus === 'unscheduled'
+                    ? 'Jobs waiting for dates'
+                    : scheduleFocus === 'unassigned'
+                      ? 'Scheduled jobs waiting for ownership'
+                      : 'Upcoming jobs needing close tracking'}
               </p>
             </div>
             <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
