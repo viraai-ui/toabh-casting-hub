@@ -1591,6 +1591,17 @@ def serve_casting_attachment(attachment_id):
 def _serialize_team_member(member_row, active_castings_count=None):
     member = dict(member_row)
     member.pop('password_hash', None)
+
+    created_at = member.get('created_at')
+    updated_at = member.get('updated_at')
+    last_login = member.get('last_login')
+    invite_sent_at = member.get('invite_sent_at')
+
+    member['created_at'] = created_at or updated_at or invite_sent_at or last_login or datetime.now().isoformat()
+    member['updated_at'] = updated_at or created_at or member['created_at']
+    member['last_login'] = last_login or None
+    member['invite_sent_at'] = invite_sent_at or None
+
     if active_castings_count is not None:
         member['active_castings_count'] = active_castings_count
     return member
@@ -1771,7 +1782,7 @@ def single_team_member(member_id):
     ''', (member_id,)).fetchall()
 
     member = _serialize_team_member(row)
-    member['castings'] = [dict(c) for c in castings]
+    member['castings'] = _apply_casting_assignments(db, castings)
     return jsonify(member)
 
 
