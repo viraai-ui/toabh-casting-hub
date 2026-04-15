@@ -305,6 +305,13 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
     }
   }, [assignedTo.length, casting.client_name, casting.project_name, casting.requirements, casting.status, talents.length])
 
+  const workflowPhaseSteps = [
+    { label: 'Intake', active: workflowStage.phase === 'Intake', done: ['Submission', 'Decision', 'Confirmed', 'Closed'].includes(workflowStage.phase) },
+    { label: 'Submission', active: workflowStage.phase === 'Submission', done: ['Decision', 'Confirmed', 'Closed'].includes(workflowStage.phase) },
+    { label: 'Decision', active: workflowStage.phase === 'Decision', done: ['Confirmed', 'Closed'].includes(workflowStage.phase) },
+    { label: 'Confirmed', active: workflowStage.phase === 'Confirmed', done: false },
+  ]
+
   const pb = (text: string | null | undefined) => text ?? null
   const closeDisabled = talentDetailOpen
 
@@ -376,6 +383,27 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                   {/* WORKFLOW */}
                   <SectionCard>
                     <SectionHeader icon={Briefcase} label="Workflow" />
+                    <div className="px-4 pb-4 pt-1">
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                          {workflowPhaseSteps.map((step, index) => (
+                            <React.Fragment key={step.label}>
+                              <div className="flex items-center gap-2">
+                                <span className={`flex h-7 min-w-7 items-center justify-center rounded-full border px-2 text-[11px] font-semibold ${step.active ? 'border-amber-300 bg-amber-100 text-amber-700' : step.done ? 'border-emerald-300 bg-emerald-100 text-emerald-700' : 'border-slate-200 bg-white text-slate-400'}`}>
+                                  {index + 1}
+                                </span>
+                                <span className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${step.active ? 'text-slate-900' : step.done ? 'text-emerald-700' : 'text-slate-400'}`}>
+                                  {step.label}
+                                </span>
+                              </div>
+                              {index < workflowPhaseSteps.length - 1 && (
+                                <div className={`hidden h-px flex-1 min-w-6 sm:block ${step.done ? 'bg-emerald-300' : 'bg-slate-200'}`} />
+                              )}
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                     <div className="grid gap-3 px-4 pb-4 pt-1 sm:grid-cols-3">
                       <WorkflowStat
                         label="Current phase"
