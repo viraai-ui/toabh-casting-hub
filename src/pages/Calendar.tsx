@@ -659,19 +659,28 @@ function WeekView({
                   key={`${day.toISOString()}-${hour}`}
                   className="min-w-0 min-h-[52px] border-l border-slate-50 p-1 sm:min-h-[60px]"
                 >
-                  {hourCasting && (
-                    <button
-                      onClick={() => onCastingClick(hourCasting)}
-                      className="w-full truncate rounded px-1 py-0.5 text-left text-[9px] font-medium sm:px-1.5 sm:text-[11px]"
-                      style={{
-                        backgroundColor: `${getCastingColor(hourCasting.status)}18`,
-                        color: getCastingColor(hourCasting.status),
-                      }}
-                      title={hourCasting.project_name || hourCasting.client_name}
-                    >
-                      {hourCasting.project_name || hourCasting.client_name}
-                    </button>
-                  )}
+                  {hourCasting && (() => {
+                    const hasOwner = Array.isArray(hourCasting.assigned_to)
+                      ? hourCasting.assigned_to.length > 0
+                      : Boolean(hourCasting.assigned_names?.trim())
+
+                    return (
+                      <button
+                        onClick={() => onCastingClick(hourCasting)}
+                        className="w-full rounded px-1 py-1 text-left text-[9px] font-medium sm:px-1.5 sm:text-[11px]"
+                        style={{
+                          backgroundColor: `${getCastingColor(hourCasting.status)}18`,
+                          color: getCastingColor(hourCasting.status),
+                        }}
+                        title={hourCasting.project_name || hourCasting.client_name}
+                      >
+                        <p className="truncate">{hourCasting.project_name || hourCasting.client_name}</p>
+                        <p className="mt-0.5 truncate text-[8px] sm:text-[10px]" style={{ opacity: 0.8 }}>
+                          {hasOwner ? 'Owner assigned' : 'Owner needed'}
+                        </p>
+                      </button>
+                    )
+                  })()}
                 </div>
               )
             })}
