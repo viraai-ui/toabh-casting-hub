@@ -164,6 +164,41 @@ function formatSourceLabel(casting: Casting) {
   return '-'
 }
 
+function getFreshnessSignal(casting: Casting) {
+  const sourceDate = casting.updated_at || casting.created_at
+  if (!sourceDate) {
+    return {
+      label: 'No activity date',
+      note: 'This record has no visible freshness signal yet.',
+      className: 'border-slate-200 bg-slate-100 text-slate-600',
+    }
+  }
+
+  const ageHours = (Date.now() - new Date(sourceDate).getTime()) / (1000 * 60 * 60)
+
+  if (ageHours <= 24) {
+    return {
+      label: 'Touched today',
+      note: 'This record is fresh and recently worked.',
+      className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    }
+  }
+
+  if (ageHours <= 72) {
+    return {
+      label: 'Touched this week',
+      note: 'Still reasonably fresh, but worth keeping in motion.',
+      className: 'border-amber-200 bg-amber-50 text-amber-700',
+    }
+  }
+
+  return {
+    label: 'Stale',
+    note: 'This record has been untouched for more than 3 days.',
+    className: 'border-violet-200 bg-violet-50 text-violet-700',
+  }
+}
+
 function getSubmissionReadiness(casting: Casting) {
   const hasProject = Boolean(casting.project_name?.trim())
   const hasClient = Boolean(casting.client_name?.trim())
@@ -1416,6 +1451,7 @@ function ListView({
               const phone = casting.client_contact?.trim()
               const normalizedPhone = phone ? phone.replace(/\D/g, '') : ''
               const readiness = getSubmissionReadiness(casting)
+              const freshness = getFreshnessSignal(casting)
               const nextStep = getNextStepSignal(casting)
               const missingItems = getMissingWorkflowItems(casting)
 
@@ -1480,6 +1516,9 @@ function ListView({
                               </span>
                               <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 font-medium', nextStep.className)}>
                                 Next: {nextStep.label}
+                              </span>
+                              <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 font-medium', freshness.className)}>
+                                {freshness.label}
                               </span>
                               {missingItems.length > 0 && (
                                 <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 font-medium text-slate-600">
@@ -1801,6 +1840,7 @@ function GridView({
         const isFlashing = flashingId === c.id
         const isUpdating = updatingId === c.id
         const readiness = getSubmissionReadiness(c)
+        const freshness = getFreshnessSignal(c)
         const nextStep = getNextStepSignal(c)
         const missingItems = getMissingWorkflowItems(c)
 
@@ -1862,6 +1902,9 @@ function GridView({
                 </span>
                 <span className={cn('inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]', nextStep.className)}>
                   Next: {nextStep.label}
+                </span>
+                <span className={cn('inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]', freshness.className)}>
+                  {freshness.label}
                 </span>
                 {missingItems.length > 0 && (
                   <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
