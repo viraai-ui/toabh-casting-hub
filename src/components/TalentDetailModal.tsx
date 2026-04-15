@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, User, Camera, Phone, Mail, Pencil, Trash2, Loader2, Check } from 'lucide-react'
 import { api } from '@/lib/api'
@@ -42,6 +42,51 @@ export function TalentDetailModal({ open, onClose, talent, onSave }: TalentDetai
   }, [open, talent])
 
   const isBusy = saving || deleting
+
+  const profileSignals = useMemo(() => {
+    const hasInstagram = Boolean(form.instagram_handle?.trim())
+    const hasPhone = Boolean(form.phone?.trim())
+    const hasEmail = Boolean(form.email?.trim())
+    const completeCount = [hasInstagram, hasPhone, hasEmail].filter(Boolean).length
+    const completeness = Math.round((completeCount / 3) * 100)
+
+    const profileHealth =
+      completeness === 100
+        ? {
+            label: 'Profile is ready',
+            note: 'This talent record has the core contact and profile fields needed for fast ops movement.',
+            tone: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+          }
+        : completeness >= 67
+          ? {
+              label: 'Profile needs light enrichment',
+              note: 'The talent is usable, but one missing field still weakens outreach speed.',
+              tone: 'border-amber-200 bg-amber-50 text-amber-700',
+            }
+          : {
+              label: 'Profile needs enrichment',
+              note: 'This record still needs more structure before it feels production-ready.',
+              tone: 'border-slate-200 bg-slate-50 text-slate-700',
+            }
+
+    const nextAction =
+      !hasInstagram
+        ? 'Add Instagram handle'
+        : !hasPhone
+          ? 'Add phone number'
+          : !hasEmail
+            ? 'Add email address'
+            : 'Profile is ops-ready'
+
+    return {
+      hasInstagram,
+      hasPhone,
+      hasEmail,
+      completeness,
+      profileHealth,
+      nextAction,
+    }
+  }, [form.email, form.instagram_handle, form.phone])
 
   const handleModalClose = () => {
     if (isBusy) return
@@ -146,6 +191,48 @@ export function TalentDetailModal({ open, onClose, talent, onSave }: TalentDetai
 
               {/* Body */}
               <div className="px-6 py-5 space-y-5">
+                {mode === 'view' && (
+                  <>
+                    <section className="grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Profile score</p>
+                        <p className="mt-2 text-2xl font-semibold text-slate-950">{profileSignals.completeness}%</p>
+                        <p className="mt-2 text-xs leading-5 text-slate-600">Based on Instagram, phone, and email coverage.</p>
+                      </div>
+                      <div className={`rounded-2xl border p-4 ${profileSignals.profileHealth.tone}`}>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] opacity-80">Profile health</p>
+                        <p className="mt-2 text-sm font-semibold text-slate-950">{profileSignals.profileHealth.label}</p>
+                        <p className="mt-2 text-xs leading-5 text-slate-600">{profileSignals.profileHealth.note}</p>
+                      </div>
+                      <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-blue-700">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] opacity-80">Next action</p>
+                        <p className="mt-2 text-sm font-semibold text-slate-950">{profileSignals.nextAction}</p>
+                        <p className="mt-2 text-xs leading-5 text-slate-600">Keep the roster fast to review and fast to contact.</p>
+                      </div>
+                    </section>
+
+                    <section className="grid gap-2 sm:grid-cols-3">
+                      {[
+                        { label: 'Instagram linked', done: profileSignals.hasInstagram },
+                        { label: 'Phone ready', done: profileSignals.hasPhone },
+                        { label: 'Email ready', done: profileSignals.hasEmail },
+                      ].map((item) => (
+                        <div
+                          key={item.label}
+                          className={`rounded-2xl border px-3 py-3 ${item.done ? 'border-emerald-200 bg-emerald-50/70' : 'border-slate-200 bg-slate-50'}`}
+                        >
+                          <div className="flex items-start gap-2">
+                            <Check className={`mt-0.5 h-4 w-4 shrink-0 ${item.done ? 'text-emerald-600' : 'text-slate-300'}`} />
+                            <div>
+                              <p className="text-[12px] font-semibold text-slate-700">{item.label}</p>
+                              <p className="mt-0.5 text-[11px] text-slate-500">{item.done ? 'Ready' : 'Missing'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </section>
+                  </>
+                )}
                 {/* Avatar area for edit/create */}
                 {mode !== 'view' && (
                   <div className="flex flex-col items-center mb-2">
