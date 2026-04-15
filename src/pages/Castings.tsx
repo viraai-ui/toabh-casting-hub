@@ -444,6 +444,45 @@ export function Castings() {
     }
   }, [workflowSummary])
 
+  const queueActionPriorities = useMemo(() => {
+    const actions: Array<{ label: string; note: string; tone: string }> = []
+
+    if (workflowSummary.incompleteIntake > 0) {
+      actions.push({
+        label: 'Clean intake first',
+        note: `${workflowSummary.incompleteIntake} job${workflowSummary.incompleteIntake === 1 ? '' : 's'} still need core project/client inputs.`,
+        tone: 'border-amber-200 bg-amber-50 text-amber-700',
+      })
+    }
+
+    if (workflowSummary.decisionQueue > 0) {
+      actions.push({
+        label: 'Push decision follow-up',
+        note: `${workflowSummary.decisionQueue} job${workflowSummary.decisionQueue === 1 ? '' : 's'} are sitting in shortlist, review, or offer stage.`,
+        tone: 'border-cyan-200 bg-cyan-50 text-cyan-700',
+      })
+    }
+
+    const unassignedJobs = Math.max(workflowSummary.readyForTalent - workflowSummary.assignedJobs, 0)
+    if (unassignedJobs > 0) {
+      actions.push({
+        label: 'Assign internal ownership',
+        note: `${unassignedJobs} ready job${unassignedJobs === 1 ? '' : 's'} can move faster with a named owner.`,
+        tone: 'border-blue-200 bg-blue-50 text-blue-700',
+      })
+    }
+
+    if (actions.length === 0) {
+      actions.push({
+        label: 'Queue is ready to move',
+        note: 'Current filtered jobs look clean enough for active ops execution.',
+        tone: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+      })
+    }
+
+    return actions.slice(0, 3)
+  }, [workflowSummary])
+
   const handleSort = (key: string) => {
     setSortConfig((prev) =>
       prev.key === key
@@ -526,14 +565,26 @@ export function Castings() {
       </section>
 
       <section className={cn('rounded-3xl border px-5 py-4 shadow-sm', workflowHealth.tone)}>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-75">Workflow health</p>
-            <p className="mt-1 text-base font-semibold text-slate-950">{workflowHealth.label}</p>
-            <p className="mt-1 text-sm leading-6 text-slate-600">{workflowHealth.note}</p>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-75">Workflow health</p>
+              <p className="mt-1 text-base font-semibold text-slate-950">{workflowHealth.label}</p>
+              <p className="mt-1 text-sm leading-6 text-slate-600">{workflowHealth.note}</p>
+            </div>
+            <div className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-black/5">
+              {workflowSummary.readyForTalent}/{workflowSummary.total} ready for movement
+            </div>
           </div>
-          <div className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-black/5">
-            {workflowSummary.readyForTalent}/{workflowSummary.total} ready for movement
+
+          <div className="grid gap-2 lg:grid-cols-3">
+            {queueActionPriorities.map((action) => (
+              <div key={action.label} className={cn('rounded-2xl border px-3 py-3 shadow-sm', action.tone)}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] opacity-80">Queue action</p>
+                <p className="mt-1 text-sm font-semibold text-slate-950">{action.label}</p>
+                <p className="mt-1 text-xs leading-5 text-slate-600">{action.note}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
