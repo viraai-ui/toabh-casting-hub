@@ -109,7 +109,12 @@ export function Reports() {
       const s = c.status || 'Unknown'
       status[s] = (status[s] || 0) + 1
     })
-    return Object.entries(status).map(([name, value]) => ({ name, value }))
+    return Object.entries(status)
+      .sort(([nameA, valueA], [nameB, valueB]) => {
+        if (valueB !== valueA) return valueB - valueA
+        return nameA.localeCompare(nameB)
+      })
+      .map(([name, value]) => ({ name, value }))
   }
 
   const getAssignedNames = (casting: Casting) => {
