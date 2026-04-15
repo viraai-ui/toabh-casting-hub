@@ -181,6 +181,48 @@ export function Talents() {
     }
   }, [talentSummary])
 
+  const rosterPriority = useMemo(() => {
+    const missingInstagram = filteredTalents.filter((talent) => !talent.instagram_handle?.trim()).length
+    const missingPhone = filteredTalents.filter((talent) => !talent.phone?.trim()).length
+    const missingEmail = filteredTalents.filter((talent) => !talent.email?.trim()).length
+
+    const candidates = [
+      {
+        count: missingInstagram,
+        label: 'Instagram coverage is the main roster gap',
+        note: 'Social presence is still the weakest field across visible talent.',
+        tone: 'border-violet-200 bg-violet-50 text-violet-700',
+      },
+      {
+        count: missingPhone,
+        label: 'Phone coverage is the main roster gap',
+        note: 'Direct outreach speed is still limited by missing phone numbers.',
+        tone: 'border-amber-200 bg-amber-50 text-amber-700',
+      },
+      {
+        count: missingEmail,
+        label: 'Email coverage is the main roster gap',
+        note: 'Formal outreach is still limited by missing email addresses.',
+        tone: 'border-blue-200 bg-blue-50 text-blue-700',
+      },
+    ].sort((a, b) => b.count - a.count)
+
+    const winner = candidates[0]
+    if (!winner || winner.count === 0) {
+      return {
+        label: 'No obvious roster gap right now',
+        note: 'Core profile coverage looks balanced across the visible roster.',
+        tone: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+      }
+    }
+
+    return {
+      label: winner.label,
+      note: `${winner.count} profile${winner.count === 1 ? '' : 's'} are missing this field. ${winner.note}`,
+      tone: winner.tone,
+    }
+  }, [filteredTalents])
+
   const handleSort = (key: string) => {
     setSortConfig((prev) =>
       prev.key === key
@@ -253,19 +295,26 @@ export function Talents() {
       </section>
 
       <section className={`rounded-3xl border px-5 py-4 shadow-sm ${talentHealth.tone}`}>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-75">Roster health</p>
-            <p className="mt-1 text-base font-semibold text-slate-950">{talentHealth.label}</p>
-            <p className="mt-1 text-sm leading-6 text-slate-600">{talentHealth.note}</p>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-75">Roster health</p>
+              <p className="mt-1 text-base font-semibold text-slate-950">{talentHealth.label}</p>
+              <p className="mt-1 text-sm leading-6 text-slate-600">{talentHealth.note}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-black/5">
+                {talentSummary.incompleteProfiles} need enrichment
+              </div>
+              <div className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-black/5">
+                {talentSummary.withPhone}/{talentSummary.total} have phone
+              </div>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-black/5">
-              {talentSummary.incompleteProfiles} need enrichment
-            </div>
-            <div className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-black/5">
-              {talentSummary.withPhone}/{talentSummary.total} have phone
-            </div>
+          <div className={`rounded-2xl border px-3 py-3 shadow-sm ${rosterPriority.tone}`}>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] opacity-80">Roster priority</p>
+            <p className="mt-1 text-sm font-semibold text-slate-950">{rosterPriority.label}</p>
+            <p className="mt-1 text-xs leading-5 text-slate-600">{rosterPriority.note}</p>
           </div>
         </div>
       </section>
