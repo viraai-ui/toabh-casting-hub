@@ -293,7 +293,7 @@ export function Reports() {
 
       {isCustomRangeInvalid ? null : filteredCastings.length === 0 ? (
         <div className="card p-8 text-center">
-          <h3 className="text-lg font-semibold text-slate-900">No castings in this date range</h3>
+          <h3 className="text-lg font-semibold text-slate-900">No scheduled castings in this date range</h3>
           <p className="mt-2 text-sm text-slate-500">
             Try a broader range or adjust the custom dates to see report data.
           </p>
