@@ -6,7 +6,7 @@ import { api } from '@/lib/api'
 import { cn, formatCurrency } from '@/lib/utils'
 import Papa from 'papaparse'
 import type { Casting } from '@/types'
-import { isWithinInterval, parseISO } from 'date-fns'
+import { endOfDay, endOfMonth, endOfQuarter, endOfWeek, isWithinInterval, parseISO, startOfDay, startOfMonth, startOfQuarter, startOfWeek, subDays } from 'date-fns'
 
 const COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#ec4899']
 const CLOSED_STATUSES = new Set(['WON', 'LOST', 'INVOICED', 'PAID', 'COMPLETED', 'DECLINED'])
@@ -38,26 +38,22 @@ export function Reports() {
     if (!c.shoot_date_start) return true
     const shootDate = parseISO(c.shoot_date_start)
     const now = new Date()
-    
+
     if (dateRange === 'week') {
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-      return isWithinInterval(shootDate, { start: weekAgo, end: now })
+      return isWithinInterval(shootDate, { start: startOfWeek(now), end: endOfWeek(now) })
     }
     if (dateRange === 'month') {
-      const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate())
-      return isWithinInterval(shootDate, { start: monthAgo, end: now })
+      return isWithinInterval(shootDate, { start: startOfMonth(now), end: endOfMonth(now) })
     }
     if (dateRange === '30days') {
-      const daysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-      return isWithinInterval(shootDate, { start: daysAgo, end: now })
+      return isWithinInterval(shootDate, { start: startOfDay(subDays(now, 29)), end: endOfDay(now) })
     }
     if (dateRange === 'quarter') {
-      const quarterAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate())
-      return isWithinInterval(shootDate, { start: quarterAgo, end: now })
+      return isWithinInterval(shootDate, { start: startOfQuarter(now), end: endOfQuarter(now) })
     }
     if (dateRange === 'custom' && customRange.from && customRange.to) {
-      const from = parseISO(customRange.from)
-      const to = parseISO(customRange.to)
+      const from = startOfDay(parseISO(customRange.from))
+      const to = endOfDay(parseISO(customRange.to))
       return isWithinInterval(shootDate, { start: from, end: to })
     }
     return true
