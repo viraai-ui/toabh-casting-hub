@@ -707,34 +707,52 @@ function DayView({
         <p className="text-slate-400 text-sm py-8 text-center">No jobs scheduled</p>
       ) : (
         <div className="space-y-2">
-          {dayCastings.map((casting) => (
-            <button
-              key={casting.id}
-              onClick={() => onCastingClick(casting)}
-              className="w-full flex items-start gap-3 p-3 bg-white border border-slate-100 rounded-xl hover:shadow-md hover:border-slate-200 active:scale-[0.99] transition-all text-left"
-            >
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-sm font-semibold shrink-0">
-                {getInitials(casting.client_name)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-slate-900 text-sm truncate">
-                  {casting.project_name || 'Untitled'}
-                </p>
-                <p className="text-xs text-slate-400 mt-0.5">{casting.client_name}</p>
-                {casting.location && (
-                  <p className="text-[11px] text-slate-400 mt-0.5 truncate">{casting.location}</p>
-                )}
-              </div>
-              <span className={cn(
-                'shrink-0 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold mt-0.5',
-                casting.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
-                casting.status === 'IN_PROGRESS' ? 'bg-amber-100 text-amber-700' :
-                'bg-blue-100 text-blue-700'
-              )}>
-                {casting.status}
-              </span>
-            </button>
-          ))}
+          {dayCastings.map((casting) => {
+            const hasOwner = Array.isArray(casting.assigned_to) ? casting.assigned_to.length > 0 : Boolean(casting.assigned_names?.trim())
+            const ownerLabel = Array.isArray(casting.assigned_to) && casting.assigned_to.length > 0
+              ? casting.assigned_to.map((member) => member.name).join(', ')
+              : casting.assigned_names?.trim() || 'No owner assigned'
+
+            return (
+              <button
+                key={casting.id}
+                onClick={() => onCastingClick(casting)}
+                className="w-full flex items-start gap-3 p-3 bg-white border border-slate-100 rounded-xl hover:shadow-md hover:border-slate-200 active:scale-[0.99] transition-all text-left"
+              >
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-sm font-semibold shrink-0">
+                  {getInitials(casting.client_name)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-slate-900 text-sm truncate">
+                    {casting.project_name || 'Untitled'}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-0.5">{casting.client_name}</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-600">
+                      {casting.shoot_date_start ? format(parseISO(casting.shoot_date_start), 'h:mm a') : 'Time TBD'}
+                    </span>
+                    <span className={cn(
+                      'rounded-full px-2 py-1 text-[10px] font-medium',
+                      hasOwner ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                    )}>
+                      {hasOwner ? ownerLabel : 'Owner needed'}
+                    </span>
+                  </div>
+                  {casting.location && (
+                    <p className="text-[11px] text-slate-400 mt-2 truncate">{casting.location}</p>
+                  )}
+                </div>
+                <span className={cn(
+                  'shrink-0 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold mt-0.5',
+                  casting.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
+                  casting.status === 'IN_PROGRESS' ? 'bg-amber-100 text-amber-700' :
+                  'bg-blue-100 text-blue-700'
+                )}>
+                  {casting.status}
+                </span>
+              </button>
+            )
+          })}
         </div>
       )}
     </div>
