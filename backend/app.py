@@ -900,6 +900,10 @@ def update_task_status(task_id):
     status = (data.get('status') or '').strip()
     if not status:
         return jsonify({'error': 'Status is required'}), 400
+    old_status = (row['status'] or '').strip()
+    if old_status == status:
+        updated = db.execute('SELECT * FROM tasks WHERE id = ?', (task_id,)).fetchone()
+        return jsonify(_serialize_task_row(db, updated))
     db.execute('UPDATE tasks SET status = ?, updated_at = datetime(\'now\') WHERE id = ?', (status, task_id))
     _create_task_activity(db, task_id, 'STATUS_CHANGED', f'Status changed from {row["status"]} to {status}')
     db.commit()
@@ -1447,11 +1451,17 @@ def single_casting(casting_id):
 def update_status(casting_id):
     db = get_db()
     data = request.json
-    new_status = data.get('status')
+    new_status = (data.get('status') or '').strip()
+    if not new_status:
+        return jsonify({'error': 'Status is required'}), 400
 
     old_row = db.execute('SELECT status FROM castings WHERE id = ?', (casting_id,)).fetchone()
     if not old_row:
         return jsonify({'error': 'Not found'}), 404
+
+    old_status = (old_row['status'] or '').strip()
+    if old_status == new_status:
+        return jsonify({'message': 'Status unchanged'})
 
     db.execute('UPDATE castings SET status = ?, updated_at = datetime("now") WHERE id = ?',
               (new_status, casting_id))
