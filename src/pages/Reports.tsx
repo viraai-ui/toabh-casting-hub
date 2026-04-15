@@ -230,20 +230,25 @@ export function Reports() {
             </button>
           ))}
           {dateRange === 'custom' && (
-            <div className="flex items-center gap-2 ml-2">
-              <input
-                type="date"
-                value={customRange.from}
-                onChange={(e) => setCustomRange({ ...customRange, from: e.target.value })}
-                className="px-3 py-2 border border-slate-200 rounded-xl text-sm"
-              />
-              <span className="text-slate-400">to</span>
-              <input
-                type="date"
-                value={customRange.to}
-                onChange={(e) => setCustomRange({ ...customRange, to: e.target.value })}
-                className="px-3 py-2 border border-slate-200 rounded-xl text-sm"
-              />
+            <div className="flex items-end gap-2 ml-2 flex-wrap">
+              <label className="flex flex-col gap-1 text-xs text-slate-500">
+                <span>From</span>
+                <input
+                  type="date"
+                  value={customRange.from}
+                  onChange={(e) => setCustomRange({ ...customRange, from: e.target.value })}
+                  className="px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-900"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-slate-500">
+                <span>To</span>
+                <input
+                  type="date"
+                  value={customRange.to}
+                  onChange={(e) => setCustomRange({ ...customRange, to: e.target.value })}
+                  className="px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-900"
+                />
+              </label>
             </div>
           )}
         </div>
