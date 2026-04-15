@@ -145,6 +145,11 @@ export function Talents() {
       (talent) => Boolean(talent.instagram_handle?.trim()) && Boolean(talent.phone?.trim()) && Boolean(talent.email?.trim()),
     ).length
     const contactable = filteredTalents.filter((talent) => Boolean(talent.phone?.trim()) || Boolean(talent.email?.trim())).length
+    const opsReady = filteredTalents.filter((talent) => getTalentProfileSignal(talent).score === 100).length
+    const partialProfiles = filteredTalents.filter((talent) => {
+      const score = getTalentProfileSignal(talent).score
+      return score > 0 && score < 100
+    }).length
 
     return {
       total: filteredTalents.length,
@@ -153,6 +158,8 @@ export function Talents() {
       withEmail,
       completeProfiles,
       contactable,
+      opsReady,
+      partialProfiles,
       incompleteProfiles: Math.max(filteredTalents.length - completeProfiles, 0),
     }
   }, [filteredTalents])
@@ -287,11 +294,12 @@ export function Talents() {
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <TalentSummaryCard label="Visible roster" value={talentSummary.total} note="Talent records in the current filtered view." tone="bg-slate-50 text-slate-700 border-slate-200/70" />
         <TalentSummaryCard label="Contactable" value={talentSummary.contactable} note="Phone or email is available for fast outreach." tone="bg-emerald-50 text-emerald-700 border-emerald-200/70" />
         <TalentSummaryCard label="Instagram linked" value={talentSummary.withInstagram} note="Profiles with social presence attached." tone="bg-violet-50 text-violet-700 border-violet-200/70" />
         <TalentSummaryCard label="Complete profiles" value={talentSummary.completeProfiles} note="Instagram, phone, and email all present." tone="bg-blue-50 text-blue-700 border-blue-200/70" />
+        <TalentSummaryCard label="Ops-ready" value={talentSummary.opsReady} note="Profiles already complete enough for fast roster execution." tone="bg-emerald-50 text-emerald-700 border-emerald-200/70" />
       </section>
 
       <section className={`rounded-3xl border px-5 py-4 shadow-sm ${talentHealth.tone}`}>
@@ -308,6 +316,9 @@ export function Talents() {
               </div>
               <div className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-black/5">
                 {talentSummary.withPhone}/{talentSummary.total} have phone
+              </div>
+              <div className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-black/5">
+                {talentSummary.partialProfiles} partially ready
               </div>
             </div>
           </div>
