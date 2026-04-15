@@ -1297,7 +1297,13 @@ def list_castings():
     if conditions:
         query += ' WHERE ' + ' AND '.join(conditions)
 
-    query += ' ORDER BY c.created_at DESC'
+    query += ' ORDER BY COALESCE(c.updated_at, c.created_at) DESC, c.id DESC'
+
+    limit = request.args.get('limit', type=int)
+    if limit is not None:
+        limit = max(1, min(limit, 200))
+        query += ' LIMIT ?'
+        params.append(limit)
 
     rows = db.execute(query, params).fetchall()
     return jsonify(_apply_casting_assignments(db, rows))
