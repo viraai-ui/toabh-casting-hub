@@ -255,6 +255,7 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
     { label: 'Shoot timing locked', done: Boolean(casting.shoot_date_start) },
     { label: 'Talent linked', done: talents.length > 0 },
   ]
+  const missingReadinessItems = readinessChecklist.filter((item) => !item.done)
 
   const pb = (text: string | null | undefined) => text ?? null
   const closeDisabled = talentDetailOpen
@@ -380,6 +381,14 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                           {readinessChecklist.filter((item) => item.done).length}/{readinessChecklist.length} ready
                         </span>
                       </div>
+                      {missingReadinessItems.length > 0 && (
+                        <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50/80 px-3 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700">Missing before clean ops movement</p>
+                          <p className="mt-1 text-[12px] leading-5 text-amber-800">
+                            {missingReadinessItems.map((item) => item.label).join(' · ')}
+                          </p>
+                        </div>
+                      )}
                       <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                         {readinessChecklist.map((item) => (
                           <div
