@@ -685,6 +685,8 @@ def _send_email_notification(recipient, subject, message):
 
 def _serialize_task_row(db, row):
     task = dict(row)
+    task['created_at'] = task.get('created_at') or task.get('updated_at') or task.get('due_date')
+    task['updated_at'] = task.get('updated_at') or task.get('created_at')
     task['assigned_to'] = [dict(item) for item in db.execute(
         '''
         SELECT tm.id, tm.name, COALESCE(tm.role, '') as role, COALESCE(tm.email, '') as email, COALESCE(tm.avatar_url, '') as avatar_url
@@ -731,6 +733,8 @@ def _apply_casting_assignments(db, casting_rows):
         })
 
     for casting in castings:
+        casting['created_at'] = casting.get('created_at') or casting.get('updated_at') or casting.get('shoot_date_start') or casting.get('shoot_date_end')
+        casting['updated_at'] = casting.get('updated_at') or casting.get('created_at')
         casting['attachments_count'] = int(casting.get('attachments_count') or 0)
         casting['assigned_to'] = [
             item for item in assignments_by_casting.get(casting['id'], [])
