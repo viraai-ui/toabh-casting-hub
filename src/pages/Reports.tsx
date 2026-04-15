@@ -167,6 +167,13 @@ export function Reports() {
   const statusData = getStatusData()
   const teamData = getTeamData()
   const revenueData = getRevenueData()
+  const exportDisabledReason = isCustomRangeIncomplete
+    ? 'Select both custom dates to export this report.'
+    : isCustomRangeInvalid
+      ? 'Fix the custom date range before exporting.'
+      : filteredCastings.length === 0
+        ? 'No report data to export for this range.'
+        : 'Export this report as CSV'
 
   const exportCSV = () => {
     const csv = Papa.unparse(filteredCastings.map((c) => ({
@@ -208,6 +215,7 @@ export function Reports() {
         <button
           onClick={exportCSV}
           disabled={filteredCastings.length === 0 || isCustomRangeIncomplete || isCustomRangeInvalid}
+          title={exportDisabledReason}
           className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Download className="w-4 h-4" />
