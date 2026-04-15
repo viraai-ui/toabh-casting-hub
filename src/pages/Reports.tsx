@@ -193,7 +193,10 @@ export function Reports() {
     const a = document.createElement('a')
     a.href = url
     a.download = `castings-report-${formatReportDateForFilename(new Date())}.csv`
+    document.body.appendChild(a)
     a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
   }
 
   if (loading) {
