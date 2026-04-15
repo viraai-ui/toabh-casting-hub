@@ -479,6 +479,7 @@ export function Castings() {
       assignedJobs,
       readyForTalent,
       incompleteIntake,
+      ownershipCoverage: readyForTalent > 0 ? Math.round((assignedJobs / readyForTalent) * 100) : 0,
       phaseDistribution,
       total: normalized.length,
     }
@@ -666,7 +667,7 @@ export function Castings() {
         <WorkflowSummaryCard
           label="Assigned internally"
           value={workflowSummary.assignedJobs}
-          note="Jobs that already have team ownership attached."
+          note={`Ownership coverage ${workflowSummary.ownershipCoverage}% across jobs ready for movement.`}
           tone="bg-blue-50 text-blue-700 border-blue-200/70"
         />
         <WorkflowSummaryCard
@@ -698,8 +699,13 @@ export function Castings() {
               <p className="mt-1 text-base font-semibold text-slate-950">{workflowHealth.label}</p>
               <p className="mt-1 text-sm leading-6 text-slate-600">{workflowHealth.note}</p>
             </div>
-            <div className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-black/5">
-              {workflowSummary.readyForTalent}/{workflowSummary.total} ready for movement
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-black/5">
+                {workflowSummary.readyForTalent}/{workflowSummary.total} ready for movement
+              </div>
+              <div className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-black/5">
+                {workflowSummary.ownershipCoverage}% ownership coverage
+              </div>
             </div>
           </div>
 
