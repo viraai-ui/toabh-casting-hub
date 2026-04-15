@@ -122,16 +122,19 @@ export function Reports() {
 
   // Revenue Trend
   const getRevenueData = () => {
-    const months: { [key: string]: number } = {}
+    const months: { [key: string]: { label: string; revenue: number } } = {}
     filteredCastings.forEach((c) => {
       if (!c.shoot_date_start || !c.budget_max) return
-      const month = new Date(c.shoot_date_start).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
-      months[month] = (months[month] || 0) + (c.budget_max || 0)
+      const date = new Date(c.shoot_date_start)
+      const monthKey = c.shoot_date_start.slice(0, 7)
+      const label = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+      if (!months[monthKey]) months[monthKey] = { label, revenue: 0 }
+      months[monthKey].revenue += c.budget_max || 0
     })
     return Object.entries(months)
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(-6)
-      .map(([month, revenue]) => ({ month, revenue }))
+      .map(([, value]) => ({ month: value.label, revenue: value.revenue }))
   }
 
   const exportCSV = () => {
