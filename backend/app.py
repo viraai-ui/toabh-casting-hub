@@ -1592,15 +1592,25 @@ def _serialize_team_member(member_row, active_castings_count=None):
     member = dict(member_row)
     member.pop('password_hash', None)
 
-    created_at = member.get('created_at')
-    updated_at = member.get('updated_at')
-    last_login = member.get('last_login')
-    invite_sent_at = member.get('invite_sent_at')
+    def _normalize_datetime_like(value):
+        if value in (None, ''):
+            return None
+        if hasattr(value, 'isoformat'):
+            try:
+                return value.isoformat()
+            except Exception:
+                pass
+        return str(value)
+
+    created_at = _normalize_datetime_like(member.get('created_at'))
+    updated_at = _normalize_datetime_like(member.get('updated_at'))
+    last_login = _normalize_datetime_like(member.get('last_login'))
+    invite_sent_at = _normalize_datetime_like(member.get('invite_sent_at'))
 
     member['created_at'] = created_at or updated_at or invite_sent_at or last_login or datetime.now().isoformat()
     member['updated_at'] = updated_at or created_at or member['created_at']
-    member['last_login'] = last_login or None
-    member['invite_sent_at'] = invite_sent_at or None
+    member['last_login'] = last_login
+    member['invite_sent_at'] = invite_sent_at
 
     if active_castings_count is not None:
         member['active_castings_count'] = active_castings_count
