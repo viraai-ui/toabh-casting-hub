@@ -567,15 +567,15 @@ def global_search():
         (like, like)
     ).fetchall()
     clients = db.execute(
-        'SELECT id, name, company, email, phone FROM clients WHERE name LIKE ? OR company LIKE ? OR email LIKE ? OR phone LIKE ? LIMIT 20',
+        "SELECT id, name, company, email, phone FROM clients WHERE name LIKE ? OR company LIKE ? OR email LIKE ? OR COALESCE(CAST(phone AS TEXT), '') LIKE ? LIMIT 20",
         (like, like, like, like)
     ).fetchall()
     team = db.execute(
-        'SELECT id, name, role, email, phone FROM team_members WHERE name LIKE ? OR role LIKE ? OR email LIKE ? OR phone LIKE ? LIMIT 20',
+        "SELECT id, name, role, email, phone FROM team_members WHERE name LIKE ? OR role LIKE ? OR email LIKE ? OR COALESCE(CAST(phone AS TEXT), '') LIKE ? LIMIT 20",
         (like, like, like, like)
     ).fetchall()
     talents = db.execute(
-        'SELECT id, name, instagram_handle, phone, email, created_at, updated_at FROM talents WHERE name LIKE ? OR phone LIKE ? OR email LIKE ? OR instagram_handle LIKE ? LIMIT 20',
+        "SELECT id, name, instagram_handle, phone, email, created_at, updated_at FROM talents WHERE name LIKE ? OR COALESCE(CAST(phone AS TEXT), '') LIKE ? OR email LIKE ? OR instagram_handle LIKE ? LIMIT 20",
         (like, like, like, like)
     ).fetchall()
 
