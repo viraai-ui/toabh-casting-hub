@@ -11,6 +11,16 @@ import { endOfDay, endOfMonth, endOfQuarter, endOfWeek, isWithinInterval, parseI
 const COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#ec4899']
 const CLOSED_STATUSES = new Set(['WON', 'LOST', 'INVOICED', 'PAID', 'COMPLETED', 'DECLINED'])
 
+const formatRevenueAxisValue = (value: number) => {
+  if (Math.abs(value) >= 100000) {
+    return `₹${(value / 100000).toFixed(value % 100000 === 0 ? 0 : 1)}L`
+  }
+  if (Math.abs(value) >= 1000) {
+    return `₹${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}K`
+  }
+  return `₹${value}`
+}
+
 export function Reports() {
   const [castings, setCastings] = useState<Casting[]>([])
   const [loading, setLoading] = useState(true)
@@ -61,7 +71,7 @@ export function Reports() {
 
   // Casting Performance - Scheduled vs Closed per week
   const getWeeklyData = () => {
-    const weeks: { [key: string]: { created: number; closed: number } } = {}
+    const weeks: { [key: string]: { scheduled: number; closed: number } } = {}
     filteredCastings.forEach((c) => {
       if (!c.shoot_date_start) return
       const date = parseISO(c.shoot_date_start)
@@ -340,7 +350,7 @@ export function Reports() {
                   tick={{ fontSize: 12 }}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(value) => `₹${(value / 100000).toFixed(0)}L`}
+                  tickFormatter={(value) => formatRevenueAxisValue(value as number)}
                 />
                 <Tooltip
                   contentStyle={{
