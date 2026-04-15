@@ -17,6 +17,15 @@ function KanbanCardBody({
 }) {
   const initials = getInitials(casting.client_name)
 
+  const assignedNames = Array.isArray(casting.assigned_to)
+    ? casting.assigned_to
+        .map((entry) => (typeof entry === 'string' ? entry : entry?.name || '').trim())
+        .filter(Boolean)
+    : []
+  const teamLabel = assignedNames.length > 0
+    ? assignedNames.join(', ')
+    : (casting.assigned_names || '').trim()
+
   // Strip WhatsApp chars for wa.me link
   const waNumber = casting.client_contact?.replace(/\D/g, '') ?? ''
 
@@ -133,14 +142,14 @@ function KanbanCardBody({
       </div>
 
       {/* ── ZONE 3: Assigned team member(s) — bottom strip ─────────────── */}
-      {casting.assigned_names ? (
+      {teamLabel ? (
         <div className="flex items-center gap-1.5 px-3 pb-2.5 pt-2 mt-auto border-t border-slate-100 min-w-0">
           <Users className="w-3 h-3 text-slate-300 shrink-0 flex-shrink-0" />
           <span
             className="text-[11px] text-slate-400 truncate"
-            title={casting.assigned_names}
+            title={teamLabel}
           >
-            {casting.assigned_names}
+            {teamLabel}
           </span>
         </div>
       ) : (

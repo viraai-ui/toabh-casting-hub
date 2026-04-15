@@ -302,7 +302,7 @@ export function Castings() {
         return typeof value === 'number' ? value : 0
       }
       case 'assigned_names':
-        return parseAssignedNames((casting as { assigned_names?: string | null }).assigned_names).length
+        return teamNamesForCasting(casting).length
       case 'source_detail':
         return formatSourceLabel(casting)
       case 'project_name':
@@ -1557,12 +1557,12 @@ function GridView({
               </FormControl>
 
               {/* Assigned team member — right-aligned, truncate */}
-              {c.assigned_names ? (
+              {teamNamesForCasting(c).length > 0 ? (
                 <span
                   className="text-[11px] text-slate-400 truncate text-right flex-1 min-w-0 ml-1"
-                  title={c.assigned_names}
+                  title={teamNamesForCasting(c).join(', ')}
                 >
-                  {c.assigned_names.split(',')[0].trim()}
+                  {teamNamesForCasting(c)[0]}
                 </span>
               ) : (
                 <span className="text-[11px] text-slate-300 truncate text-right flex-1 min-w-0 ml-1">
