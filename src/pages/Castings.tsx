@@ -464,6 +464,16 @@ export function Castings() {
     const activeQueue = normalized.filter((casting) => !confirmedStatuses.has(casting.normalizedStatus)).length
     const decisionQueue = normalized.filter((casting) => decisionStatuses.has(casting.normalizedStatus)).length
     const assignedJobs = normalized.filter((casting) => parseAssignedNames((casting as { assigned_names?: string | null }).assigned_names).length > 0).length
+    const readinessBreakdown = normalized.reduce(
+      (acc, casting) => {
+        const readiness = getSubmissionReadiness(casting)
+        if (readiness.label === 'Submission ready') acc.submissionReady += 1
+        else if (readiness.label === 'Needs ops fill-in') acc.needsOpsFillIn += 1
+        else acc.intakeIncomplete += 1
+        return acc
+      },
+      { submissionReady: 0, needsOpsFillIn: 0, intakeIncomplete: 0 },
+    )
     const readyForTalent = normalized.filter((casting) => Boolean(casting.project_name) && Boolean(casting.client_name)).length
     const incompleteIntake = normalized.filter((casting) => !casting.project_name || !casting.client_name).length
     const phaseDistribution = {
@@ -479,6 +489,7 @@ export function Castings() {
       assignedJobs,
       readyForTalent,
       incompleteIntake,
+      readinessBreakdown,
       ownershipCoverage: readyForTalent > 0 ? Math.round((assignedJobs / readyForTalent) * 100) : 0,
       phaseDistribution,
       total: normalized.length,
@@ -680,6 +691,24 @@ export function Castings() {
 
       <section className={cn('rounded-3xl border px-5 py-4 shadow-sm', workflowHealth.tone)}>
         <div className="flex flex-col gap-4">
+          <div className="grid gap-2 lg:grid-cols-3">
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-3 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700/80">Readiness</p>
+              <p className="mt-1 text-sm font-semibold text-slate-950">{workflowSummary.readinessBreakdown.submissionReady} ready now</p>
+              <p className="mt-1 text-xs leading-5 text-slate-600">These jobs have enough structure for active submission movement.</p>
+            </div>
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700/80">Needs fill-in</p>
+              <p className="mt-1 text-sm font-semibold text-slate-950">{workflowSummary.readinessBreakdown.needsOpsFillIn} need ops fill-in</p>
+              <p className="mt-1 text-xs leading-5 text-slate-600">These jobs are close, but still missing the last execution inputs.</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-600/80">Intake incomplete</p>
+              <p className="mt-1 text-sm font-semibold text-slate-950">{workflowSummary.readinessBreakdown.intakeIncomplete} still blocked at intake</p>
+              <p className="mt-1 text-xs leading-5 text-slate-600">These jobs still need basic setup before the workflow can really move.</p>
+            </div>
+          </div>
+
           <div className="flex flex-wrap gap-2">
             {[
               { label: 'Intake', value: workflowSummary.phaseDistribution.intake, tone: 'bg-blue-50 text-blue-700 border-blue-200' },
