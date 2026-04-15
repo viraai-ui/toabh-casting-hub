@@ -231,6 +231,31 @@ export function TalentDetailModal({ open, onClose, talent, onSave }: TalentDetai
                         </div>
                       ))}
                     </section>
+
+                    <section className="grid gap-2 sm:grid-cols-2">
+                      <a
+                        href={form.phone ? `tel:${form.phone}` : '#'}
+                        className={cn(
+                          'flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-medium transition-colors',
+                          form.phone ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'pointer-events-none border-slate-200 bg-slate-50 text-slate-400',
+                        )}
+                      >
+                        <Phone className="h-4 w-4" />
+                        Call talent
+                      </a>
+                      <a
+                        href={form.phone ? `https://wa.me/${form.phone.replace(/[^\d]/g, '')}` : '#'}
+                        target={form.phone ? '_blank' : undefined}
+                        rel={form.phone ? 'noopener noreferrer' : undefined}
+                        className={cn(
+                          'flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-medium transition-colors',
+                          form.phone ? 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100' : 'pointer-events-none border-slate-200 bg-slate-50 text-slate-400',
+                        )}
+                      >
+                        <Phone className="h-4 w-4" />
+                        WhatsApp talent
+                      </a>
+                    </section>
                   </>
                 )}
                 {/* Avatar area for edit/create */}
