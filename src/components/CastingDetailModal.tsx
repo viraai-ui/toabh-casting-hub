@@ -372,6 +372,33 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
     }
   }, [assignedTo.length, casting.client_name, casting.project_name, casting.requirements, freshnessSignal.label])
 
+  const workflowScore = useMemo(() => {
+    const readyCount = readinessChecklist.filter((item) => item.done).length
+    const score = Math.round((readyCount / readinessChecklist.length) * 100)
+
+    if (score >= 85) {
+      return {
+        value: `${score}%`,
+        note: 'This record is operationally strong and close to fully structured.',
+        tone: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      }
+    }
+
+    if (score >= 50) {
+      return {
+        value: `${score}%`,
+        note: 'Core structure exists, but the workflow still needs a few pieces tightened.',
+        tone: 'bg-amber-50 text-amber-700 border-amber-200',
+      }
+    }
+
+    return {
+      value: `${score}%`,
+      note: 'This record still needs significant setup before the workflow is solid.',
+      tone: 'bg-slate-100 text-slate-700 border-slate-200',
+    }
+  }, [readinessChecklist])
+
   const workflowPhaseSteps = [
     { label: 'Intake', active: workflowStage.phase === 'Intake', done: ['Submission', 'Decision', 'Confirmed', 'Closed'].includes(workflowStage.phase) },
     { label: 'Submission', active: workflowStage.phase === 'Submission', done: ['Decision', 'Confirmed', 'Closed'].includes(workflowStage.phase) },
@@ -471,7 +498,7 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                         </div>
                       </div>
                     </div>
-                    <div className="grid gap-3 px-4 pb-4 pt-1 sm:grid-cols-2 xl:grid-cols-5">
+                    <div className="grid gap-3 px-4 pb-4 pt-1 sm:grid-cols-2 xl:grid-cols-6">
                       <WorkflowStat
                         label="Current phase"
                         value={workflowStage.phase}
@@ -501,6 +528,12 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                         value={workflowRisk.label}
                         note={workflowRisk.note}
                         tone={workflowRisk.tone}
+                      />
+                      <WorkflowStat
+                        label="Workflow score"
+                        value={workflowScore.value}
+                        note={workflowScore.note}
+                        tone={workflowScore.tone}
                       />
                     </div>
                     <div className="border-t border-slate-100 px-4 py-4">
