@@ -400,6 +400,63 @@ export function Calendar() {
         </p>
       )}
 
+      {scheduleFocus !== 'all' && (
+        <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Focus queue</p>
+              <p className="mt-1 text-sm font-semibold text-slate-900">
+                {scheduleFocus === 'unscheduled'
+                  ? 'Jobs waiting for dates'
+                  : scheduleFocus === 'unassigned'
+                    ? 'Scheduled jobs waiting for ownership'
+                    : 'Upcoming jobs needing close tracking'}
+              </p>
+            </div>
+            <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              {filteredCastings.length} item{filteredCastings.length === 1 ? '' : 's'}
+            </div>
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {filteredCastings.slice(0, 6).map((casting) => {
+              const hasOwner = Array.isArray(casting.assigned_to) ? casting.assigned_to.length > 0 : Boolean(casting.assigned_names?.trim())
+              const ownerLabel = Array.isArray(casting.assigned_to) && casting.assigned_to.length > 0
+                ? casting.assigned_to.map((member) => member.name).join(', ')
+                : casting.assigned_names?.trim() || 'No owner yet'
+
+              return (
+                <button
+                  key={casting.id}
+                  onClick={() => openDetail(casting)}
+                  className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left transition hover:border-slate-300 hover:bg-white"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 line-clamp-1">{casting.project_name || 'Untitled job'}</p>
+                      <p className="mt-1 text-xs text-slate-500">{casting.client_name || 'No client'}</p>
+                    </div>
+                    <span
+                      className="rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]"
+                      style={{
+                        backgroundColor: `${getCastingColor(casting.status)}18`,
+                        color: getCastingColor(casting.status),
+                      }}
+                    >
+                      {casting.status}
+                    </span>
+                  </div>
+                  <div className="mt-3 space-y-1.5 text-xs text-slate-600">
+                    <p>{casting.shoot_date_start ? `Date: ${format(parseISO(casting.shoot_date_start), 'EEE, MMM d')}` : 'Date: Not scheduled yet'}</p>
+                    <p>{hasOwner ? `Owner: ${ownerLabel}` : 'Owner: Not assigned yet'}</p>
+                    {casting.location && <p className="line-clamp-1">Location: {casting.location}</p>}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
       {/* ── Calendar views ───────────────────────────────────────────── */}
       <div className="min-h-0 flex-1 w-full">
         {view === 'month' && (
