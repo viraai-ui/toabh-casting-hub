@@ -340,6 +340,38 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
     }
   }, [assignedTo.length, casting.client_name, casting.project_name, casting.requirements, casting.status, talents.length])
 
+  const workflowRisk = useMemo(() => {
+    if (!casting.project_name?.trim() || !casting.client_name?.trim()) {
+      return {
+        label: 'High risk',
+        note: 'Intake is still incomplete, so execution can stall quickly.',
+        tone: 'bg-amber-50 text-amber-700 border-amber-200',
+      }
+    }
+
+    if (assignedTo.length === 0 || !casting.requirements?.trim()) {
+      return {
+        label: 'Medium risk',
+        note: 'Core structure exists, but missing ownership or brief depth can slow movement.',
+        tone: 'bg-blue-50 text-blue-700 border-blue-200',
+      }
+    }
+
+    if (freshnessSignal.label === 'Stale') {
+      return {
+        label: 'Watch closely',
+        note: 'The record is structurally sound, but it has gone stale and needs follow-up.',
+        tone: 'bg-violet-50 text-violet-700 border-violet-200',
+      }
+    }
+
+    return {
+      label: 'Low risk',
+      note: 'This job looks healthy enough for active workflow movement.',
+      tone: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    }
+  }, [assignedTo.length, casting.client_name, casting.project_name, casting.requirements, freshnessSignal.label])
+
   const workflowPhaseSteps = [
     { label: 'Intake', active: workflowStage.phase === 'Intake', done: ['Submission', 'Decision', 'Confirmed', 'Closed'].includes(workflowStage.phase) },
     { label: 'Submission', active: workflowStage.phase === 'Submission', done: ['Decision', 'Confirmed', 'Closed'].includes(workflowStage.phase) },
@@ -439,7 +471,7 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                         </div>
                       </div>
                     </div>
-                    <div className="grid gap-3 px-4 pb-4 pt-1 sm:grid-cols-2 xl:grid-cols-4">
+                    <div className="grid gap-3 px-4 pb-4 pt-1 sm:grid-cols-2 xl:grid-cols-5">
                       <WorkflowStat
                         label="Current phase"
                         value={workflowStage.phase}
@@ -463,6 +495,12 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                         value={freshnessSignal.label}
                         note={freshnessSignal.note}
                         tone={freshnessSignal.tone}
+                      />
+                      <WorkflowStat
+                        label="Ops risk"
+                        value={workflowRisk.label}
+                        note={workflowRisk.note}
+                        tone={workflowRisk.tone}
                       />
                     </div>
                     <div className="border-t border-slate-100 px-4 py-4">
