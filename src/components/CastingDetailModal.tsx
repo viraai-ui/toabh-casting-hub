@@ -257,6 +257,54 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
   ]
   const missingReadinessItems = readinessChecklist.filter((item) => !item.done)
 
+  const workflowNextStep = useMemo(() => {
+    if (!casting.project_name?.trim() || !casting.client_name?.trim()) {
+      return {
+        title: 'Complete intake first',
+        note: 'Lock the project and client basics before this job moves deeper into operations.',
+        tone: 'border-amber-200 bg-amber-50 text-amber-700',
+      }
+    }
+
+    if (assignedTo.length === 0) {
+      return {
+        title: 'Assign internal ownership',
+        note: 'Put a named owner on this job so follow-through does not get lost.',
+        tone: 'border-blue-200 bg-blue-50 text-blue-700',
+      }
+    }
+
+    if (!casting.requirements?.trim()) {
+      return {
+        title: 'Tighten the brief',
+        note: 'Add clearer requirements so the team can move talent with confidence.',
+        tone: 'border-violet-200 bg-violet-50 text-violet-700',
+      }
+    }
+
+    if (['SHORTLISTED', 'OFFERED', 'REVIEW'].includes((casting.status || 'NEW').toUpperCase())) {
+      return {
+        title: 'Push client decision follow-up',
+        note: 'This record is already in a decision-sensitive stage and needs quick follow-through.',
+        tone: 'border-cyan-200 bg-cyan-50 text-cyan-700',
+      }
+    }
+
+    if (talents.length === 0) {
+      return {
+        title: 'Start shortlist movement',
+        note: 'The record is structured enough, now it needs the first talent layer attached.',
+        tone: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+      }
+    }
+
+    return {
+      title: 'Advance active ops movement',
+      note: 'Use this record to manage submissions, follow-through, and final booking conversion.',
+      tone: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    }
+  }, [assignedTo.length, casting.client_name, casting.project_name, casting.requirements, casting.status, talents.length])
+
   const pb = (text: string | null | undefined) => text ?? null
   const closeDisabled = talentDetailOpen
 
@@ -347,6 +395,13 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                         note={timelineNote}
                         tone="bg-white text-slate-700 border-slate-200"
                       />
+                    </div>
+                    <div className="border-t border-slate-100 px-4 py-4">
+                      <div className={`rounded-2xl border px-3 py-3 ${workflowNextStep.tone}`}>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] opacity-80">Recommended next step</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900">{workflowNextStep.title}</p>
+                        <p className="mt-1 text-[12px] leading-5 text-slate-600">{workflowNextStep.note}</p>
+                      </div>
                     </div>
                     <div className="grid gap-2 border-t border-slate-100 px-4 py-4 sm:grid-cols-3">
                       <div className="flex items-start gap-2 rounded-2xl bg-slate-50 px-3 py-2.5">
