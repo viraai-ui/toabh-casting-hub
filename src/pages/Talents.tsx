@@ -29,6 +29,48 @@ function TalentSummaryCard({
   )
 }
 
+function getTalentProfileSignal(talent: Talent) {
+  const hasInstagram = Boolean(talent.instagram_handle?.trim())
+  const hasPhone = Boolean(talent.phone?.trim())
+  const hasEmail = Boolean(talent.email?.trim())
+  const completeCount = [hasInstagram, hasPhone, hasEmail].filter(Boolean).length
+  const score = Math.round((completeCount / 3) * 100)
+
+  if (score === 100) {
+    return {
+      score,
+      label: 'Ready',
+      nextAction: 'Profile is ops-ready',
+      className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    }
+  }
+
+  if (!hasInstagram) {
+    return {
+      score,
+      label: 'Needs Instagram',
+      nextAction: 'Add Instagram handle',
+      className: 'border-violet-200 bg-violet-50 text-violet-700',
+    }
+  }
+
+  if (!hasPhone) {
+    return {
+      score,
+      label: 'Needs phone',
+      nextAction: 'Add phone number',
+      className: 'border-amber-200 bg-amber-50 text-amber-700',
+    }
+  }
+
+  return {
+    score,
+    label: 'Needs email',
+    nextAction: 'Add email address',
+    className: 'border-blue-200 bg-blue-50 text-blue-700',
+  }
+}
+
 export function Talents() {
   const [talents, setTalents] = useState<Talent[]>([])
   const [loading, setLoading] = useState(true)
@@ -295,13 +337,19 @@ export function Talents() {
                   >
                     Email <SortArrow sortKey="email" />
                   </th>
+                  <th className="text-left px-6 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wider hidden lg:table-cell">
+                    Profile status
+                  </th>
                   <th className="text-right px-6 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredTalents.map((talent) => (
+                {filteredTalents.map((talent) => {
+                  const profileSignal = getTalentProfileSignal(talent)
+
+                  return (
                   <tr
                     key={talent.id}
                     className="border-b border-slate-50 hover:bg-amber-50/30 transition-colors cursor-pointer last:border-b-0"
@@ -346,6 +394,14 @@ export function Talents() {
                         <span className="text-slate-400 text-xs">—</span>
                       )}
                     </td>
+                    <td className="px-6 py-3 hidden lg:table-cell">
+                      <div className="space-y-1">
+                        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${profileSignal.className}`}>
+                          {profileSignal.label} · {profileSignal.score}%
+                        </span>
+                        <p className="text-[11px] text-slate-500">{profileSignal.nextAction}</p>
+                      </div>
+                    </td>
                     <td className="px-6 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
                         {/* Call */}
@@ -373,7 +429,7 @@ export function Talents() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                )})}
               </tbody>
             </table>
           </div>
