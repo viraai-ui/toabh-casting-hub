@@ -212,15 +212,17 @@ export function Reports() {
           <h2 className="text-xl font-semibold text-slate-900">Reports</h2>
           <p className="text-sm text-slate-500">Analytics and insights for your castings</p>
         </div>
-        <button
-          onClick={exportCSV}
-          disabled={filteredCastings.length === 0 || isCustomRangeIncomplete || isCustomRangeInvalid}
-          title={exportDisabledReason}
-          className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Download className="w-4 h-4" />
-          Export CSV
-        </button>
+        <span title={exportDisabledReason}>
+          <button
+            onClick={exportCSV}
+            disabled={filteredCastings.length === 0 || isCustomRangeIncomplete || isCustomRangeInvalid}
+            aria-label={exportDisabledReason}
+            className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
+        </span>
       </div>
 
       {/* Date Range Selector */}
