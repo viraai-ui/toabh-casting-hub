@@ -286,7 +286,7 @@ export function Reports() {
           </p>
         ) : (
           <p className="text-sm text-slate-500">
-            {filteredCastings.length} {filteredCastings.length === 1 ? 'casting' : 'castings'} in this report range
+            {filteredCastings.length} {filteredCastings.length === 1 ? 'scheduled casting' : 'scheduled castings'} in this report range
           </p>
         )}
       </div>
