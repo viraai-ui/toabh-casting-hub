@@ -5,9 +5,7 @@ import {
   LayoutDashboard,
   Briefcase,
   Plus,
-  Users,
   Calendar,
-  CheckSquare,
   MoreHorizontal,
   X,
   Activity,
@@ -15,26 +13,27 @@ import {
   Settings,
   LogOut,
   Star,
+  Users,
+  CheckSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useOverlay } from '@/hooks/useOverlayManager'
 import { getSessionUser, isAdminUser, logout } from '@/lib/api'
 
-// Main bottom nav: Home, Jobs, + (FAB), Clients, More
+// Main bottom nav: Today, Jobs, Calendar, Talent, Inbox
 const mainItems = [
-  { icon: LayoutDashboard, label: 'Home', path: '/dashboard' },
+  { icon: LayoutDashboard, label: 'Today', path: '/dashboard' },
   { icon: Briefcase, label: 'Jobs', path: '/castings' },
   { icon: Plus, label: '', path: '', isFab: true },
-  { icon: Users, label: 'Clients', path: '/clients' },
-  { icon: MoreHorizontal, label: 'More', path: '#' },
+  { icon: Calendar, label: 'Calendar', path: '/calendar' },
+  { icon: Activity, label: 'Inbox', path: '/activity' },
 ]
 
-// More sheet: Calendar, Activity, Reports, Settings
+// More sheet: Talent, Tasks, Clients, Reports, Settings
 const moreItems = [
-  { icon: CheckSquare, label: 'Tasks', path: '/tasks' },
-  { icon: Calendar, label: 'Calendar', path: '/calendar' },
   { icon: Star, label: 'Talents', path: '/talents' },
-  { icon: Activity, label: 'Activity', path: '/activity' },
+  { icon: CheckSquare, label: 'Tasks', path: '/tasks' },
+  { icon: Users, label: 'Clients', path: '/clients' },
   { icon: BarChart3, label: 'Reports', path: '/reports' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ]
@@ -200,7 +199,7 @@ export function BottomNav() {
               </div>
 
               <div className="flex items-center justify-between mb-5">
-                <h3 className="text-base font-semibold text-slate-900">Menu</h3>
+                <h3 className="text-base font-semibold text-slate-900">More</h3>
                 <button
                   onClick={() => setMoreOpen(false)}
                   className="p-2 rounded-full hover:bg-slate-100 transition-colors"

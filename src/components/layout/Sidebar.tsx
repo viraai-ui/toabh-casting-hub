@@ -20,14 +20,14 @@ import { useAppStore } from '@/hooks/useStore'
 import { isAdminUser, logout, toApiUrl } from '@/lib/api'
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-  { icon: Briefcase, label: 'Castings', path: '/castings' },
-  { icon: CheckSquare, label: 'Tasks', path: '/tasks' },
-  { icon: Users, label: 'Clients', path: '/clients' },
+  { icon: LayoutDashboard, label: 'Today', path: '/dashboard' },
+  { icon: Briefcase, label: 'Jobs', path: '/castings' },
   { icon: Calendar, label: 'Calendar', path: '/calendar' },
-  { icon: UserCircle, label: 'Team', path: '/team' },
+  { icon: CheckSquare, label: 'Tasks', path: '/tasks' },
   { icon: Star, label: 'Talents', path: '/talents' },
-  { icon: Activity, label: 'Activity', path: '/activity' },
+  { icon: Users, label: 'Clients', path: '/clients' },
+  { icon: UserCircle, label: 'Team', path: '/team' },
+  { icon: Activity, label: 'Inbox', path: '/activity' },
   { icon: BarChart3, label: 'Reports', path: '/reports' },
   { icon: Settings, label: 'Settings', path: '/settings' },
 ]
@@ -59,7 +59,7 @@ export function Sidebar() {
           {!sidebarCollapsed && (
             <div className="flex flex-col">
               <span className="font-semibold text-slate-900">TOABH</span>
-              <span className="text-xs text-slate-500">Casting Hub</span>
+              <span className="text-xs text-slate-500">Agency OS</span>
             </div>
           )}
         </div>

@@ -11,16 +11,17 @@ import { logout } from '@/lib/api'
 import { useDataRefresh } from '@/hooks/useDataRefresh'
 
 const pageTitles: { [key: string]: string } = {
-  '/dashboard': 'Dashboard',
-  '/castings': 'Castings',
+  '/dashboard': 'Today',
+  '/castings': 'Jobs',
   '/clients': 'Clients',
   '/calendar': 'Calendar',
   '/team': 'Team',
-  '/activity': 'Activity Log',
+  '/activity': 'Inbox',
   '/reports': 'Reports',
   '/settings': 'Settings',
   '/profile': 'Profile',
   '/tasks': 'Tasks',
+  '/talents': 'Talents',
 }
 
 const NOTIFICATION_STORAGE_KEY = 'toabh_notification_reads'
@@ -249,7 +250,7 @@ export function Header() {
                     <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">Notifications</p>
-                        <p className="text-xs text-slate-500">Recent activity from Casting Hub</p>
+                        <p className="text-xs text-slate-500">Recent activity from your agency workspace</p>
                       </div>
                       <button
                         onClick={markAllRead}
