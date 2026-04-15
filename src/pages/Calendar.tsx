@@ -114,6 +114,61 @@ export function Calendar() {
     })
   }
 
+  const scheduleSummary = useMemo(() => {
+    const scheduled = filteredCastings.filter((casting) => Boolean(casting.shoot_date_start))
+    const unscheduled = Math.max(filteredCastings.length - scheduled.length, 0)
+    const assigned = scheduled.filter((casting) => Array.isArray(casting.assigned_to) ? casting.assigned_to.length > 0 : Boolean(casting.assigned_names?.trim()))
+    const unassigned = Math.max(scheduled.length - assigned.length, 0)
+    const todayCount = scheduled.filter((casting) => isSameDay(parseISO(casting.shoot_date_start), new Date())).length
+    const nextSevenDays = scheduled.filter((casting) => {
+      const date = parseISO(casting.shoot_date_start)
+      const diff = date.getTime() - new Date().getTime()
+      return diff >= 0 && diff <= 7 * 24 * 60 * 60 * 1000
+    }).length
+
+    return {
+      total: filteredCastings.length,
+      scheduled: scheduled.length,
+      unscheduled,
+      assigned: assigned.length,
+      unassigned,
+      todayCount,
+      nextSevenDays,
+    }
+  }, [filteredCastings])
+
+  const schedulePriority = useMemo(() => {
+    if (scheduleSummary.total === 0) {
+      return {
+        label: 'No schedule load yet',
+        note: 'Create or import jobs to build the booking and availability layer.',
+        tone: 'border-slate-200 bg-slate-50 text-slate-700',
+      }
+    }
+
+    if (scheduleSummary.unscheduled > 0) {
+      return {
+        label: 'Scheduling dates is the biggest gap right now',
+        note: `${scheduleSummary.unscheduled} job${scheduleSummary.unscheduled === 1 ? '' : 's'} still have no shoot date, so availability planning is still blocked.`,
+        tone: 'border-amber-200 bg-amber-50 text-amber-700',
+      }
+    }
+
+    if (scheduleSummary.unassigned > 0) {
+      return {
+        label: 'Owner coverage is the main scheduling gap',
+        note: `${scheduleSummary.unassigned} scheduled job${scheduleSummary.unassigned === 1 ? '' : 's'} still need team ownership before execution is safe.`,
+        tone: 'border-blue-200 bg-blue-50 text-blue-700',
+      }
+    }
+
+    return {
+      label: 'Schedule coverage looks strong',
+      note: 'Upcoming jobs appear dated and staffed, so this surface is starting to act like a booking OS.',
+      tone: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    }
+  }, [scheduleSummary])
+
   const goToToday = () => setCurrentDate(new Date())
 
   // Count active filters for badge
@@ -156,6 +211,47 @@ export function Calendar() {
                 Active filters
               </div>
               <div className="mt-1 font-medium text-slate-800">{activeFilterCount === 0 ? 'No filters applied' : `${activeFilterCount} active filter${activeFilterCount === 1 ? '' : 's'}`}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-3xl border border-slate-200/70 bg-slate-50 p-5 shadow-sm">
+          <p className="text-sm font-medium text-slate-500">Scheduled jobs</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{scheduleSummary.scheduled}</p>
+          <p className="mt-3 text-sm leading-6 text-slate-600">Jobs with a shoot date already locked.</p>
+        </div>
+        <div className="rounded-3xl border border-amber-200/70 bg-amber-50 p-5 shadow-sm text-amber-700">
+          <p className="text-sm font-medium text-amber-700/80">Unscheduled</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{scheduleSummary.unscheduled}</p>
+          <p className="mt-3 text-sm leading-6 text-slate-600">Jobs still missing a date, so booking movement is blocked.</p>
+        </div>
+        <div className="rounded-3xl border border-blue-200/70 bg-blue-50 p-5 shadow-sm text-blue-700">
+          <p className="text-sm font-medium text-blue-700/80">Unassigned schedule</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{scheduleSummary.unassigned}</p>
+          <p className="mt-3 text-sm leading-6 text-slate-600">Scheduled jobs that still need clear ownership.</p>
+        </div>
+        <div className="rounded-3xl border border-emerald-200/70 bg-emerald-50 p-5 shadow-sm text-emerald-700">
+          <p className="text-sm font-medium text-emerald-700/80">Next 7 days</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{scheduleSummary.nextSevenDays}</p>
+          <p className="mt-3 text-sm leading-6 text-slate-600">Upcoming scheduled jobs that need active availability focus.</p>
+        </div>
+      </section>
+
+      <section className={`rounded-3xl border px-5 py-4 shadow-sm ${schedulePriority.tone}`}>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-75">Schedule priority</p>
+            <p className="mt-1 text-base font-semibold text-slate-950">{schedulePriority.label}</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600">{schedulePriority.note}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-black/5">
+              {scheduleSummary.todayCount} today
+            </div>
+            <div className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-black/5">
+              {scheduleSummary.assigned}/{scheduleSummary.scheduled || 0} staffed
             </div>
           </div>
         </div>
