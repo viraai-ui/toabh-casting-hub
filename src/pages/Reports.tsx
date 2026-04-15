@@ -88,7 +88,7 @@ export function Reports() {
       if (!c.shoot_date_start) return
       const date = parseISO(c.shoot_date_start)
       const weekStart = startOfWeek(date)
-      const weekKey = weekStart.toISOString().split('T')[0]
+      const weekKey = formatReportDateForFilename(weekStart)
       if (!weeks[weekKey]) weeks[weekKey] = { scheduled: 0, closed: 0 }
       weeks[weekKey].scheduled++
       if (CLOSED_STATUSES.has((c.status || '').trim().toUpperCase())) weeks[weekKey].closed++
@@ -97,7 +97,7 @@ export function Reports() {
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(-8)
       .map(([week, data]) => ({
-        week: new Date(week).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        week: parseISO(week).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         ...data,
       }))
   }
