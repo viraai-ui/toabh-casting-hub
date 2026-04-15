@@ -6,6 +6,7 @@ import {
   Briefcase,
   ChevronDown,
   ChevronRight,
+  CircleAlert,
   LayoutGrid,
   List,
   Loader2,
@@ -32,6 +33,7 @@ interface ClientTagWithUsage extends ClientTag {
 }
 
 type ClientViewMode = 'grid' | 'list'
+type ClientRelationshipFilter = 'all' | 'active' | 'untagged' | 'missing-contact'
 
 const CLIENT_VIEW_STORAGE_KEY = 'toabh-clients-view-mode'
 
@@ -53,6 +55,7 @@ export function Clients() {
   const [quickAddClientId, setQuickAddClientId] = useState<number | null>(null)
   const [savingTagClientId, setSavingTagClientId] = useState<number | null>(null)
   const [viewMode, setViewMode] = useState<ClientViewMode>('grid')
+  const [relationshipFilter, setRelationshipFilter] = useState<ClientRelationshipFilter>('all')
 
   const fetchPageData = async () => {
     try {
@@ -123,6 +126,8 @@ export function Clients() {
 
     return clients.filter((client) => {
       const clientTags = client.tags ?? []
+      const clientCastings = getClientCastings(client.id)
+      const hasMissingContact = !client.email?.trim() || !client.phone?.trim()
       const matchesQuery =
         !query ||
         client.name.toLowerCase().includes(query) ||
@@ -136,9 +141,15 @@ export function Clients() {
         selectedFilterTagIds.length === 0 ||
         selectedFilterTagIds.every((tagId) => clientTags.some((tag) => tag.id === tagId))
 
-      return matchesQuery && matchesTagFilter
+      const matchesRelationshipFilter =
+        relationshipFilter === 'all' ||
+        (relationshipFilter === 'active' && clientCastings.length > 0) ||
+        (relationshipFilter === 'untagged' && clientTags.length === 0) ||
+        (relationshipFilter === 'missing-contact' && hasMissingContact)
+
+      return matchesQuery && matchesTagFilter && matchesRelationshipFilter
     })
-  }, [clients, searchQuery, selectedFilterTagIds])
+  }, [clients, searchQuery, selectedFilterTagIds, relationshipFilter, castings])
 
   const taggedClientsCount = useMemo(
     () => clients.filter((client) => (client.tags ?? []).length > 0).length,
@@ -147,6 +158,21 @@ export function Clients() {
 
   const totalClientTagAssignments = useMemo(
     () => clients.reduce((sum, client) => sum + (client.tags?.length ?? 0), 0),
+    [clients],
+  )
+
+  const activeClientsCount = useMemo(
+    () => clients.filter((client) => getClientCastings(client.id).length > 0).length,
+    [clients, castings],
+  )
+
+  const untaggedClientsCount = useMemo(
+    () => clients.filter((client) => (client.tags?.length ?? 0) === 0).length,
+    [clients],
+  )
+
+  const missingContactClientsCount = useMemo(
+    () => clients.filter((client) => !client.email?.trim() || !client.phone?.trim()).length,
     [clients],
   )
 
@@ -261,18 +287,18 @@ export function Clients() {
               Client CRM
             </div>
             <h1 className="mt-3 text-2xl font-semibold text-slate-900 sm:text-[30px]">
-              Clients with smart tags, fast scanning, and dual layouts
+              Clients with smart tags, faster scanning, and relationship triage
             </h1>
             <p className="mt-2 max-w-xl text-sm text-slate-600 sm:text-[15px]">
-              Switch between compact list mode and clean card mode, filter by reusable client tags, and update labels inline.
+              Phase 1 sharpens this into an operating surface so active clients, missing contact details, and untagged relationships stand out immediately.
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[520px]">
             <StatCard icon={Users} label="Total Clients" value={clients.length} />
-            <StatCard icon={Tag} label="Tagged Clients" value={taggedClientsCount} />
-            <StatCard icon={Briefcase} label="Live Castings" value={castings.length} />
-            <StatCard icon={Tag} label="Tag Links" value={totalClientTagAssignments} />
+            <StatCard icon={Briefcase} label="Active Clients" value={activeClientsCount} />
+            <StatCard icon={Tag} label="Untagged" value={untaggedClientsCount} />
+            <StatCard icon={CircleAlert} label="Missing Contact" value={missingContactClientsCount} />
           </div>
         </div>
       </section>
@@ -333,6 +359,33 @@ export function Clients() {
           </div>
         </div>
 
+        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Relationship focus</span>
+            {[
+              { key: 'all', label: `All (${clients.length})` },
+              { key: 'active', label: `Active (${activeClientsCount})` },
+              { key: 'untagged', label: `Untagged (${untaggedClientsCount})` },
+              { key: 'missing-contact', label: `Missing contact (${missingContactClientsCount})` },
+            ].map((option) => {
+              const active = relationshipFilter === option.key
+              return (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => setRelationshipFilter(option.key as ClientRelationshipFilter)}
+                  className={cn(
+                    'rounded-full border px-3 py-1.5 text-xs font-semibold transition',
+                    active ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300',
+                  )}
+                >
+                  {option.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
         {availableTags.length > 0 && (
           <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
             <div className="flex flex-wrap items-center gap-2">
@@ -367,6 +420,12 @@ export function Clients() {
             </div>
           </div>
         )}
+
+        <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+          <span className="rounded-full bg-white px-3 py-1.5 ring-1 ring-slate-200">Showing {filteredClients.length} client{filteredClients.length === 1 ? '' : 's'}</span>
+          <span className="rounded-full bg-white px-3 py-1.5 ring-1 ring-slate-200">{totalClientTagAssignments} total tag links</span>
+          <span className="rounded-full bg-white px-3 py-1.5 ring-1 ring-slate-200">{castings.length} linked casting records</span>
+        </div>
       </section>
 
       {loading ? (
