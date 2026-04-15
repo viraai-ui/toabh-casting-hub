@@ -3146,6 +3146,8 @@ def create_custom_field():
 
 # Dashboard modules toggle
 @app.route('/api/settings/dashboard-modules', methods=['GET'])
+@app.route('/api/settings/dashboard', methods=['GET'])
+@require_auth
 def get_dashboard_modules():
     os.makedirs(SETTINGS_DIR, exist_ok=True)
     try:
@@ -3155,6 +3157,8 @@ def get_dashboard_modules():
         return jsonify({'kanban':True,'calendar':True,'activityFeed':True,'quickActions':True,'charts':True})
 
 @app.route('/api/settings/dashboard-modules', methods=['PUT'])
+@app.route('/api/settings/dashboard', methods=['PUT'])
+@require_auth
 def update_dashboard_modules():
     data = request.json
     os.makedirs(SETTINGS_DIR, exist_ok=True)
