@@ -175,7 +175,7 @@ export function Reports() {
         ? 'No report data to export for this range.'
         : 'Export this report as CSV'
   const exportRangeLabel = dateRange === 'custom'
-    ? `${customRange.from || 'from'}_to_${customRange.to || 'to'}`
+    ? `custom-${customRange.from || 'from'}-to-${customRange.to || 'to'}`
     : {
         week: 'this-week',
         month: 'this-month',
