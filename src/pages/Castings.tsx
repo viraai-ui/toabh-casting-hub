@@ -396,13 +396,53 @@ export function Castings() {
     const decisionStatuses = new Set(['SHORTLISTED', 'OFFERED', 'REVIEW'])
     const confirmedStatuses = new Set(['COMPLETED', 'CONFIRMED', 'BOOKED', 'WON'])
 
+    const activeQueue = normalized.filter((casting) => !confirmedStatuses.has(casting.normalizedStatus)).length
+    const decisionQueue = normalized.filter((casting) => decisionStatuses.has(casting.normalizedStatus)).length
+    const assignedJobs = normalized.filter((casting) => parseAssignedNames((casting as { assigned_names?: string | null }).assigned_names).length > 0).length
+    const readyForTalent = normalized.filter((casting) => Boolean(casting.project_name) && Boolean(casting.client_name)).length
+    const incompleteIntake = normalized.filter((casting) => !casting.project_name || !casting.client_name).length
+
     return {
-      activeQueue: normalized.filter((casting) => !confirmedStatuses.has(casting.normalizedStatus)).length,
-      decisionQueue: normalized.filter((casting) => decisionStatuses.has(casting.normalizedStatus)).length,
-      assignedJobs: normalized.filter((casting) => parseAssignedNames((casting as { assigned_names?: string | null }).assigned_names).length > 0).length,
-      readyForTalent: normalized.filter((casting) => Boolean(casting.project_name) && Boolean(casting.client_name)).length,
+      activeQueue,
+      decisionQueue,
+      assignedJobs,
+      readyForTalent,
+      incompleteIntake,
+      total: normalized.length,
     }
   }, [filteredCastings])
+
+  const workflowHealth = useMemo(() => {
+    if (workflowSummary.total === 0) {
+      return {
+        label: 'Queue is clear',
+        note: 'No jobs are in the current filtered view.',
+        tone: 'border-slate-200 bg-slate-50 text-slate-700',
+      }
+    }
+
+    if (workflowSummary.incompleteIntake > 0) {
+      return {
+        label: `${workflowSummary.incompleteIntake} job${workflowSummary.incompleteIntake === 1 ? '' : 's'} need intake cleanup`,
+        note: 'Project or client inputs are still missing before ops can move cleanly.',
+        tone: 'border-amber-200 bg-amber-50 text-amber-700',
+      }
+    }
+
+    if (workflowSummary.decisionQueue > 0) {
+      return {
+        label: `${workflowSummary.decisionQueue} job${workflowSummary.decisionQueue === 1 ? '' : 's'} in decision stage`,
+        note: 'This queue needs fast follow-through on shortlist, review, or offer movement.',
+        tone: 'border-cyan-200 bg-cyan-50 text-cyan-700',
+      }
+    }
+
+    return {
+      label: 'Workflow health looks strong',
+      note: 'Current jobs are structured well enough for active ops movement.',
+      tone: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    }
+  }, [workflowSummary])
 
   const handleSort = (key: string) => {
     setSortConfig((prev) =>
@@ -483,6 +523,19 @@ export function Castings() {
           note="Client + project details are strong enough to push outward."
           tone="bg-emerald-50 text-emerald-700 border-emerald-200/70"
         />
+      </section>
+
+      <section className={cn('rounded-3xl border px-5 py-4 shadow-sm', workflowHealth.tone)}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-75">Workflow health</p>
+            <p className="mt-1 text-base font-semibold text-slate-950">{workflowHealth.label}</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600">{workflowHealth.note}</p>
+          </div>
+          <div className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-black/5">
+            {workflowSummary.readyForTalent}/{workflowSummary.total} ready for movement
+          </div>
+        </div>
       </section>
 
       {/* Toolbar */}
