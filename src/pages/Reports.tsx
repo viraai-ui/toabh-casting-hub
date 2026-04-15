@@ -59,7 +59,7 @@ export function Reports() {
     return true
   })
 
-  // Casting Performance - Created vs Closed per week
+  // Casting Performance - Scheduled vs Closed per week
   const getWeeklyData = () => {
     const weeks: { [key: string]: { created: number; closed: number } } = {}
     filteredCastings.forEach((c) => {
@@ -67,8 +67,8 @@ export function Reports() {
       const date = parseISO(c.shoot_date_start)
       const weekStart = startOfWeek(date)
       const weekKey = weekStart.toISOString().split('T')[0]
-      if (!weeks[weekKey]) weeks[weekKey] = { created: 0, closed: 0 }
-      weeks[weekKey].created++
+      if (!weeks[weekKey]) weeks[weekKey] = { scheduled: 0, closed: 0 }
+      weeks[weekKey].scheduled++
       if (CLOSED_STATUSES.has((c.status || '').trim().toUpperCase())) weeks[weekKey].closed++
     })
     return Object.entries(weeks)
@@ -248,7 +248,7 @@ export function Reports() {
                   }}
                 />
                 <Legend />
-                <Bar dataKey="created" name="Created" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="scheduled" name="Scheduled" fill="#f59e0b" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="closed" name="Closed" fill="#10b981" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
