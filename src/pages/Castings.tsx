@@ -164,6 +164,38 @@ function formatSourceLabel(casting: Casting) {
   return '-'
 }
 
+function getSubmissionReadiness(casting: Casting) {
+  const hasProject = Boolean(casting.project_name?.trim())
+  const hasClient = Boolean(casting.client_name?.trim())
+  const hasTeam =
+    parseAssignedNames(casting.assigned_names).length > 0 ||
+    (Array.isArray(casting.assigned_to) && casting.assigned_to.length > 0)
+  const hasBrief = Boolean(casting.requirements?.trim())
+  const hasTiming = Boolean(casting.shoot_date_start)
+
+  if (hasProject && hasClient && hasTeam && hasBrief && hasTiming) {
+    return {
+      label: 'Submission ready',
+      note: 'Ops can move talent now',
+      className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    }
+  }
+
+  if (hasProject && hasClient && (hasTeam || hasBrief)) {
+    return {
+      label: 'Needs ops fill-in',
+      note: 'Almost ready for movement',
+      className: 'border-amber-200 bg-amber-50 text-amber-700',
+    }
+  }
+
+  return {
+    label: 'Intake incomplete',
+    note: 'Core job inputs still missing',
+    className: 'border-slate-200 bg-slate-100 text-slate-600',
+  }
+}
+
 export function Castings() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -1084,6 +1116,7 @@ function ListView({
               const isAttachmentLoading = loadingAttachmentId === casting.id
               const phone = casting.client_contact?.trim()
               const normalizedPhone = phone ? phone.replace(/\D/g, '') : ''
+              const readiness = getSubmissionReadiness(casting)
 
               return (
                 <tr
@@ -1141,6 +1174,9 @@ function ListView({
                               )}
                             </div>
                             <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+                              <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 font-medium', readiness.className)}>
+                                {readiness.label}
+                              </span>
                               {casting.location && !columnVisibility.location && (
                                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">{casting.location}</span>
                               )}
@@ -1455,6 +1491,7 @@ function GridView({
         const stageColor = currentStage?.color || '#64748b'
         const isFlashing = flashingId === c.id
         const isUpdating = updatingId === c.id
+        const readiness = getSubmissionReadiness(c)
 
         return (
           <div
@@ -1508,6 +1545,12 @@ function GridView({
 
             {/* ── ZONE 2: Info stack — uniform vertical rhythm ───────── */}
             <div className="flex-1 px-5 space-y-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2 pb-1">
+                <span className={cn('inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]', readiness.className)}>
+                  {readiness.label}
+                </span>
+                <span className="text-[11px] text-slate-400">{readiness.note}</span>
+              </div>
               {/* Client name */}
               <p
                 className="text-[13px] font-medium text-slate-700 truncate"
