@@ -577,20 +577,29 @@ function MonthView({
               </div>
 
               <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-hidden">
-                {visibleCastings.map((casting) => (
-                  <button
-                    key={casting.id}
-                    onClick={() => onCastingClick(casting)}
-                    className="w-full truncate rounded px-1 py-0.5 text-left text-[9px] font-medium leading-tight transition-opacity hover:opacity-75 sm:text-[11px]"
-                    style={{
-                      backgroundColor: `${getCastingColor(casting.status)}18`,
-                      color: getCastingColor(casting.status),
-                    }}
-                    title={casting.project_name || casting.client_name}
-                  >
-                    {casting.project_name || casting.client_name}
-                  </button>
-                ))}
+                {visibleCastings.map((casting) => {
+                  const hasOwner = Array.isArray(casting.assigned_to)
+                    ? casting.assigned_to.length > 0
+                    : Boolean(casting.assigned_names?.trim())
+
+                  return (
+                    <button
+                      key={casting.id}
+                      onClick={() => onCastingClick(casting)}
+                      className="w-full rounded px-1 py-0.5 text-left text-[9px] font-medium leading-tight transition-opacity hover:opacity-75 sm:text-[11px]"
+                      style={{
+                        backgroundColor: `${getCastingColor(casting.status)}18`,
+                        color: getCastingColor(casting.status),
+                      }}
+                      title={casting.project_name || casting.client_name}
+                    >
+                      <p className="truncate">{casting.project_name || casting.client_name}</p>
+                      <p className="truncate text-[8px] sm:text-[9px]" style={{ opacity: 0.78 }}>
+                        {hasOwner ? 'Owner assigned' : 'Owner needed'}
+                      </p>
+                    </button>
+                  )
+                })}
                 {overflow > 0 && (
                   <span className="truncate pl-1 text-[9px] leading-tight text-slate-400 sm:text-[10px]">
                     +{overflow} more
