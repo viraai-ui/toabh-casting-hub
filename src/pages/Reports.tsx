@@ -317,31 +317,37 @@ export function Reports() {
         >
           <h3 className="font-semibold text-slate-900 mb-4">Status Distribution</h3>
           <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={statusData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {statusData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    background: 'rgba(255,255,255,0.95)',
-                    border: '1px solid rgba(0,0,0,0.1)',
-                    borderRadius: 12,
-                  }}
-                />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            {statusData.length === 0 ? (
+              <div className="flex h-full items-center justify-center text-center text-sm text-slate-500">
+                No status data in this report range yet.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={statusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {statusData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      background: 'rgba(255,255,255,0.95)',
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      borderRadius: 12,
+                    }}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </motion.div>
 
