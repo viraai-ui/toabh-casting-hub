@@ -63,9 +63,9 @@ export function Reports() {
   const getWeeklyData = () => {
     const weeks: { [key: string]: { created: number; closed: number } } = {}
     filteredCastings.forEach((c) => {
-      if (!c.created_at) return
-      const date = new Date(c.created_at)
-      const weekStart = new Date(date.setDate(date.getDate() - date.getDay()))
+      if (!c.shoot_date_start) return
+      const date = parseISO(c.shoot_date_start)
+      const weekStart = startOfWeek(date)
       const weekKey = weekStart.toISOString().split('T')[0]
       if (!weeks[weekKey]) weeks[weekKey] = { created: 0, closed: 0 }
       weeks[weekKey].created++
