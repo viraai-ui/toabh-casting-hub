@@ -1503,6 +1503,10 @@ def assign_casting(casting_id):
 @require_auth
 def get_activities(casting_id):
     db = get_db()
+    casting = db.execute('SELECT id FROM castings WHERE id = ?', (casting_id,)).fetchone()
+    if not casting:
+        return jsonify({'error': 'Casting not found'}), 404
+
     rows = db.execute('''
         SELECT a.*, tm.name as team_member_name
         FROM activities a
