@@ -10,6 +10,7 @@ import { endOfDay, endOfMonth, endOfQuarter, endOfWeek, isWithinInterval, parseI
 
 const COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#ec4899']
 const CLOSED_STATUSES = new Set(['WON', 'LOST', 'INVOICED', 'PAID', 'COMPLETED', 'DECLINED'])
+const WEEK_OPTIONS = { weekStartsOn: 1 as const }
 
 const formatRevenueAxisValue = (value: number) => {
   if (Math.abs(value) >= 100000) {
@@ -60,7 +61,7 @@ export function Reports() {
     const now = new Date()
 
     if (dateRange === 'week') {
-      return isWithinInterval(shootDate, { start: startOfWeek(now), end: endOfWeek(now) })
+      return isWithinInterval(shootDate, { start: startOfWeek(now, WEEK_OPTIONS), end: endOfWeek(now, WEEK_OPTIONS) })
     }
     if (dateRange === 'month') {
       return isWithinInterval(shootDate, { start: startOfMonth(now), end: endOfMonth(now) })
@@ -87,7 +88,7 @@ export function Reports() {
     filteredCastings.forEach((c) => {
       if (!c.shoot_date_start) return
       const date = parseISO(c.shoot_date_start)
-      const weekStart = startOfWeek(date)
+      const weekStart = startOfWeek(date, WEEK_OPTIONS)
       const weekKey = formatReportDateForFilename(weekStart)
       if (!weeks[weekKey]) weeks[weekKey] = { scheduled: 0, closed: 0 }
       weeks[weekKey].scheduled++
