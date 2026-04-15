@@ -300,6 +300,18 @@ def init_db():
         except:
             pass
 
+    # Harden castings timestamps across SQLite and Postgres
+    for statement in [
+        'UPDATE castings SET created_at = COALESCE(created_at, updated_at) WHERE created_at IS NULL AND updated_at IS NOT NULL',
+        'UPDATE castings SET updated_at = COALESCE(updated_at, created_at) WHERE updated_at IS NULL AND created_at IS NOT NULL',
+        'ALTER TABLE castings ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP',
+        'ALTER TABLE castings ALTER COLUMN updated_at SET DEFAULT CURRENT_TIMESTAMP',
+    ]:
+        try:
+            db.execute(statement)
+        except:
+            pass
+
     # Add missing columns to team_members for existing databases
     for col_def in [
         'ALTER TABLE team_members ADD COLUMN email TEXT',
@@ -1246,8 +1258,8 @@ def list_castings():
                 source, source_detail, client_name, client_company, client_contact, client_email,
                 project_name, project_type, shoot_date_start, shoot_date_end,
                 location, medium, usage, budget_min, budget_max, requirements,
-                apply_to, status, priority
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                apply_to, status, priority, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ''', (
             source,
             data.get('source_detail'),
