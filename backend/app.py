@@ -138,6 +138,16 @@ def init_db():
     db = get_db()
     if app.config['DB_BACKEND'] == 'postgres':
         db.executescript(POSTGRES_SCHEMA_SCRIPT)
+        for statement in [
+            'UPDATE castings SET created_at = COALESCE(created_at, updated_at) WHERE created_at IS NULL AND updated_at IS NOT NULL',
+            'UPDATE castings SET updated_at = COALESCE(updated_at, created_at) WHERE updated_at IS NULL AND created_at IS NOT NULL',
+            'ALTER TABLE castings ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP',
+            'ALTER TABLE castings ALTER COLUMN updated_at SET DEFAULT CURRENT_TIMESTAMP',
+        ]:
+            try:
+                db.execute(statement)
+            except:
+                pass
         db.commit()
         return
     else:
