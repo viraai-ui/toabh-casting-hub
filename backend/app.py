@@ -3416,6 +3416,13 @@ def sanitize_instagram(handle):
         h = h[1:]
     return h or None
 
+
+def _serialize_talent_row(row):
+    talent = dict(row)
+    talent['created_at'] = talent.get('created_at') or talent.get('updated_at') or datetime.now().isoformat()
+    talent['updated_at'] = talent.get('updated_at') or talent.get('created_at') or talent['created_at']
+    return talent
+
 @app.route('/api/talents', methods=['GET'])
 @require_auth
 def list_talents():
@@ -3426,11 +3433,11 @@ def list_talents():
         rows = db.execute('''
             SELECT * FROM talents
             WHERE name LIKE ? OR phone LIKE ? OR email LIKE ? OR instagram_handle LIKE ?
-            ORDER BY updated_at DESC
+            ORDER BY COALESCE(updated_at, created_at) DESC, id DESC
         ''', (like, like, like, like)).fetchall()
     else:
-        rows = db.execute('SELECT * FROM talents ORDER BY updated_at DESC').fetchall()
-    return jsonify([dict(r) for r in rows])
+        rows = db.execute('SELECT * FROM talents ORDER BY COALESCE(updated_at, created_at) DESC, id DESC').fetchall()
+    return jsonify([_serialize_talent_row(r) for r in rows])
 
 
 @app.route('/api/talents/search', methods=['GET'])
@@ -3470,13 +3477,13 @@ def create_talent():
         return jsonify({'error': 'Invalid email format'}), 400
 
     row = db.execute('''
-        INSERT INTO talents (name, instagram_handle, phone, email)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO talents (name, instagram_handle, phone, email, created_at, updated_at)
+        VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))
     ''', (name, instagram, phone, email))
     db.commit()
 
     talent = db.execute('SELECT * FROM talents WHERE id = ?', (row.lastrowid,)).fetchone()
-    return jsonify(dict(talent)), 201
+    return jsonify(_serialize_talent_row(talent)), 201
 
 
 @app.route('/api/talents/<int:talent_id>', methods=['PUT'])
@@ -3507,7 +3514,7 @@ def update_talent(talent_id):
     db.commit()
 
     talent = db.execute('SELECT * FROM talents WHERE id = ?', (talent_id,)).fetchone()
-    return jsonify(dict(talent))
+    return jsonify(_serialize_talent_row(talent))
 
 
 @app.route('/api/talents/<int:talent_id>', methods=['DELETE'])
