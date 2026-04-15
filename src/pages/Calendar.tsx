@@ -36,6 +36,7 @@ export function Calendar() {
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [filters, setFilters] = useState<{ team?: string; status?: string; client?: string }>({})
+  const [scheduleFocus, setScheduleFocus] = useState<'all' | 'unscheduled' | 'unassigned' | 'upcoming'>('all')
   const [filtersOpen, setFiltersOpen] = useState(false) // collapsed on mobile by default
 
   const fetchData = async () => {
@@ -103,9 +104,26 @@ export function Calendar() {
     return castings.filter((c) => {
       if (filters.status && c.status !== filters.status) return false
       if (filters.client && !c.client_name?.toLowerCase().includes(filters.client.toLowerCase())) return false
+
+      if (scheduleFocus === 'unscheduled') {
+        return !c.shoot_date_start
+      }
+
+      if (scheduleFocus === 'unassigned') {
+        const hasOwner = Array.isArray(c.assigned_to) ? c.assigned_to.length > 0 : Boolean(c.assigned_names?.trim())
+        return Boolean(c.shoot_date_start) && !hasOwner
+      }
+
+      if (scheduleFocus === 'upcoming') {
+        if (!c.shoot_date_start) return false
+        const date = parseISO(c.shoot_date_start)
+        const diff = date.getTime() - new Date().getTime()
+        return diff >= 0 && diff <= 7 * 24 * 60 * 60 * 1000
+      }
+
       return true
     })
-  }, [castings, filters])
+  }, [castings, filters, scheduleFocus])
 
   const getCastingsForDate = (date: Date) => {
     return filteredCastings.filter((c) => {
@@ -303,6 +321,26 @@ export function Calendar() {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        {[
+          { key: 'all', label: `All schedule (${scheduleSummary.total})` },
+          { key: 'unscheduled', label: `Unscheduled (${scheduleSummary.unscheduled})` },
+          { key: 'unassigned', label: `Unassigned (${scheduleSummary.unassigned})` },
+          { key: 'upcoming', label: `Next 7 days (${scheduleSummary.nextSevenDays})` },
+        ].map((option) => {
+          const active = scheduleFocus === option.key
+          return (
+            <button
+              key={option.key}
+              onClick={() => setScheduleFocus(option.key as 'all' | 'unscheduled' | 'unassigned' | 'upcoming')}
+              className={`rounded-full border px-3 py-2 text-xs font-semibold transition-colors ${active ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
+            >
+              {option.label}
+            </button>
+          )
+        })}
+      </div>
+
       {/* ── Filters: collapsible on mobile ───────────────────────────── */}
       <div className="mb-2 shrink-0">
         {/* Filter toggle row */}
@@ -355,6 +393,12 @@ export function Calendar() {
           </div>
         </div>
       </div>
+
+      {scheduleFocus !== 'all' && (
+        <p className="text-xs text-slate-500">
+          Showing {filteredCastings.length} of {castings.length} job{castings.length === 1 ? '' : 's'} for the current scheduling focus.
+        </p>
+      )}
 
       {/* ── Calendar views ───────────────────────────────────────────── */}
       <div className="min-h-0 flex-1 w-full">
