@@ -432,16 +432,15 @@ export function Calendar() {
                 : casting.assigned_names?.trim() || 'No owner yet'
 
               return (
-                <button
+                <div
                   key={casting.id}
-                  onClick={() => openDetail(casting)}
                   className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-left transition hover:border-slate-300 hover:bg-white"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div>
+                    <button onClick={() => openDetail(casting)} className="text-left min-w-0 flex-1">
                       <p className="text-sm font-semibold text-slate-900 line-clamp-1">{casting.project_name || 'Untitled job'}</p>
                       <p className="mt-1 text-xs text-slate-500">{casting.client_name || 'No client'}</p>
-                    </div>
+                    </button>
                     <span
                       className="rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]"
                       style={{
@@ -457,7 +456,24 @@ export function Calendar() {
                     <p>{hasOwner ? `Owner: ${ownerLabel}` : 'Owner: Not assigned yet'}</p>
                     {casting.location && <p className="line-clamp-1">Location: {casting.location}</p>}
                   </div>
-                </button>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => openDetail(casting)}
+                      className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50"
+                    >
+                      View details
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedCasting(casting)
+                        setEditModalOpen(true)
+                      }}
+                      className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-100"
+                    >
+                      {scheduleFocus === 'unscheduled' ? 'Add date' : scheduleFocus === 'unassigned' ? 'Assign owner' : 'Edit job'}
+                    </button>
+                  </div>
+                </div>
               )
             })}
           </div>
