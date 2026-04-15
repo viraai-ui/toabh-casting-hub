@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Calendar, Loader2, MessageSquare, Plus, X } from 'lucide-react'
+import { AlertTriangle, Calendar, CheckCircle2, Loader2, MessageSquare, Plus, UserCheck, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, formatDate, formatRelativeTime, getInitials } from '@/lib/utils'
 import { useAppStore } from '@/hooks/useStore'
@@ -347,7 +347,6 @@ export function Tasks() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
 
-  // Handle ?new=true URL param — opens the task composer modal
   useEffect(() => {
     if (searchParams.get('new') === 'true' && !composerOpen) {
       setComposerOpen(true)
@@ -383,6 +382,21 @@ export function Tasks() {
     void fetchData()
   })
 
+  const taskStats = useMemo(() => {
+    const now = new Date()
+    const doneStatuses = new Set(['done', 'completed'])
+    const completedCount = tasks.filter((task) => doneStatuses.has((task.status || '').toLowerCase())).length
+    const overdueCount = tasks.filter((task) => task.due_date && new Date(task.due_date) < now && !doneStatuses.has((task.status || '').toLowerCase())).length
+    const assignedCount = tasks.filter((task) => task.assigned_to.length > 0).length
+    const dueSoonCount = tasks.filter((task) => {
+      if (!task.due_date || doneStatuses.has((task.status || '').toLowerCase())) return false
+      const due = new Date(task.due_date)
+      const diff = due.getTime() - now.getTime()
+      return diff >= 0 && diff <= 1000 * 60 * 60 * 24 * 2
+    }).length
+    return { completedCount, overdueCount, assignedCount, dueSoonCount }
+  }, [tasks])
+
   if (loading) {
     return <div className="flex items-center justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-amber-500" /></div>
   }
@@ -406,44 +420,84 @@ export function Tasks() {
         </div>
       </section>
 
-      <div className="flex flex-wrap gap-2">
-        <button onClick={() => setFilter('my')} className={cn('rounded-full border px-3 py-1.5 text-sm', filter === 'my' ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-200 bg-white text-slate-600')}>My Tasks</button>
-        {isAdmin && <button onClick={() => setFilter('all')} className={cn('rounded-full border px-3 py-1.5 text-sm', filter === 'all' ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-200 bg-white text-slate-600')}>All Tasks</button>}
-        <button onClick={() => setFilter('completed')} className={cn('rounded-full border px-3 py-1.5 text-sm', filter === 'completed' ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-200 bg-white text-slate-600')}>Completed</button>
-        <button onClick={() => setFilter('overdue')} className={cn('rounded-full border px-3 py-1.5 text-sm', filter === 'overdue' ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-200 bg-white text-slate-600')}>Overdue</button>
-      </div>
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <TaskStatCard label="Open now" value={tasks.length} note="Tasks in the current view and ready for action." tone="border-amber-200/70 bg-amber-50 text-amber-700" icon={Calendar} />
+        <TaskStatCard label="Due soon" value={taskStats.dueSoonCount} note="Due in the next 48 hours and worth checking first." tone="border-blue-200/70 bg-blue-50 text-blue-700" icon={UserCheck} />
+        <TaskStatCard label="Overdue" value={taskStats.overdueCount} note="Past due and still not marked complete." tone="border-red-200/70 bg-red-50 text-red-700" icon={AlertTriangle} />
+        <TaskStatCard label="Completed" value={taskStats.completedCount} note="Already closed out in the loaded queue." tone="border-emerald-200/70 bg-emerald-50 text-emerald-700" icon={CheckCircle2} />
+      </section>
+
+      <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Queue filters</p>
+            <p className="mt-1 text-sm text-slate-600">Switch between personal execution, full team view, and recovery lists.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => setFilter('my')} className={cn('rounded-full border px-3 py-2 text-xs font-semibold', filter === 'my' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-600')}>My queue</button>
+            {isAdmin && <button onClick={() => setFilter('all')} className={cn('rounded-full border px-3 py-2 text-xs font-semibold', filter === 'all' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-600')}>All tasks</button>}
+            <button onClick={() => setFilter('completed')} className={cn('rounded-full border px-3 py-2 text-xs font-semibold', filter === 'completed' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-600')}>Completed</button>
+            <button onClick={() => setFilter('overdue')} className={cn('rounded-full border px-3 py-2 text-xs font-semibold', filter === 'overdue' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-600')}>Overdue</button>
+          </div>
+        </div>
+      </section>
 
       <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
         <div className="divide-y divide-slate-100">
           {tasks.length === 0 ? (
-            <div className="px-5 py-16 text-center text-sm text-slate-400">No tasks found.</div>
-          ) : tasks.map((task) => (
-            <div key={task.id} className="flex flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="min-w-0 flex-1 cursor-pointer" onClick={() => { setSelectedTask(task); setDetailOpen(true) }}>
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="truncate text-sm font-semibold text-slate-900">{task.title}</p>
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">{task.status}</span>
-                </div>
-                <p className="mt-1 truncate text-sm text-slate-500">{task.description || 'No description added.'}</p>
-                <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400">
-                  <span>{task.assigned_to.length ? task.assigned_to.map((member) => member.name).join(', ') : 'Unassigned'}</span>
-                  <span>{task.due_date ? `Due ${formatDate(task.due_date)}` : 'No due date'}</span>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {stages.map((stage) => (
-                  <button key={stage.id} onClick={() => api.put(`/tasks/${task.id}/status`, { status: stage.name }).then(() => fetchData())} className={cn('rounded-full border px-3 py-1.5 text-xs font-medium', task.status === stage.name ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-200 bg-white text-slate-600')}>
-                    {stage.name}
-                  </button>
-                ))}
-              </div>
+            <div className="px-5 py-16 text-center">
+              <p className="text-sm font-semibold text-slate-900">No tasks found</p>
+              <p className="mt-2 text-sm text-slate-500">Try another queue filter or create the next follow-up task.</p>
             </div>
-          ))}
+          ) : tasks.map((task) => {
+            const overdue = Boolean(task.due_date && new Date(task.due_date) < new Date() && !['done', 'completed'].includes((task.status || '').toLowerCase()))
+            return (
+              <div key={task.id} className="flex flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0 flex-1 cursor-pointer" onClick={() => { setSelectedTask(task); setDetailOpen(true) }}>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate text-sm font-semibold text-slate-900">{task.title}</p>
+                    <span className={cn('rounded-full px-2.5 py-1 text-[11px] font-medium', overdue ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-600')}>{task.status}</span>
+                    {overdue && <span className="rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700">Overdue</span>}
+                  </div>
+                  <p className="mt-1 truncate text-sm text-slate-500">{task.description || 'No description added.'}</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                    <span>{task.assigned_to.length ? task.assigned_to.map((member) => member.name).join(', ') : 'Unassigned'}</span>
+                    <span>{task.due_date ? `Due ${formatDate(task.due_date)}` : 'No due date'}</span>
+                    <span>{task.assigned_to.length > 0 ? `${task.assigned_to.length} owner${task.assigned_to.length === 1 ? '' : 's'}` : 'Needs owner'}</span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {stages.map((stage) => (
+                    <button key={stage.id} onClick={() => api.put(`/tasks/${task.id}/status`, { status: stage.name }).then(() => fetchData())} className={cn('rounded-full border px-3 py-1.5 text-xs font-medium', task.status === stage.name ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-200 bg-white text-slate-600')}>
+                      {stage.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
 
       <TaskComposer open={composerOpen} onClose={() => setComposerOpen(false)} onSaved={fetchData} task={selectedTask} team={team} stages={stages} currentUserTeamMemberId={currentUser?.team_member_id} />
       <TaskDetail task={detailOpen ? selectedTask : null} team={team} stages={stages} onClose={() => setDetailOpen(false)} onRefresh={fetchData} />
+    </div>
+  )
+}
+
+function TaskStatCard({ label, value, note, tone, icon: Icon }: { label: string; value: number; note: string; tone: string; icon: React.ElementType }) {
+  return (
+    <div className={cn('rounded-3xl border p-5 shadow-sm', tone)}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-current/80">{label}</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{value}</p>
+        </div>
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 shadow-sm">
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+      <p className="mt-4 text-sm leading-6 text-slate-600">{note}</p>
     </div>
   )
 }
