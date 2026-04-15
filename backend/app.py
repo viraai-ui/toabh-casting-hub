@@ -590,9 +590,11 @@ def list_activities():
 
     query = '''
         SELECT a.id, a.casting_id, a.action, a.details as description,
-               COALESCE(NULLIF(TRIM(tm.name), ''), 'System') as user_name, a.timestamp as created_at
+               COALESCE(NULLIF(TRIM(tm.name), ''), 'System') as user_name,
+               COALESCE(a.timestamp, c.updated_at, c.created_at) as created_at
         FROM activities a
         LEFT JOIN team_members tm ON a.team_member_id = tm.id
+        LEFT JOIN castings c ON a.casting_id = c.id
     '''
 
     conditions = []
@@ -987,10 +989,12 @@ def list_notifications():
     db = get_db()
     rows = db.execute('''
         SELECT a.id, a.casting_id, a.action, a.details as description,
-               COALESCE(NULLIF(TRIM(tm.name), ''), 'System') as user_name, a.timestamp as created_at
+               COALESCE(NULLIF(TRIM(tm.name), ''), 'System') as user_name,
+               COALESCE(a.timestamp, c.updated_at, c.created_at) as created_at
         FROM activities a
         LEFT JOIN team_members tm ON a.team_member_id = tm.id
-        ORDER BY a.timestamp DESC
+        LEFT JOIN castings c ON a.casting_id = c.id
+        ORDER BY COALESCE(a.timestamp, c.updated_at, c.created_at) DESC, a.id DESC
         LIMIT 20
     ''').fetchall()
 
@@ -1989,11 +1993,13 @@ def _build_profile_payload(db, profile):
         activity_rows = db.execute(
             '''
             SELECT a.id, a.casting_id, a.action, a.details as description,
-                   COALESCE(NULLIF(TRIM(tm.name), ''), 'System') as user_name, a.timestamp as created_at
+                   COALESCE(NULLIF(TRIM(tm.name), ''), 'System') as user_name,
+                   COALESCE(a.timestamp, c.updated_at, c.created_at) as created_at
             FROM activities a
             LEFT JOIN team_members tm ON a.team_member_id = tm.id
+            LEFT JOIN castings c ON a.casting_id = c.id
             WHERE a.team_member_id = ? OR LOWER(COALESCE(tm.name, '')) = LOWER(?)
-            ORDER BY a.timestamp DESC
+            ORDER BY COALESCE(a.timestamp, c.updated_at, c.created_at) DESC, a.id DESC
             LIMIT 8
             ''',
             (team_member_id, profile.get('name') or ''),
@@ -2479,10 +2485,12 @@ def dashboard():
     # Recent activity
     recent = db.execute('''
         SELECT a.id, a.casting_id, a.action, a.details as description,
-               COALESCE(NULLIF(TRIM(tm.name), ''), 'System') as user_name, a.timestamp as created_at
+               COALESCE(NULLIF(TRIM(tm.name), ''), 'System') as user_name,
+               COALESCE(a.timestamp, c.updated_at, c.created_at) as created_at
         FROM activities a
         LEFT JOIN team_members tm ON a.team_member_id = tm.id
-        ORDER BY a.timestamp DESC
+        LEFT JOIN castings c ON a.casting_id = c.id
+        ORDER BY COALESCE(a.timestamp, c.updated_at, c.created_at) DESC, a.id DESC
         LIMIT 10
     ''').fetchall()
 
