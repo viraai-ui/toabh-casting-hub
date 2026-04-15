@@ -1063,7 +1063,7 @@ def _activity_row_to_dict(row):
 
 def _build_notification_from_activity(activity):
     action = (activity.get('action') or '').upper()
-    created_at = activity.get('created_at') or activity.get('timestamp') or datetime.now().isoformat()
+    created_at = activity.get('created_at') or activity.get('timestamp')
     casting_id = activity.get('casting_id')
     user_name = activity.get('user_name') or activity.get('team_member_name') or 'Team'
     body = activity.get('description') or activity.get('details') or 'Activity update'
