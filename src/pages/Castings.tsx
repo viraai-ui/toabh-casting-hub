@@ -355,6 +355,23 @@ export function Castings() {
 
   const activeFilterCount = countActiveCastingFilters(appliedFilters)
 
+  const workflowSummary = useMemo(() => {
+    const normalized = filteredCastings.map((casting) => ({
+      ...casting,
+      normalizedStatus: (casting.status || 'NEW').toUpperCase(),
+    }))
+
+    const decisionStatuses = new Set(['SHORTLISTED', 'OFFERED', 'REVIEW'])
+    const confirmedStatuses = new Set(['COMPLETED', 'CONFIRMED', 'BOOKED', 'WON'])
+
+    return {
+      activeQueue: normalized.filter((casting) => !confirmedStatuses.has(casting.normalizedStatus)).length,
+      decisionQueue: normalized.filter((casting) => decisionStatuses.has(casting.normalizedStatus)).length,
+      assignedJobs: normalized.filter((casting) => parseAssignedNames((casting as { assigned_names?: string | null }).assigned_names).length > 0).length,
+      readyForTalent: normalized.filter((casting) => Boolean(casting.project_name) && Boolean(casting.client_name)).length,
+    }
+  }, [filteredCastings])
+
   const handleSort = (key: string) => {
     setSortConfig((prev) =>
       prev.key === key
@@ -407,6 +424,33 @@ export function Castings() {
             </button>
           </div>
         </div>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <WorkflowSummaryCard
+          label="Active queue"
+          value={workflowSummary.activeQueue}
+          note="Jobs still in motion and needing follow-through."
+          tone="bg-amber-50 text-amber-700 border-amber-200/70"
+        />
+        <WorkflowSummaryCard
+          label="Decision queue"
+          value={workflowSummary.decisionQueue}
+          note="Shortlist / review / offer-stage jobs to watch closely."
+          tone="bg-cyan-50 text-cyan-700 border-cyan-200/70"
+        />
+        <WorkflowSummaryCard
+          label="Assigned internally"
+          value={workflowSummary.assignedJobs}
+          note="Jobs that already have team ownership attached."
+          tone="bg-blue-50 text-blue-700 border-blue-200/70"
+        />
+        <WorkflowSummaryCard
+          label="Ready for talent"
+          value={workflowSummary.readyForTalent}
+          note="Client + project details are strong enough to push outward."
+          tone="bg-emerald-50 text-emerald-700 border-emerald-200/70"
+        />
       </section>
 
       {/* Toolbar */}
@@ -543,6 +587,26 @@ export function Castings() {
         }}
         casting={selectedCasting}
       />
+    </div>
+  )
+}
+
+function WorkflowSummaryCard({
+  label,
+  value,
+  note,
+  tone,
+}: {
+  label: string
+  value: number
+  note: string
+  tone: string
+}) {
+  return (
+    <div className={cn('rounded-3xl border p-5 shadow-sm', tone)}>
+      <p className="text-sm font-medium text-slate-500">{label}</p>
+      <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{value}</p>
+      <p className="mt-3 text-sm leading-6 text-slate-600">{note}</p>
     </div>
   )
 }
