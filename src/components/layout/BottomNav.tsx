@@ -20,17 +20,18 @@ import { cn } from '@/lib/utils'
 import { useOverlay } from '@/hooks/useOverlayManager'
 import { getSessionUser, isAdminUser, logout } from '@/lib/api'
 
-// Main bottom nav: Today, Jobs, Calendar, Talent, Inbox
+// Main bottom nav: Today, Jobs, Calendar, More
 const mainItems = [
   { icon: LayoutDashboard, label: 'Today', path: '/dashboard' },
   { icon: Briefcase, label: 'Jobs', path: '/castings' },
   { icon: Plus, label: '', path: '', isFab: true },
   { icon: Calendar, label: 'Calendar', path: '/calendar' },
-  { icon: Activity, label: 'Inbox', path: '/activity' },
+  { icon: MoreHorizontal, label: 'More', path: '#' },
 ]
 
-// More sheet: Talent, Tasks, Clients, Reports, Settings
+// More sheet: Inbox, Talent, Tasks, Clients, Reports, Settings
 const moreItems = [
+  { icon: Activity, label: 'Inbox', path: '/activity' },
   { icon: Star, label: 'Talents', path: '/talents' },
   { icon: CheckSquare, label: 'Tasks', path: '/tasks' },
   { icon: Users, label: 'Clients', path: '/clients' },
