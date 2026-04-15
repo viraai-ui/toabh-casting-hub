@@ -946,6 +946,10 @@ def task_comments(task_id):
 @require_auth
 def task_activities(task_id):
     db = get_db()
+    task = db.execute('SELECT id FROM tasks WHERE id = ?', (task_id,)).fetchone()
+    if not task:
+        return jsonify({'error': 'Task not found'}), 404
+
     rows = db.execute(
         '''
         SELECT ta.id, ta.task_id, ta.action, ta.details as description,
@@ -1118,6 +1122,10 @@ def _build_notification_from_activity(activity):
 @require_auth
 def get_comments(casting_id):
     db = get_db()
+    casting = db.execute('SELECT id FROM castings WHERE id = ?', (casting_id,)).fetchone()
+    if not casting:
+        return jsonify({'error': 'Casting not found'}), 404
+
     rows = db.execute('''
         SELECT a.id, a.casting_id, a.details, a.timestamp as created_at,
                COALESCE(tm.name, 'Admin') as default_user_name
@@ -3616,6 +3624,10 @@ def delete_talent(talent_id):
 @require_auth
 def get_casting_talents(casting_id):
     db = get_db()
+    casting = db.execute('SELECT id FROM castings WHERE id = ?', (casting_id,)).fetchone()
+    if not casting:
+        return jsonify({'error': 'Casting not found'}), 404
+
     rows = db.execute('''
         SELECT t.id as talent_id, t.name, t.phone, t.email, t.instagram_handle
         FROM casting_talents ct
