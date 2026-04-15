@@ -2620,10 +2620,11 @@ def dashboard():
 
         month_name = month_start.strftime('%b')
 
+        month_key = month_start.strftime('%Y-%m')
         count_row = db.execute('''
             SELECT COUNT(*) as cnt FROM castings
-            WHERE datetime(created_at) >= datetime(?) AND datetime(created_at) < datetime(?)
-        ''', (month_start.isoformat(), month_end.isoformat())).fetchone()
+            WHERE SUBSTR(COALESCE(CAST(created_at AS TEXT), ''), 1, 7) = ?
+        ''', (month_key,)).fetchone()
 
         months.append({
             'month': month_name,
