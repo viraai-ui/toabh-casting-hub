@@ -159,6 +159,7 @@ export function Reports() {
       .map(([, value]) => ({ month: value.label, revenue: value.revenue }))
   }
 
+  const teamData = getTeamData()
   const revenueData = getRevenueData()
 
   const exportCSV = () => {
@@ -352,20 +353,26 @@ export function Reports() {
         >
           <h3 className="font-semibold text-slate-900 mb-4">Team Performance</h3>
           <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={getTeamData()} layout="vertical">
-                <XAxis type="number" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} width={80} />
-                <Tooltip
-                  contentStyle={{
-                    background: 'rgba(255,255,255,0.95)',
-                    border: '1px solid rgba(0,0,0,0.1)',
-                    borderRadius: 12,
-                  }}
-                />
-                <Bar dataKey="count" name="Castings" fill="#f59e0b" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {teamData.length === 0 ? (
+              <div className="flex h-full items-center justify-center text-center text-sm text-slate-500">
+                No assigned team members in this report range yet.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={teamData} layout="vertical">
+                  <XAxis type="number" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} width={80} />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'rgba(255,255,255,0.95)',
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      borderRadius: 12,
+                    }}
+                  />
+                  <Bar dataKey="count" name="Castings" fill="#f59e0b" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </motion.div>
 
