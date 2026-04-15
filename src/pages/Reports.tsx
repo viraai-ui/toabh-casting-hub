@@ -93,16 +93,29 @@ export function Reports() {
     return Object.entries(status).map(([name, value]) => ({ name, value }))
   }
 
+  const getAssignedNames = (casting: Casting) => {
+    const assignedTo = casting.assigned_to as Array<string | { name?: string | null }> | undefined
+    if (Array.isArray(assignedTo)) {
+      const names = assignedTo
+        .map((entry) => (typeof entry === 'string' ? entry : entry?.name || '').trim())
+        .filter(Boolean)
+      if (names.length > 0) return names
+    }
+
+    if (casting.assigned_names) {
+      return casting.assigned_names.split(',').map((name) => name.trim()).filter(Boolean)
+    }
+
+    return []
+  }
+
   // Team Performance
   const getTeamData = () => {
     const team: { [key: string]: number } = {}
     filteredCastings.forEach((c) => {
-      if (c.assigned_names) {
-        const names = c.assigned_names.split(',').map((n) => n.trim())
-        names.forEach((name) => {
-          team[name] = (team[name] || 0) + 1
-        })
-      }
+      getAssignedNames(c).forEach((name) => {
+        team[name] = (team[name] || 0) + 1
+      })
     })
     return Object.entries(team)
       .sort(([, a], [, b]) => b - a)
@@ -134,7 +147,7 @@ export function Reports() {
       Budget_Min: c.budget_min,
       Budget_Max: c.budget_max,
       Location: c.location,
-      Assigned_To: c.assigned_names ? c.assigned_names.split(',').join('; ') : '',
+      Assigned_To: getAssignedNames(c).join('; '),
       Created: c.created_at,
     })))
     const blob = new Blob([csv], { type: 'text/csv' })
