@@ -3552,6 +3552,16 @@ def create_talent():
     return jsonify(_serialize_talent_row(talent)), 201
 
 
+@app.route('/api/talents/<int:talent_id>', methods=['GET'])
+@require_auth
+def get_talent(talent_id):
+    db = get_db()
+    talent = db.execute('SELECT * FROM talents WHERE id = ?', (talent_id,)).fetchone()
+    if not talent:
+        return jsonify({'error': 'Talent not found'}), 404
+    return jsonify(_serialize_talent_row(talent))
+
+
 @app.route('/api/talents/<int:talent_id>', methods=['PUT'])
 @require_auth
 def update_talent(talent_id):
