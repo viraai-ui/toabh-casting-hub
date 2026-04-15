@@ -35,7 +35,7 @@ export function Reports() {
 
   // Filter by date range using shoot_date_start
   const filteredCastings = castings.filter((c) => {
-    if (!c.shoot_date_start) return true
+    if (!c.shoot_date_start) return false
     const shootDate = parseISO(c.shoot_date_start)
     const now = new Date()
 
