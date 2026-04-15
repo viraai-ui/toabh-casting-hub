@@ -244,6 +244,23 @@ function getNextStepSignal(casting: Casting) {
   }
 }
 
+function getMissingWorkflowItems(casting: Casting) {
+  const items = [] as string[]
+
+  if (!casting.project_name?.trim()) items.push('project')
+  if (!casting.client_name?.trim()) items.push('client')
+
+  const hasTeam =
+    parseAssignedNames(casting.assigned_names).length > 0 ||
+    (Array.isArray(casting.assigned_to) && casting.assigned_to.length > 0)
+  if (!hasTeam) items.push('owner')
+
+  if (!casting.requirements?.trim()) items.push('brief')
+  if (!casting.shoot_date_start) items.push('timing')
+
+  return items
+}
+
 export function Castings() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -1270,6 +1287,7 @@ function ListView({
               const normalizedPhone = phone ? phone.replace(/\D/g, '') : ''
               const readiness = getSubmissionReadiness(casting)
               const nextStep = getNextStepSignal(casting)
+              const missingItems = getMissingWorkflowItems(casting)
 
               return (
                 <tr
@@ -1333,6 +1351,11 @@ function ListView({
                               <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 font-medium', nextStep.className)}>
                                 Next: {nextStep.label}
                               </span>
+                              {missingItems.length > 0 && (
+                                <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 font-medium text-slate-600">
+                                  {missingItems.length} gap{missingItems.length === 1 ? '' : 's'}
+                                </span>
+                              )}
                               {casting.location && !columnVisibility.location && (
                                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">{casting.location}</span>
                               )}
@@ -1649,6 +1672,7 @@ function GridView({
         const isUpdating = updatingId === c.id
         const readiness = getSubmissionReadiness(c)
         const nextStep = getNextStepSignal(c)
+        const missingItems = getMissingWorkflowItems(c)
 
         return (
           <div
@@ -1709,8 +1733,13 @@ function GridView({
                 <span className={cn('inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]', nextStep.className)}>
                   Next: {nextStep.label}
                 </span>
+                {missingItems.length > 0 && (
+                  <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+                    {missingItems.length} gap{missingItems.length === 1 ? '' : 's'}
+                  </span>
+                )}
               </div>
-              <p className="text-[11px] text-slate-400">{nextStep.note}</p>
+              <p className="text-[11px] text-slate-400">{missingItems.length > 0 ? `Missing: ${missingItems.join(', ')}` : nextStep.note}</p>
               {/* Client name */}
               <p
                 className="text-[13px] font-medium text-slate-700 truncate"
