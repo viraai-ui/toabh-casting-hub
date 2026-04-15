@@ -555,6 +555,47 @@ export function Castings() {
     return actions.slice(0, 3)
   }, [workflowSummary])
 
+  const queueBottleneck = useMemo(() => {
+    const candidates = [
+      {
+        key: 'intake',
+        count: workflowSummary.incompleteIntake,
+        label: 'Intake is the current bottleneck',
+        note: 'Most friction is still in missing project/client setup.',
+        tone: 'border-amber-200 bg-amber-50 text-amber-700',
+      },
+      {
+        key: 'decision',
+        count: workflowSummary.decisionQueue,
+        label: 'Decision follow-up is the current bottleneck',
+        note: 'The queue is clustering around shortlist, review, or offer follow-through.',
+        tone: 'border-cyan-200 bg-cyan-50 text-cyan-700',
+      },
+      {
+        key: 'submission',
+        count: workflowSummary.phaseDistribution.submission,
+        label: 'Submission movement is the current bottleneck',
+        note: 'A large share of work is sitting in active submission stage.',
+        tone: 'border-amber-200 bg-amber-50 text-amber-700',
+      },
+    ].sort((a, b) => b.count - a.count)
+
+    const winner = candidates[0]
+    if (!winner || winner.count === 0) {
+      return {
+        label: 'No obvious bottleneck right now',
+        note: 'The filtered queue looks relatively balanced across phases.',
+        tone: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+      }
+    }
+
+    return {
+      label: winner.label,
+      note: `${winner.count} job${winner.count === 1 ? '' : 's'} are concentrated here. ${winner.note}`,
+      tone: winner.tone,
+    }
+  }, [workflowSummary])
+
   const handleSort = (key: string) => {
     setSortConfig((prev) =>
       prev.key === key
@@ -660,6 +701,12 @@ export function Castings() {
             <div className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-black/5">
               {workflowSummary.readyForTalent}/{workflowSummary.total} ready for movement
             </div>
+          </div>
+
+          <div className={cn('rounded-2xl border px-3 py-3 shadow-sm', queueBottleneck.tone)}>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] opacity-80">Queue bottleneck</p>
+            <p className="mt-1 text-sm font-semibold text-slate-950">{queueBottleneck.label}</p>
+            <p className="mt-1 text-xs leading-5 text-slate-600">{queueBottleneck.note}</p>
           </div>
 
           <div className="grid gap-2 lg:grid-cols-3">
