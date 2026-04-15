@@ -2622,7 +2622,7 @@ def dashboard():
 
         count_row = db.execute('''
             SELECT COUNT(*) as cnt FROM castings
-            WHERE created_at >= ? AND created_at < ?
+            WHERE datetime(created_at) >= datetime(?) AND datetime(created_at) < datetime(?)
         ''', (month_start.isoformat(), month_end.isoformat())).fetchone()
 
         months.append({
