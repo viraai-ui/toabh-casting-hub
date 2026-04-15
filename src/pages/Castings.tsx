@@ -365,8 +365,52 @@ export function Castings() {
 
   return (
     <div className="space-y-4">
+      <section className="card overflow-hidden p-5 sm:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700">
+              Jobs
+            </div>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]">
+              The live work queue, built for fast scanning and action.
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              Phase 1 makes Jobs cleaner, faster on mobile, and less like a generic CRM list.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => setFiltersOpen(!filtersOpen)}
+              className={cn(
+                'relative inline-flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-medium transition-colors',
+                filtersOpen
+                  ? 'border-amber-500 bg-amber-500/10 text-amber-600'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+              )}
+            >
+              <Filter className="h-4 w-4" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-xs text-white">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('toabh-global-action', { detail: { action: 'open-casting-modal' } }))
+              }}
+              className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-[0_16px_30px_rgba(15,23,42,0.18)] transition hover:bg-slate-800"
+            >
+              <Plus className="h-4 w-4" />
+              New job
+            </button>
+          </div>
+        </div>
+      </section>
+
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row">
         {/* Search */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -374,7 +418,7 @@ export function Castings() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search castings..."
+            placeholder="Search jobs, clients, or project names..."
             className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500"
           />
         </div>
@@ -402,35 +446,7 @@ export function Castings() {
             ))}
           </div>
 
-          {/* Filters */}
-          <button
-            onClick={() => setFiltersOpen(!filtersOpen)}
-            className={cn(
-              'relative flex items-center gap-2 px-4 py-2 border rounded-xl transition-colors',
-              filtersOpen
-                ? 'bg-amber-500/10 border-amber-500 text-amber-600'
-                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-            )}
-          >
-            <Filter className="w-4 h-4" />
-            <span className="hidden sm:inline">Filters</span>
-            {activeFilterCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 text-white text-xs rounded-full flex items-center justify-center">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
-
-          {/* New Casting — dispatches global event to open modal in AppLayout */}
-          <button
-            onClick={() => {
-              window.dispatchEvent(new CustomEvent('toabh-global-action', { detail: { action: 'open-casting-modal' } }))
-            }}
-            className="btn-primary flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">New Casting</span>
-          </button>
+          <div className="hidden sm:block h-10 w-px bg-slate-200" aria-hidden="true" />
         </div>
       </div>
 
@@ -461,8 +477,8 @@ export function Castings() {
         </div>
       ) : filteredCastings.length === 0 ? (
         <div className="rounded-[28px] border border-slate-200 bg-white px-5 py-16 text-center shadow-sm">
-          <p className="text-sm font-medium text-slate-700">No castings found</p>
-          <p className="mt-1 text-sm text-slate-500">Try clearing filters, changing search, or creating a new casting.</p>
+          <p className="text-sm font-medium text-slate-700">No jobs found</p>
+          <p className="mt-1 text-sm text-slate-500">Try clearing filters, changing search, or creating a new job.</p>
         </div>
       ) : castingViewMode === 'kanban' ? (
         <KanbanBoard

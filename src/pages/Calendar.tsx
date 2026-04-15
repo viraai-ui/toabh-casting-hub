@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, Loader2, Filter, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2, Filter, X, CalendarDays, ListTodo } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import { CastingModal } from '@/components/CastingModal'
@@ -128,7 +128,39 @@ export function Calendar() {
   }
 
   return (
-    <div className="flex min-h-[calc(100dvh-7rem)] w-full flex-col lg:h-[calc(100dvh-6rem)]">
+    <div className="flex min-h-[calc(100dvh-7rem)] w-full flex-col gap-4 lg:h-[calc(100dvh-6rem)]">
+      <section className="card overflow-hidden p-5 sm:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700">
+              Calendar
+            </div>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]">
+              Agenda first on mobile, planning depth when you need it.
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              Phase 1 keeps desktop planning strong, but pushes day and week execution higher for real daily use.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 shadow-sm">
+              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                <ListTodo className="h-3.5 w-3.5" />
+                Recommended now
+              </div>
+              <div className="mt-1 font-medium text-slate-800">{view === 'month' ? 'Month planning' : view === 'week' ? 'Week execution' : 'Day agenda'}</div>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 shadow-sm">
+              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                <CalendarDays className="h-3.5 w-3.5" />
+                Active filters
+              </div>
+              <div className="mt-1 font-medium text-slate-800">{activeFilterCount === 0 ? 'No filters applied' : `${activeFilterCount} active filter${activeFilterCount === 1 ? '' : 's'}`}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Header: month nav + today + view tabs ────────────────────── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-3">
         {/* Left: month nav */}
@@ -158,7 +190,7 @@ export function Calendar() {
 
         {/* Right: view toggle */}
         <div className="flex gap-1 bg-slate-100 rounded-lg p-1 self-start sm:self-auto">
-          {(['month', 'week', 'day'] as const).map((v) => (
+          {(['day', 'week', 'month'] as const).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
@@ -203,7 +235,7 @@ export function Calendar() {
               onChange={(e) => setFilters({ ...filters, status: e.target.value || undefined })}
               className="px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40"
             >
-              <option value="">All Statuses</option>
+              <option value="">All stages</option>
               {pipeline.map((s) => (
                 <option key={s.id} value={s.name}>{s.name}</option>
               ))}
@@ -212,7 +244,7 @@ export function Calendar() {
               type="text"
               value={filters.client || ''}
               onChange={(e) => setFilters({ ...filters, client: e.target.value || undefined })}
-              placeholder="Client..."
+              placeholder="Client name..."
               className="px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 w-28 sm:w-36"
             />
             {activeFilterCount > 0 && (
@@ -475,7 +507,7 @@ function DayView({
         {format(currentDate, 'EEE, MMM d')}
       </h3>
       {dayCastings.length === 0 ? (
-        <p className="text-slate-400 text-sm py-8 text-center">No castings scheduled</p>
+        <p className="text-slate-400 text-sm py-8 text-center">No jobs scheduled</p>
       ) : (
         <div className="space-y-2">
           {dayCastings.map((casting) => (
