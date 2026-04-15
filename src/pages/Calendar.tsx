@@ -191,7 +191,11 @@ export function Calendar() {
     }
   }, [scheduleSummary])
 
-  const goToToday = () => setCurrentDate(new Date())
+  const goToToday = () => {
+    setCurrentDate(new Date())
+    setScheduleFocus('today')
+    setView('day')
+  }
 
   // Count active filters for badge
   const activeFilterCount = Object.values(filters).filter(Boolean).length
@@ -302,7 +306,7 @@ export function Calendar() {
             onClick={goToToday}
             className="ml-1 px-2 py-1 sm:px-3 sm:py-1.5 text-xs sm:text-sm font-medium text-amber-600 bg-amber-50 rounded-lg hover:bg-amber-100 active:bg-amber-200 transition-colors"
           >
-            Today
+            Today run mode
           </button>
         </div>
 
