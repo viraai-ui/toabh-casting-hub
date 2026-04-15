@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { X, Edit2, Phone, MessageCircle, MapPin, User, Tag, Users } from 'lucide-react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { X, Edit2, Phone, MessageCircle, MapPin, User, Tag, Users, Briefcase, Clock3, CheckCircle2 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { getInitials } from '@/lib/utils'
 import type { Casting, Talent } from '@/types'
@@ -65,6 +65,26 @@ function FieldRow({ label, value, action }: { label: string; value: React.ReactN
 
 function EmptyState({ message }: { message: string }) {
   return <div className="px-4 pb-4 text-[12px] text-slate-400 italic">{message}</div>
+}
+
+function WorkflowStat({
+  label,
+  value,
+  note,
+  tone,
+}: {
+  label: string
+  value: string
+  note: string
+  tone: string
+}) {
+  return (
+    <div className={`rounded-2xl border p-3 ${tone}`}>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
+      <p className="mt-2 text-lg font-semibold text-slate-900">{value}</p>
+      <p className="mt-1 text-[11px] leading-5 text-slate-500">{note}</p>
+    </div>
+  )
 }
 
 interface CastingTalentLink {
@@ -161,6 +181,50 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
     (casting.budget_min != null && casting.budget_min > 0) ||
     (casting.budget_max != null && casting.budget_max > 0)
 
+  const workflowStage = useMemo(() => {
+    const normalized = (casting.status || 'NEW').toUpperCase()
+    if (['COMPLETED', 'CONFIRMED', 'BOOKED', 'WON'].includes(normalized)) {
+      return {
+        phase: 'Confirmed',
+        note: 'This job is already in a committed or closed state.',
+        tone: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      }
+    }
+    if (['SHORTLISTED', 'OFFERED', 'REVIEW'].includes(normalized)) {
+      return {
+        phase: 'Decision',
+        note: 'Client-side movement is happening, this needs tight follow-through.',
+        tone: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+      }
+    }
+    if (['IN_PROGRESS', 'ACTIVE'].includes(normalized)) {
+      return {
+        phase: 'Submission',
+        note: 'This job is active and moving, talent coordination matters now.',
+        tone: 'bg-amber-50 text-amber-700 border-amber-200',
+      }
+    }
+    if (['REJECTED', 'CANCELLED', 'LOST'].includes(normalized)) {
+      return {
+        phase: 'Closed',
+        note: 'This job is closed and should mostly stay in history unless reopened.',
+        tone: 'bg-slate-100 text-slate-600 border-slate-200',
+      }
+    }
+    return {
+      phase: 'Intake',
+      note: 'This brief still needs coordination, assignment, and talent movement.',
+      tone: 'bg-blue-50 text-blue-700 border-blue-200',
+    }
+  }, [casting.status])
+
+  const timelineNote = useMemo(() => {
+    if (casting.shoot_date_start) {
+      return `Shoot starts ${fmtDate(casting.shoot_date_start)}`
+    }
+    return 'No shoot date locked yet'
+  }, [casting.shoot_date_start])
+
   // Phone links
   const phoneRaw = casting.client_contact || ''
   const phoneDigits = phoneRaw.replace(/\D/g, '')
@@ -250,6 +314,54 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                       </span>
                     )}
                   </div>
+
+                  {/* WORKFLOW */}
+                  <SectionCard>
+                    <SectionHeader icon={Briefcase} label="Workflow" />
+                    <div className="grid gap-3 px-4 pb-4 pt-1 sm:grid-cols-3">
+                      <WorkflowStat
+                        label="Current phase"
+                        value={workflowStage.phase}
+                        note={workflowStage.note}
+                        tone={workflowStage.tone}
+                      />
+                      <WorkflowStat
+                        label="Linked talent"
+                        value={talentsLoading ? '...' : String(talents.length)}
+                        note={talents.length > 0 ? 'Talent already linked to this job.' : 'No talent attached yet, shortlist building still open.'}
+                        tone="bg-white text-slate-700 border-slate-200"
+                      />
+                      <WorkflowStat
+                        label="Timeline"
+                        value={casting.status || 'NEW'}
+                        note={timelineNote}
+                        tone="bg-white text-slate-700 border-slate-200"
+                      />
+                    </div>
+                    <div className="grid gap-2 border-t border-slate-100 px-4 py-4 sm:grid-cols-3">
+                      <div className="flex items-start gap-2 rounded-2xl bg-slate-50 px-3 py-2.5">
+                        <Clock3 className="mt-0.5 h-4 w-4 text-amber-500" />
+                        <div>
+                          <p className="text-[12px] font-semibold text-slate-700">Next ops focus</p>
+                          <p className="mt-1 text-[11px] leading-5 text-slate-500">{assignedTo.length > 0 ? 'Drive follow-up with the assigned team.' : 'Assign internal ownership before more work gets lost.'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2 rounded-2xl bg-slate-50 px-3 py-2.5">
+                        <Users className="mt-0.5 h-4 w-4 text-amber-500" />
+                        <div>
+                          <p className="text-[12px] font-semibold text-slate-700">Submission readiness</p>
+                          <p className="mt-1 text-[11px] leading-5 text-slate-500">{talents.length > 0 ? 'Ready for shortlist movement and decision tracking.' : 'Still missing the first talent submission layer.'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2 rounded-2xl bg-slate-50 px-3 py-2.5">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 text-amber-500" />
+                        <div>
+                          <p className="text-[12px] font-semibold text-slate-700">Outcome path</p>
+                          <p className="mt-1 text-[11px] leading-5 text-slate-500">Use this record as the future base for submissions, holds, and confirmed booking flow.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </SectionCard>
 
                   {/* CLIENT */}
                   <SectionCard>
