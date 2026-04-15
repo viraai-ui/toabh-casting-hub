@@ -21,6 +21,13 @@ const formatRevenueAxisValue = (value: number) => {
   return `₹${value}`
 }
 
+const formatReportDateForFilename = (date: Date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export function Reports() {
   const [castings, setCastings] = useState<Casting[]>([])
   const [loading, setLoading] = useState(true)
@@ -167,7 +174,7 @@ export function Reports() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `castings-report-${new Date().toISOString().split('T')[0]}.csv`
+    a.download = `castings-report-${formatReportDateForFilename(new Date())}.csv`
     a.click()
   }
 
