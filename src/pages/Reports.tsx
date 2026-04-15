@@ -27,6 +27,8 @@ export function Reports() {
   const [dateRange, setDateRange] = useState<'week' | 'month' | '30days' | 'quarter' | 'custom'>('month')
   const [customRange, setCustomRange] = useState({ from: '', to: '' })
 
+  const isCustomRangeIncomplete = dateRange === 'custom' && (!customRange.from || !customRange.to)
+
   const fetchCastings = async () => {
     try {
       const data = await api.get('/castings')
@@ -61,7 +63,8 @@ export function Reports() {
     if (dateRange === 'quarter') {
       return isWithinInterval(shootDate, { start: startOfQuarter(now), end: endOfQuarter(now) })
     }
-    if (dateRange === 'custom' && customRange.from && customRange.to) {
+    if (dateRange === 'custom') {
+      if (!customRange.from || !customRange.to) return false
       const from = startOfDay(parseISO(customRange.from))
       const to = endOfDay(parseISO(customRange.to))
       return isWithinInterval(shootDate, { start: from, end: to })
@@ -186,7 +189,7 @@ export function Reports() {
         </div>
         <button
           onClick={exportCSV}
-          disabled={filteredCastings.length === 0}
+          disabled={filteredCastings.length === 0 || isCustomRangeIncomplete}
           className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Download className="w-4 h-4" />
@@ -235,9 +238,15 @@ export function Reports() {
             </div>
           )}
         </div>
-        <p className="text-sm text-slate-500">
-          {filteredCastings.length} {filteredCastings.length === 1 ? 'casting' : 'castings'} in this report range
-        </p>
+        {isCustomRangeIncomplete ? (
+          <p className="text-sm text-amber-600">
+            Select both custom dates to generate a report.
+          </p>
+        ) : (
+          <p className="text-sm text-slate-500">
+            {filteredCastings.length} {filteredCastings.length === 1 ? 'casting' : 'castings'} in this report range
+          </p>
+        )}
       </div>
 
       {filteredCastings.length === 0 ? (
