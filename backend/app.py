@@ -733,6 +733,8 @@ def _apply_casting_assignments(db, casting_rows):
         })
 
     for casting in castings:
+        source = casting.get('source')
+        casting['source'] = source.strip() if isinstance(source, str) and source.strip() else 'manual'
         casting['created_at'] = casting.get('created_at') or casting.get('updated_at') or casting.get('shoot_date_start') or casting.get('shoot_date_end')
         casting['updated_at'] = casting.get('updated_at') or casting.get('created_at')
         casting['attachments_count'] = int(casting.get('attachments_count') or 0)
@@ -1223,6 +1225,8 @@ def list_castings():
         # Handle assignment
         assigned_members = data.pop('assigned_to', [])
 
+        source = (data.get('source') or '').strip() or 'manual'
+
         cursor = db.execute('''
             INSERT INTO castings (
                 source, source_detail, client_name, client_company, client_contact, client_email,
@@ -1231,7 +1235,7 @@ def list_castings():
                 apply_to, status, priority
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
-            data.get('source', 'manual'),
+            source,
             data.get('source_detail'),
             data.get('client_name'),
             data.get('client_company'),
@@ -1350,8 +1354,11 @@ def single_casting(casting_id):
                       'location', 'medium', 'usage', 'budget_min', 'budget_max',
                       'requirements', 'apply_to', 'status', 'priority']:
             if field in data:
+                value = data[field]
+                if field == 'source':
+                    value = (value or '').strip() or 'manual'
                 fields.append(f'{field} = ?')
-                values.append(data[field])
+                values.append(value)
 
         fields.append('updated_at = datetime("now")')
         values.append(casting_id)
@@ -2500,9 +2507,9 @@ def dashboard():
 
     # Source breakdown
     sources = db.execute('''
-        SELECT source, COUNT(*) as count
+        SELECT COALESCE(NULLIF(TRIM(source), ''), 'manual') as source, COUNT(*) as count
         FROM castings
-        GROUP BY source
+        GROUP BY COALESCE(NULLIF(TRIM(source), ''), 'manual')
     ''').fetchall()
 
     # Total revenue (sum of budget_max where status indicates won/paid)
