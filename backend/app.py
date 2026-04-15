@@ -1970,8 +1970,8 @@ def _get_request_profile(db):
 
 def _build_profile_payload(db, profile):
     team_member_id = profile.get('team_member_id')
-    active_statuses = ('NEW', 'REVIEWING', 'PROPOSED', 'NEGOTIATING', 'CONFIRMED', 'IN_PROGRESS')
-    completed_statuses = ('WON', 'PAID', 'COMPLETED')
+    active_statuses = ('NEW', 'New Lead', 'REVIEWING', 'PROPOSED', 'NEGOTIATING', 'CONFIRMED', 'IN_PROGRESS', 'Talents Shortlisted', 'SHORTLISTED', 'INTERVIEW', 'OFFERED', 'Options Sent')
+    completed_statuses = ('WON', 'PAID', 'COMPLETED', 'LOST', 'DECLINED', 'INVOICED')
 
     if team_member_id:
         assigned_rows = db.execute(
@@ -2446,12 +2446,12 @@ def dashboard():
     # Total, active, and closed casting counts
     total_castings = db.execute('SELECT COUNT(*) as cnt FROM castings').fetchone()['cnt']
 
-    active_statuses = ('NEW', 'REVIEWING', 'PROPOSED', 'NEGOTIATING', 'CONFIRMED', 'IN_PROGRESS')
+    active_statuses = ('NEW', 'New Lead', 'REVIEWING', 'PROPOSED', 'NEGOTIATING', 'CONFIRMED', 'IN_PROGRESS', 'Talents Shortlisted', 'SHORTLISTED', 'INTERVIEW', 'OFFERED', 'Options Sent')
     closed_statuses = ('WON', 'LOST', 'INVOICED', 'PAID', 'COMPLETED', 'DECLINED')
 
     active_castings = db.execute(
-        'SELECT COUNT(*) as cnt FROM castings WHERE status IN (?, ?, ?, ?, ?, ?)',
-        active_statuses
+        'SELECT COUNT(*) as cnt FROM castings WHERE COALESCE(status, "") NOT IN (?, ?, ?, ?, ?, ?)',
+        closed_statuses
     ).fetchone()['cnt']
 
     closed_castings = db.execute(
