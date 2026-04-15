@@ -1,6 +1,6 @@
-import { useCallback, useState, useEffect } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Edit, ArrowRight, UserPlus, MessageSquare, Trash2, Loader2, Filter } from 'lucide-react'
+import { Plus, Edit, ArrowRight, UserPlus, MessageSquare, Trash2, Loader2, Filter, Sparkles, Clock3 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, formatDate, formatRelativeTime, getInitials } from '@/lib/utils'
 import { useDataRefresh } from '@/hooks/useDataRefresh'
@@ -28,16 +28,26 @@ const activityColors: { [key: string]: string } = {
   NOTE: 'bg-slate-100 text-slate-600',
 }
 
+type ActivityFilters = {
+  date_from?: string
+  date_to?: string
+  user_id?: string
+  type?: string
+}
+
+const quickFilters = [
+  { key: 'all', label: 'All activity', description: 'Full inbox feed' },
+  { key: 'today', label: 'Today only', description: 'Fresh movement from today' },
+  { key: 'ASSIGNED', label: 'Assignments', description: 'Ownership and handoff changes' },
+  { key: 'COMMENTED', label: 'Comments', description: 'Notes and team discussion' },
+  { key: 'STATUS_CHANGED', label: 'Status changes', description: 'Pipeline movement and decisions' },
+] as const
+
 export function ActivityLog() {
   const [activities, setActivities] = useState<Activity[]>([])
   const [team, setTeam] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState<{
-    date_from?: string
-    date_to?: string
-    user_id?: string
-    type?: string
-  }>({})
+  const [filters, setFilters] = useState<ActivityFilters>({})
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
 
@@ -121,6 +131,40 @@ export function ActivityLog() {
     })()
   }
 
+  const todayKey = new Date().toISOString().slice(0, 10)
+  const inboxStats = useMemo(() => {
+    const todayCount = activities.filter((activity) => activity.created_at?.slice(0, 10) === todayKey).length
+    const assignmentCount = activities.filter((activity) => activity.action === 'ASSIGNED').length
+    const commentCount = activities.filter((activity) => activity.action === 'COMMENTED' || activity.action === 'NOTE').length
+    const systemCount = activities.filter((activity) => !(activity.user_name || '').trim() || (activity.user_name || '').trim() === 'System').length
+
+    return { todayCount, assignmentCount, commentCount, systemCount }
+  }, [activities, todayKey])
+
+  const activeFilterCount = Object.values(filters).filter(Boolean).length
+
+  const activeQuickFilter = useMemo(() => {
+    if (filters.type === 'ASSIGNED') return 'ASSIGNED'
+    if (filters.type === 'COMMENTED') return 'COMMENTED'
+    if (filters.type === 'STATUS_CHANGED') return 'STATUS_CHANGED'
+    if (filters.date_from === todayKey && filters.date_to === todayKey && !filters.type) return 'today'
+    return 'all'
+  }, [filters.date_from, filters.date_to, filters.type, todayKey])
+
+  const applyQuickFilter = (key: (typeof quickFilters)[number]['key']) => {
+    if (key === 'all') {
+      setFilters((prev) => ({ ...prev, date_from: undefined, date_to: undefined, type: undefined }))
+      return
+    }
+
+    if (key === 'today') {
+      setFilters((prev) => ({ ...prev, date_from: todayKey, date_to: todayKey, type: undefined }))
+      return
+    }
+
+    setFilters((prev) => ({ ...prev, type: key === 'STATUS_CHANGED' ? 'STATUS_CHANGED' : key, date_from: undefined, date_to: undefined }))
+  }
+
   return (
     <div className="space-y-4">
       <section className="card overflow-hidden p-5 sm:p-6">
@@ -143,66 +187,132 @@ export function ActivityLog() {
         </div>
       </section>
 
-      {/* Filters */}
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <InboxStatCard
+          label="Moved today"
+          value={inboxStats.todayCount}
+          note="Fresh activity from the current day."
+          tone="border-amber-200/70 bg-amber-50 text-amber-700"
+          icon={Sparkles}
+        />
+        <InboxStatCard
+          label="Assignments"
+          value={inboxStats.assignmentCount}
+          note="Ownership changes and handoffs in the loaded feed."
+          tone="border-blue-200/70 bg-blue-50 text-blue-700"
+          icon={UserPlus}
+        />
+        <InboxStatCard
+          label="Comments + notes"
+          value={inboxStats.commentCount}
+          note="Conversation and context added by the team."
+          tone="border-cyan-200/70 bg-cyan-50 text-cyan-700"
+          icon={MessageSquare}
+        />
+        <InboxStatCard
+          label="System generated"
+          value={inboxStats.systemCount}
+          note="Automatic updates that still need a human glance."
+          tone="border-slate-200/70 bg-slate-50 text-slate-600"
+          icon={Clock3}
+        />
+      </section>
+
+      <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Quick inbox filters</p>
+            <p className="mt-1 text-sm text-slate-600">Jump straight to the part of the feed you need.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {quickFilters.map((option) => {
+              const active = activeQuickFilter === option.key
+              return (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => applyQuickFilter(option.key)}
+                  className={cn(
+                    'rounded-full border px-3 py-2 text-xs font-semibold transition-colors',
+                    active ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  )}
+                  title={option.description}
+                >
+                  {option.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
       <div className="card p-4">
-        <div className="flex items-center gap-3 flex-wrap">
-          <Filter className="w-4 h-4 text-slate-500" />
-          <input
-            type="date"
-            value={filters.date_from || ''}
-            onChange={(e) => setFilters({ ...filters, date_from: e.target.value || undefined })}
-            className="px-3 py-2 border border-slate-200 rounded-xl bg-white/50 text-sm"
-            placeholder="From"
-          />
-          <input
-            type="date"
-            value={filters.date_to || ''}
-            onChange={(e) => setFilters({ ...filters, date_to: e.target.value || undefined })}
-            className="px-3 py-2 border border-slate-200 rounded-xl bg-white/50 text-sm"
-            placeholder="To"
-          />
-          <select
-            value={filters.user_id || ''}
-            onChange={(e) => setFilters({ ...filters, user_id: e.target.value || undefined })}
-            className="px-3 py-2 border border-slate-200 rounded-xl bg-white/50 text-sm"
-          >
-            <option value="">All teammates</option>
-            {team.map((m) => (
-              <option key={m.id} value={m.id}>{m.name}</option>
-            ))}
-          </select>
-          <select
-            value={filters.type || ''}
-            onChange={(e) => setFilters({ ...filters, type: e.target.value || undefined })}
-            className="px-3 py-2 border border-slate-200 rounded-xl bg-white/50 text-sm"
-          >
-            <option value="">All activity types</option>
-            <option value="CREATED">Created</option>
-            <option value="UPDATED">Updated</option>
-            <option value="STATUS_CHANGED">Status Changed</option>
-            <option value="ASSIGNED">Assigned</option>
-            <option value="COMMENTED">Commented</option>
-            <option value="DELETED">Deleted</option>
-          </select>
-          {(filters.date_from || filters.date_to || filters.user_id || filters.type) && (
-            <button
-              onClick={() => setFilters({})}
-              className="text-sm text-amber-600 hover:text-amber-700"
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex items-center gap-3 flex-wrap">
+            <Filter className="w-4 h-4 text-slate-500" />
+            <input
+              type="date"
+              value={filters.date_from || ''}
+              onChange={(e) => setFilters({ ...filters, date_from: e.target.value || undefined })}
+              className="px-3 py-2 border border-slate-200 rounded-xl bg-white/50 text-sm"
+              placeholder="From"
+            />
+            <input
+              type="date"
+              value={filters.date_to || ''}
+              onChange={(e) => setFilters({ ...filters, date_to: e.target.value || undefined })}
+              className="px-3 py-2 border border-slate-200 rounded-xl bg-white/50 text-sm"
+              placeholder="To"
+            />
+            <select
+              value={filters.user_id || ''}
+              onChange={(e) => setFilters({ ...filters, user_id: e.target.value || undefined })}
+              className="px-3 py-2 border border-slate-200 rounded-xl bg-white/50 text-sm"
             >
-              Clear
-            </button>
-          )}
+              <option value="">All teammates</option>
+              {team.map((m) => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+            <select
+              value={filters.type || ''}
+              onChange={(e) => setFilters({ ...filters, type: e.target.value || undefined })}
+              className="px-3 py-2 border border-slate-200 rounded-xl bg-white/50 text-sm"
+            >
+              <option value="">All activity types</option>
+              <option value="CREATED">Created</option>
+              <option value="UPDATED">Updated</option>
+              <option value="STATUS_CHANGED">Status changed</option>
+              <option value="ASSIGNED">Assigned</option>
+              <option value="COMMENTED">Commented</option>
+              <option value="DELETED">Deleted</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
+              {activeFilterCount === 0 ? 'No advanced filters' : `${activeFilterCount} active filter${activeFilterCount === 1 ? '' : 's'}`}
+            </div>
+            {(filters.date_from || filters.date_to || filters.user_id || filters.type) && (
+              <button
+                onClick={() => setFilters({})}
+                className="text-sm font-medium text-amber-600 hover:text-amber-700"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Activity List */}
       {loading && activities.length === 0 ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
         </div>
       ) : activities.length === 0 ? (
         <div className="card p-12 text-center">
-          <p className="text-slate-500">No inbox activity found</p>
+          <p className="text-sm font-semibold text-slate-900">No inbox activity found</p>
+          <p className="mt-2 text-sm leading-6 text-slate-500">Try widening the filters or switch back to the full activity feed.</p>
         </div>
       ) : (
         <>
@@ -224,8 +334,17 @@ export function ActivityLog() {
                       <Icon className="w-5 h-5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-slate-700">{activity.description || activity.details}</p>
-                      <div className="flex items-center gap-3 mt-1.5 text-sm text-slate-500">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={cn(
+                          'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.16em]',
+                          colorClass
+                        )}>
+                          {(activity.action || 'Unknown').replace('_', ' ')}
+                        </span>
+                        <span className="text-xs text-slate-400">#{activity.id}</span>
+                      </div>
+                      <p className="mt-2 text-slate-700">{activity.description}</p>
+                      <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-slate-500">
                         <span className="flex items-center gap-1">
                           <div className="w-5 h-5 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-[10px] font-medium">
                             {getInitials(activityUserName)}
@@ -238,12 +357,6 @@ export function ActivityLog() {
                         <span>{formatRelativeTime(activity.created_at)}</span>
                       </div>
                     </div>
-                    <span className={cn(
-                      'px-2 py-0.5 rounded-full text-xs font-medium capitalize',
-                      colorClass
-                    )}>
-                      {(activity.action || activity.type || 'Unknown').replace('_', ' ').toLowerCase()}
-                    </span>
                   </div>
                 </motion.div>
               )
@@ -262,6 +375,35 @@ export function ActivityLog() {
           )}
         </>
       )}
+    </div>
+  )
+}
+
+function InboxStatCard({
+  label,
+  value,
+  note,
+  tone,
+  icon: Icon,
+}: {
+  label: string
+  value: number
+  note: string
+  tone: string
+  icon: React.ElementType
+}) {
+  return (
+    <div className={cn('rounded-3xl border p-5 shadow-sm', tone)}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-current/80">{label}</p>
+          <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{value}</p>
+        </div>
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 shadow-sm">
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+      <p className="mt-4 text-sm leading-6 text-slate-600">{note}</p>
     </div>
   )
 }
