@@ -2509,23 +2509,32 @@ def dashboard():
     ''').fetchone()
     total_clients = clients_row['total'] if clients_row else 0
 
-    # Monthly trend (last 6 months of castings created)
-    from datetime import datetime, timedelta
+    # Monthly trend (last 6 calendar months of castings created)
+    from datetime import datetime
     months = []
     now = datetime.now()
+    current_month_start = datetime(now.year, now.month, 1)
+
+    def _shift_month_start(base, months_back):
+        year = base.year
+        month = base.month - months_back
+        while month <= 0:
+            month += 12
+            year -= 1
+        return datetime(year, month, 1)
+
     for i in range(5, -1, -1):
-        # Calculate month start and end
-        month_start = datetime(now.year, now.month, 1) - timedelta(days=30 * i)
+        month_start = _shift_month_start(current_month_start, i)
         if month_start.month == 12:
-            month_end = datetime(month_start.year + 1, 1, 1) - timedelta(days=1)
+            month_end = datetime(month_start.year + 1, 1, 1)
         else:
-            month_end = datetime(month_start.year, month_start.month + 1, 1) - timedelta(days=1)
+            month_end = datetime(month_start.year, month_start.month + 1, 1)
 
         month_name = month_start.strftime('%b')
 
         count_row = db.execute('''
             SELECT COUNT(*) as cnt FROM castings
-            WHERE created_at >= ? AND created_at <= ?
+            WHERE created_at >= ? AND created_at < ?
         ''', (month_start.isoformat(), month_end.isoformat())).fetchone()
 
         months.append({
