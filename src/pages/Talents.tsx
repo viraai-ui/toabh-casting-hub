@@ -9,6 +9,26 @@ import { toast } from 'sonner'
 import { TalentDetailModal } from '@/components/TalentDetailModal'
 import { TalentImportModal } from '@/components/TalentImportModal'
 
+function TalentSummaryCard({
+  label,
+  value,
+  note,
+  tone,
+}: {
+  label: string
+  value: number
+  note: string
+  tone: string
+}) {
+  return (
+    <div className={`rounded-3xl border p-5 shadow-sm ${tone}`}>
+      <p className="text-sm font-medium text-slate-500">{label}</p>
+      <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{value}</p>
+      <p className="mt-3 text-sm leading-6 text-slate-600">{note}</p>
+    </div>
+  )
+}
+
 export function Talents() {
   const [talents, setTalents] = useState<Talent[]>([])
   const [loading, setLoading] = useState(true)
@@ -75,6 +95,50 @@ export function Talents() {
     })
   }, [talents, searchQuery, sortConfig])
 
+  const talentSummary = useMemo(() => {
+    const withInstagram = filteredTalents.filter((talent) => Boolean(talent.instagram_handle?.trim())).length
+    const withPhone = filteredTalents.filter((talent) => Boolean(talent.phone?.trim())).length
+    const withEmail = filteredTalents.filter((talent) => Boolean(talent.email?.trim())).length
+    const completeProfiles = filteredTalents.filter(
+      (talent) => Boolean(talent.instagram_handle?.trim()) && Boolean(talent.phone?.trim()) && Boolean(talent.email?.trim()),
+    ).length
+    const contactable = filteredTalents.filter((talent) => Boolean(talent.phone?.trim()) || Boolean(talent.email?.trim())).length
+
+    return {
+      total: filteredTalents.length,
+      withInstagram,
+      withPhone,
+      withEmail,
+      completeProfiles,
+      contactable,
+      incompleteProfiles: Math.max(filteredTalents.length - completeProfiles, 0),
+    }
+  }, [filteredTalents])
+
+  const talentHealth = useMemo(() => {
+    if (talentSummary.total === 0) {
+      return {
+        label: 'Roster is empty',
+        note: 'Add or import talent to build the flagship roster layer.',
+        tone: 'border-slate-200 bg-slate-50 text-slate-700',
+      }
+    }
+
+    if (talentSummary.incompleteProfiles > 0) {
+      return {
+        label: `${talentSummary.incompleteProfiles} profile${talentSummary.incompleteProfiles === 1 ? '' : 's'} need enrichment`,
+        note: 'A chunk of the roster is still missing contact or profile depth.',
+        tone: 'border-amber-200 bg-amber-50 text-amber-700',
+      }
+    }
+
+    return {
+      label: 'Roster health looks strong',
+      note: 'Most visible talent records are ready for quick outreach and review.',
+      tone: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    }
+  }, [talentSummary])
+
   const handleSort = (key: string) => {
     setSortConfig((prev) =>
       prev.key === key
@@ -135,6 +199,31 @@ export function Talents() {
               <Plus className="h-4 w-4" />
               Add talent
             </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <TalentSummaryCard label="Visible roster" value={talentSummary.total} note="Talent records in the current filtered view." tone="bg-slate-50 text-slate-700 border-slate-200/70" />
+        <TalentSummaryCard label="Contactable" value={talentSummary.contactable} note="Phone or email is available for fast outreach." tone="bg-emerald-50 text-emerald-700 border-emerald-200/70" />
+        <TalentSummaryCard label="Instagram linked" value={talentSummary.withInstagram} note="Profiles with social presence attached." tone="bg-violet-50 text-violet-700 border-violet-200/70" />
+        <TalentSummaryCard label="Complete profiles" value={talentSummary.completeProfiles} note="Instagram, phone, and email all present." tone="bg-blue-50 text-blue-700 border-blue-200/70" />
+      </section>
+
+      <section className={`rounded-3xl border px-5 py-4 shadow-sm ${talentHealth.tone}`}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-75">Roster health</p>
+            <p className="mt-1 text-base font-semibold text-slate-950">{talentHealth.label}</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600">{talentHealth.note}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-black/5">
+              {talentSummary.incompleteProfiles} need enrichment
+            </div>
+            <div className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-black/5">
+              {talentSummary.withPhone}/{talentSummary.total} have phone
+            </div>
           </div>
         </div>
       </section>
