@@ -2450,7 +2450,7 @@ def dashboard():
     closed_statuses = ('WON', 'LOST', 'INVOICED', 'PAID', 'COMPLETED', 'DECLINED')
 
     active_castings = db.execute(
-        'SELECT COUNT(*) as cnt FROM castings WHERE COALESCE(status, "") NOT IN (?, ?, ?, ?, ?, ?)',
+        "SELECT COUNT(*) as cnt FROM castings WHERE COALESCE(status, '') NOT IN (?, ?, ?, ?, ?, ?)",
         closed_statuses
     ).fetchone()['cnt']
 
