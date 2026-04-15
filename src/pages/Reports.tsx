@@ -174,6 +174,9 @@ export function Reports() {
       : filteredCastings.length === 0
         ? 'No report data to export for this range.'
         : 'Export this report as CSV'
+  const exportRangeLabel = dateRange === 'custom'
+    ? `${customRange.from || 'from'}_to_${customRange.to || 'to'}`
+    : dateRange
 
   const exportCSV = () => {
     const csv = Papa.unparse(filteredCastings.map((c) => ({
@@ -192,7 +195,7 @@ export function Reports() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `castings-report-${formatReportDateForFilename(new Date())}.csv`
+    a.download = `castings-report-${exportRangeLabel}-${formatReportDateForFilename(new Date())}.csv`
     document.body.appendChild(a)
     a.click()
     a.remove()
