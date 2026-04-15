@@ -231,7 +231,7 @@ export function GlobalSearch() {
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold tracking-tight text-slate-900">Universal search</p>
-                <p className="mt-1 text-xs text-slate-500">Search castings, clients, phone numbers, emails, and team.</p>
+                <p className="mt-1 text-xs text-slate-500">Jump into jobs, clients, team, phone numbers, and live records.</p>
               </div>
               <button
                 onClick={closeSearch}
@@ -254,7 +254,7 @@ export function GlobalSearch() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Search project, client, phone, email..."
+                placeholder="Search job, client, team, phone, or email..."
                 className="h-7 flex-1 bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400 sm:text-lg"
               />
             </div>
@@ -286,7 +286,7 @@ export function GlobalSearch() {
                 </div>
                 <div className="max-w-sm">
                   <p className="text-base font-semibold tracking-tight text-slate-900">Search everything instantly</p>
-                  <p className="mt-1.5 text-sm leading-6 text-slate-500">Find castings, clients, phone numbers, emails, and team members in one place.</p>
+                  <p className="mt-1.5 text-sm leading-6 text-slate-500">Find jobs, clients, phone numbers, emails, and team members in one place.</p>
                 </div>
               </div>
             )}

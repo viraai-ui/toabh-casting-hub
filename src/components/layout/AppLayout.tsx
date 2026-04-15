@@ -65,11 +65,11 @@ export function AppLayout() {
         {/* Main content area */}
         <main
           className={cn(
-            'pt-16 pb-20 lg:pb-6 min-h-screen transition-all duration-300',
+            'min-h-screen bg-transparent pb-24 pt-16 transition-all duration-300 lg:pb-8',
             sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-[260px]'
           )}
         >
-          <div className="p-4 lg:px-6 lg:pt-6 lg:pb-10 lg:pr-20 xl:pr-24">
+          <div className="px-3 pb-10 pt-3 sm:px-4 lg:px-6 lg:pt-6 lg:pr-20 xl:pr-24">
             <div className="mx-auto w-full max-w-[1600px]">
               <Outlet />
             </div>
