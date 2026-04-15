@@ -97,12 +97,26 @@ export function Team() {
     navigate('/team', { replace: true })
   }, [navigate, searchParams, team])
 
-  const getMemberAssignments = (memberId: string | number) => {
-    return castings.filter((c) => {
-      if (!c.assigned_ids) return false
-      const ids = (c.assigned_ids || '').toString().split(',').map((s) => s.trim())
+  const isMemberAssignedToCasting = (casting: Casting, memberId: string | number) => {
+    if (Array.isArray(casting.assigned_to)) {
+      const assignedIds = casting.assigned_to
+        .map((entry) => (typeof entry === 'object' && entry ? String(entry.id) : String(entry)))
+        .filter(Boolean)
+      if (assignedIds.length > 0) {
+        return assignedIds.includes(String(memberId))
+      }
+    }
+
+    if (casting.assigned_ids) {
+      const ids = String(casting.assigned_ids).split(',').map((s) => s.trim())
       return ids.includes(String(memberId))
-    }).length
+    }
+
+    return false
+  }
+
+  const getMemberAssignments = (memberId: string | number) => {
+    return castings.filter((c) => isMemberAssignedToCasting(c, memberId)).length
   }
 
   const handleToggleActive = async (member: TeamMember) => {
@@ -427,8 +441,17 @@ function MemberViewModal({
   if (!member) return null
 
   const assignedCastings = castings.filter((c) => {
+    if (Array.isArray(c.assigned_to)) {
+      const assignedIds = c.assigned_to
+        .map((entry) => (typeof entry === 'object' && entry ? String(entry.id) : String(entry)))
+        .filter(Boolean)
+      if (assignedIds.length > 0) {
+        return assignedIds.includes(String(member.id))
+      }
+    }
+
     if (!c.assigned_ids) return false
-    const ids = (c.assigned_ids || '').toString().split(',').map((s) => s.trim())
+    const ids = String(c.assigned_ids).split(',').map((s) => s.trim())
     return ids.includes(String(member.id))
   })
 
