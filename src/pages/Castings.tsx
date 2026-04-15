@@ -196,6 +196,54 @@ function getSubmissionReadiness(casting: Casting) {
   }
 }
 
+function getNextStepSignal(casting: Casting) {
+  const hasProject = Boolean(casting.project_name?.trim())
+  const hasClient = Boolean(casting.client_name?.trim())
+  const hasTeam =
+    parseAssignedNames(casting.assigned_names).length > 0 ||
+    (Array.isArray(casting.assigned_to) && casting.assigned_to.length > 0)
+  const hasBrief = Boolean(casting.requirements?.trim())
+  const normalizedStatus = (casting.status || 'NEW').toUpperCase()
+
+  if (!hasProject || !hasClient) {
+    return {
+      label: 'Complete intake',
+      note: 'Add missing project or client basics',
+      className: 'text-amber-700 bg-amber-50 border-amber-200',
+    }
+  }
+
+  if (!hasTeam) {
+    return {
+      label: 'Assign owner',
+      note: 'Put an internal lead on this job',
+      className: 'text-blue-700 bg-blue-50 border-blue-200',
+    }
+  }
+
+  if (!hasBrief) {
+    return {
+      label: 'Tighten brief',
+      note: 'Add clearer requirements for ops and talent',
+      className: 'text-violet-700 bg-violet-50 border-violet-200',
+    }
+  }
+
+  if (['SHORTLISTED', 'OFFERED', 'REVIEW'].includes(normalizedStatus)) {
+    return {
+      label: 'Chase decision',
+      note: 'Follow up on shortlist, review, or offer movement',
+      className: 'text-cyan-700 bg-cyan-50 border-cyan-200',
+    }
+  }
+
+  return {
+    label: 'Move talent',
+    note: 'Queue is ready for active ops execution',
+    className: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+  }
+}
+
 export function Castings() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -1221,6 +1269,7 @@ function ListView({
               const phone = casting.client_contact?.trim()
               const normalizedPhone = phone ? phone.replace(/\D/g, '') : ''
               const readiness = getSubmissionReadiness(casting)
+              const nextStep = getNextStepSignal(casting)
 
               return (
                 <tr
@@ -1280,6 +1329,9 @@ function ListView({
                             <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
                               <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 font-medium', readiness.className)}>
                                 {readiness.label}
+                              </span>
+                              <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 font-medium', nextStep.className)}>
+                                Next: {nextStep.label}
                               </span>
                               {casting.location && !columnVisibility.location && (
                                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">{casting.location}</span>
@@ -1596,6 +1648,7 @@ function GridView({
         const isFlashing = flashingId === c.id
         const isUpdating = updatingId === c.id
         const readiness = getSubmissionReadiness(c)
+        const nextStep = getNextStepSignal(c)
 
         return (
           <div
@@ -1653,8 +1706,11 @@ function GridView({
                 <span className={cn('inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]', readiness.className)}>
                   {readiness.label}
                 </span>
-                <span className="text-[11px] text-slate-400">{readiness.note}</span>
+                <span className={cn('inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]', nextStep.className)}>
+                  Next: {nextStep.label}
+                </span>
               </div>
+              <p className="text-[11px] text-slate-400">{nextStep.note}</p>
               {/* Client name */}
               <p
                 className="text-[13px] font-medium text-slate-700 truncate"
