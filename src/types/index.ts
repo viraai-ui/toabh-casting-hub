@@ -212,10 +212,11 @@ export interface TalentImportResult {
 
 // ─── Search ──────────────────────────────────────────
 export interface SearchResult {
-  type: string
-  id: number
-  label: string
-  [key: string]: unknown
+  projects: SearchProjectResult[]
+  castings: Casting[]
+  clients: Client[]
+  team: TeamMember[]
+  talents: Talent[]
 }
 
 export interface SearchProjectResult {

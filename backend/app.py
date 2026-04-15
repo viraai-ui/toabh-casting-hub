@@ -559,7 +559,7 @@ def global_search():
     db = get_db()
     q = request.args.get('q', '').strip()
     if not q:
-        return jsonify({'projects': [], 'clients': [], 'team': []})
+        return jsonify({'projects': [], 'castings': [], 'clients': [], 'team': [], 'talents': []})
 
     like = f'%{q}%'
     projects = db.execute(
@@ -567,18 +567,24 @@ def global_search():
         (like, like)
     ).fetchall()
     clients = db.execute(
-        'SELECT id, name, company, email FROM clients WHERE name LIKE ? OR company LIKE ? OR email LIKE ? LIMIT 20',
-        (like, like, like)
+        'SELECT id, name, company, email, phone FROM clients WHERE name LIKE ? OR company LIKE ? OR email LIKE ? OR phone LIKE ? LIMIT 20',
+        (like, like, like, like)
     ).fetchall()
     team = db.execute(
-        'SELECT id, name, role, email FROM team_members WHERE name LIKE ? OR role LIKE ? OR email LIKE ? LIMIT 20',
-        (like, like, like)
+        'SELECT id, name, role, email, phone FROM team_members WHERE name LIKE ? OR role LIKE ? OR email LIKE ? OR phone LIKE ? LIMIT 20',
+        (like, like, like, like)
+    ).fetchall()
+    talents = db.execute(
+        'SELECT id, name, instagram_handle, phone, email, created_at, updated_at FROM talents WHERE name LIKE ? OR phone LIKE ? OR email LIKE ? OR instagram_handle LIKE ? LIMIT 20',
+        (like, like, like, like)
     ).fetchall()
 
     return jsonify({
         'projects': [dict(row) for row in projects],
+        'castings': [_serialize_casting_row(db, row) for row in projects],
         'clients': [dict(row) for row in clients],
         'team': [dict(row) for row in team],
+        'talents': [_serialize_talent_row(row) for row in talents],
     })
 
 

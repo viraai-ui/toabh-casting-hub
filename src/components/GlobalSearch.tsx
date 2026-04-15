@@ -17,13 +17,14 @@ import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/hooks/useStore'
 import { useOverlay } from '@/hooks/useOverlayManager'
-import type { SearchResult, SearchProjectResult, Casting, Client, TeamMember } from '@/types'
+import type { SearchResult, SearchProjectResult, Casting, Client, TeamMember, Talent } from '@/types'
 
 const EMPTY_RESULTS: SearchResult = {
   projects: [],
   castings: [],
   clients: [],
   team: [],
+  talents: [],
 }
 
 type SearchItem =
@@ -31,6 +32,7 @@ type SearchItem =
   | { type: 'casting'; data: Casting }
   | { type: 'client'; data: Client }
   | { type: 'team'; data: TeamMember }
+  | { type: 'talent'; data: Talent }
 
 const safeText = (value: unknown) => (typeof value === 'string' ? value.trim() : '')
 
@@ -41,6 +43,7 @@ const normaliseSearchResults = (payload: unknown): SearchResult => {
     castings: Array.isArray(source.castings) ? source.castings : [],
     clients: Array.isArray(source.clients) ? source.clients : [],
     team: Array.isArray(source.team) ? source.team : [],
+    talents: Array.isArray(source.talents) ? source.talents : [],
   }
 }
 
@@ -60,6 +63,11 @@ const getClientSubtitle = (client: Client) => {
 const getTeamSubtitle = (member: TeamMember) => {
   const parts = [safeText(member.role), safeText(member.email), safeText(member.phone)].filter(Boolean)
   return parts.length > 0 ? parts.join(' • ') : 'Team member'
+}
+
+const getTalentSubtitle = (talent: Talent) => {
+  const parts = [safeText(talent.instagram_handle), safeText(talent.phone), safeText(talent.email)].filter(Boolean)
+  return parts.length > 0 ? parts.join(' • ') : 'Talent'
 }
 
 export function GlobalSearch() {
@@ -156,6 +164,7 @@ export function GlobalSearch() {
       ...results.castings.slice(0, 6).map((casting) => ({ type: 'casting' as const, data: casting })),
       ...results.clients.slice(0, 4).map((client) => ({ type: 'client' as const, data: client })),
       ...results.team.slice(0, 3).map((member) => ({ type: 'team' as const, data: member })),
+      ...results.talents.slice(0, 4).map((talent) => ({ type: 'talent' as const, data: talent })),
     ]
   }, [results])
 
@@ -167,6 +176,7 @@ export function GlobalSearch() {
     if (item.type === 'casting') navigate(`/castings?id=${item.data.id}`)
     if (item.type === 'client') navigate(`/clients?id=${item.data.id}`)
     if (item.type === 'team') navigate(`/team?id=${item.data.id}`)
+    if (item.type === 'talent') navigate(`/talents?id=${item.data.id}`)
 
     closeSearch()
   }
@@ -400,6 +410,36 @@ export function GlobalSearch() {
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-sm font-semibold text-slate-900">{safeText(member.name) || 'Unnamed team member'}</p>
                               <p className="mt-0.5 text-sm text-slate-500">{getTeamSubtitle(member)}</p>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {results.talents.length > 0 && (
+                  <div className="rounded-[22px] border border-slate-100 bg-slate-50/70 p-2.5 shadow-[0_16px_35px_-30px_rgba(15,23,42,0.28)]">
+                    {renderSectionHeader('Talents')}
+                    <div className="space-y-1">
+                      {results.talents.slice(0, 4).map((talent) => {
+                        const rowIndex = currentIndex++
+                        const active = selectedIndex === rowIndex
+                        return (
+                          <button
+                            key={`talent-${talent.id}`}
+                            onClick={() => openResult({ type: 'talent', data: talent })}
+                            className={cn(
+                              'flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition-all',
+                              active ? 'bg-amber-50 ring-1 ring-amber-200' : 'hover:bg-white'
+                            )}
+                          >
+                            <div className={cn('mt-0.5 rounded-2xl p-2', active ? 'bg-amber-100 text-amber-600' : 'bg-white text-slate-400')}>
+                              <UserCircle className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-semibold text-slate-900">{safeText(talent.name) || 'Unnamed talent'}</p>
+                              <p className="mt-0.5 text-sm text-slate-500">{getTalentSubtitle(talent)}</p>
                             </div>
                           </button>
                         )
