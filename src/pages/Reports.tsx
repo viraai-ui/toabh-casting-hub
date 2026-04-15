@@ -9,6 +9,7 @@ import type { Casting } from '@/types'
 import { isWithinInterval, parseISO } from 'date-fns'
 
 const COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#ec4899']
+const CLOSED_STATUSES = new Set(['WON', 'LOST', 'INVOICED', 'PAID', 'COMPLETED', 'DECLINED'])
 
 export function Reports() {
   const [castings, setCastings] = useState<Casting[]>([])
@@ -72,7 +73,7 @@ export function Reports() {
       const weekKey = weekStart.toISOString().split('T')[0]
       if (!weeks[weekKey]) weeks[weekKey] = { created: 0, closed: 0 }
       weeks[weekKey].created++
-      if (c.status === 'COMPLETED') weeks[weekKey].closed++
+      if (CLOSED_STATUSES.has((c.status || '').trim().toUpperCase())) weeks[weekKey].closed++
     })
     return Object.entries(weeks)
       .sort(([a], [b]) => a.localeCompare(b))
