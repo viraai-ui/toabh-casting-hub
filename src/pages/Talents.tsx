@@ -75,6 +75,7 @@ export function Talents() {
   const [talents, setTalents] = useState<Talent[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [focusFilter, setFocusFilter] = useState<'all' | 'needs-attention' | 'ops-ready'>('all')
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
     key: 'updated_at',
     direction: 'desc',
@@ -118,8 +119,23 @@ export function Talents() {
       )
     }
 
+    if (focusFilter === 'needs-attention') {
+      results = results.filter((talent) => getTalentProfileSignal(talent).score < 100)
+    }
+
+    if (focusFilter === 'ops-ready') {
+      results = results.filter((talent) => getTalentProfileSignal(talent).score === 100)
+    }
+
     return [...results].sort((a, b) => {
       const key = sortConfig.key
+
+      if (key === 'profile_score') {
+        const aScore = getTalentProfileSignal(a).score
+        const bScore = getTalentProfileSignal(b).score
+        return sortConfig.direction === 'asc' ? aScore - bScore : bScore - aScore
+      }
+
       let aVal: string | number = (a as Record<string, string | number | null>)[key] ?? ''
       let bVal: string | number = (b as Record<string, string | number | null>)[key] ?? ''
 
@@ -135,7 +151,7 @@ export function Talents() {
       const cmp = String(aVal).localeCompare(String(bVal), undefined, { sensitivity: 'base', numeric: true })
       return sortConfig.direction === 'asc' ? cmp : -cmp
     })
-  }, [talents, searchQuery, sortConfig])
+  }, [focusFilter, talents, searchQuery, sortConfig])
 
   const talentSummary = useMemo(() => {
     const withInstagram = filteredTalents.filter((talent) => Boolean(talent.instagram_handle?.trim())).length
@@ -331,23 +347,50 @@ export function Talents() {
       </section>
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search talent by name, phone, email, or Instagram..."
-            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 text-sm"
-          />
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search talent by name, phone, email, or Instagram..."
+              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 text-sm"
+            />
+          </div>
+
+          <div className="hidden sm:block h-10 w-px bg-slate-200" aria-hidden="true" />
         </div>
 
-        <div className="hidden sm:block h-10 w-px bg-slate-200" aria-hidden="true" />
+        <div className="flex flex-wrap items-center gap-2">
+          {[
+            { key: 'all', label: `All roster (${talentSummary.total})` },
+            { key: 'needs-attention', label: `Needs attention (${talentSummary.incompleteProfiles})` },
+            { key: 'ops-ready', label: `Ops-ready (${talentSummary.opsReady})` },
+          ].map((option) => {
+            const active = focusFilter === option.key
+            return (
+              <button
+                key={option.key}
+                onClick={() => setFocusFilter(option.key as 'all' | 'needs-attention' | 'ops-ready')}
+                className={`rounded-full border px-3 py-2 text-xs font-semibold transition-colors ${active ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
+              >
+                {option.label}
+              </button>
+            )
+          })}
+          <button
+            onClick={() => setSortConfig({ key: 'profile_score', direction: 'asc' })}
+            className={`rounded-full border px-3 py-2 text-xs font-semibold transition-colors ${sortConfig.key === 'profile_score' ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
+          >
+            Lowest profile score first
+          </button>
+        </div>
       </div>
 
       {/* Results count */}
-      {searchQuery && (
+      {(searchQuery || focusFilter !== 'all') && (
         <p className="text-xs text-slate-500">
           Showing {filteredTalents.length} of {talents.length} talent{talents.length !== 1 ? 's' : ''}
         </p>
@@ -397,8 +440,11 @@ export function Talents() {
                   >
                     Email <SortArrow sortKey="email" />
                   </th>
-                  <th className="text-left px-6 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wider hidden lg:table-cell">
-                    Profile status
+                  <th
+                    className="text-left px-6 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wider hidden lg:table-cell cursor-pointer hover:text-slate-900 select-none"
+                    onClick={() => handleSort('profile_score')}
+                  >
+                    Profile status <SortArrow sortKey="profile_score" />
                   </th>
                   <th className="text-right px-6 py-3 font-semibold text-slate-600 text-xs uppercase tracking-wider">
                     Actions
