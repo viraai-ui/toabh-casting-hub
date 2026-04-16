@@ -64,7 +64,14 @@ function FieldRow({ label, value, action }: { label: string; value: React.ReactN
 }
 
 function EmptyState({ message }: { message: string }) {
-  return <div className="px-4 pb-4 text-[12px] text-slate-400 italic">{message}</div>
+  return (
+    <div className="px-4 pb-4">
+      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-center">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Waiting on data</p>
+        <p className="mt-2 text-[12px] text-slate-600">{message}</p>
+      </div>
+    </div>
+  )
 }
 
 function WorkflowStat({

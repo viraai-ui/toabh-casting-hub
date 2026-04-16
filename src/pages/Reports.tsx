@@ -296,22 +296,30 @@ export function Reports() {
         >
           <h3 className="font-semibold text-slate-900 mb-4">Casting Performance</h3>
           <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyData}>
-                <XAxis dataKey="week" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: 'rgba(255,255,255,0.95)',
-                    border: '1px solid rgba(0,0,0,0.1)',
-                    borderRadius: 12,
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="created" name="Created" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="closed" name="Closed" fill="#10b981" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {weeklyData.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 text-center">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Performance</p>
+                <p className="mt-3 text-sm font-semibold text-slate-900">No performance data yet</p>
+                <p className="mt-2 text-sm text-slate-500">New job creation and closures in this range will turn this into a usable trend view.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weeklyData}>
+                  <XAxis dataKey="week" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'rgba(255,255,255,0.95)',
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      borderRadius: 12,
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="created" name="Created" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="closed" name="Closed" fill="#10b981" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </motion.div>
 
@@ -361,20 +369,28 @@ export function Reports() {
         >
           <h3 className="font-semibold text-slate-900 mb-4">Team Performance</h3>
           <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={teamData} layout="vertical">
-                <XAxis type="number" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} width={80} />
-                <Tooltip
-                  contentStyle={{
-                    background: 'rgba(255,255,255,0.95)',
-                    border: '1px solid rgba(0,0,0,0.1)',
-                    borderRadius: 12,
-                  }}
-                />
-                <Bar dataKey="count" name="Castings" fill="#f59e0b" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {teamData.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 text-center">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Team load</p>
+                <p className="mt-3 text-sm font-semibold text-slate-900">No team performance visible yet</p>
+                <p className="mt-2 text-sm text-slate-500">Once jobs have clear owners, this will show who is carrying the most active work.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={teamData} layout="vertical">
+                  <XAxis type="number" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} width={80} />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'rgba(255,255,255,0.95)',
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      borderRadius: 12,
+                    }}
+                  />
+                  <Bar dataKey="count" name="Castings" fill="#f59e0b" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </motion.div>
 
@@ -387,38 +403,46 @@ export function Reports() {
         >
           <h3 className="font-semibold text-slate-900 mb-4">Revenue Trend</h3>
           <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueData}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="month" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-                <YAxis
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(value) => `₹${(value / 100000).toFixed(0)}L`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: 'rgba(255,255,255,0.95)',
-                    border: '1px solid rgba(0,0,0,0.1)',
-                    borderRadius: 12,
-                  }}
-                  formatter={(value) => [formatCurrency(value as number), 'Revenue']}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  fill="url(#colorRevenue)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {revenueData.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 text-center">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Revenue</p>
+                <p className="mt-3 text-sm font-semibold text-slate-900">No revenue trend yet</p>
+                <p className="mt-2 text-sm text-slate-500">Budgeted jobs in this reporting window will shape the revenue curve here.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={revenueData}>
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                  <YAxis
+                    tick={{ fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `₹${(value / 100000).toFixed(0)}L`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'rgba(255,255,255,0.95)',
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      borderRadius: 12,
+                    }}
+                    formatter={(value) => [formatCurrency(value as number), 'Revenue']}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="#10b981"
+                    strokeWidth={2}
+                    fill="url(#colorRevenue)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </motion.div>
       </div>
