@@ -419,11 +419,16 @@ export function Talents() {
       >
         {filteredTalents.length === 0 ? (
           <div className="py-16 text-center">
-            <p className="text-5xl mb-3">🎭</p>
-            <p className="text-sm font-medium text-slate-700">No talent yet</p>
-            <p className="text-xs text-slate-500 mt-1">
-              {searchQuery ? 'No results match your search.' : 'Add your first talent or import a CSV to get started.'}
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Talent roster</p>
+            <p className="mt-3 text-5xl">🎭</p>
+            <p className="mt-3 text-sm font-semibold text-slate-900">No talent yet</p>
+            <p className="mt-2 text-sm text-slate-500">
+              {searchQuery ? 'No results match your search or focus filters.' : 'Add your first talent or import a CSV to start building the roster.'}
             </p>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500">
+              <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{talents.length} total talents</span>
+              <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">Focus: {focusFilter}</span>
+            </div>
           </div>
         ) : (
           <div className="overflow-x-auto">

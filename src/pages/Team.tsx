@@ -288,11 +288,14 @@ export function Team() {
         </div>
       ) : team.length === 0 ? (
         <div className="card p-12 text-center">
-          <p className="text-slate-500">No team members yet</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Team board</p>
+          <p className="mt-3 text-sm font-semibold text-slate-900">No team members yet</p>
+          <p className="mt-2 text-sm text-slate-500">Invite the first operator to start assigning ownership across jobs and follow-ups.</p>
         </div>
       ) : filteredTeam.length === 0 ? (
         <div className="card p-12 text-center">
-          <p className="text-sm font-semibold text-slate-900">No matching team members</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Team board</p>
+          <p className="mt-3 text-sm font-semibold text-slate-900">No matching team members</p>
           <p className="mt-2 text-sm text-slate-500">Try another search or focus filter.</p>
         </div>
       ) : (

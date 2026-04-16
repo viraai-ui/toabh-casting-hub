@@ -434,8 +434,13 @@ export function Clients() {
         </div>
       ) : filteredClients.length === 0 ? (
         <div className="rounded-[28px] border border-slate-200 bg-white px-4 py-16 text-center shadow-sm">
-          <p className="text-sm font-medium text-slate-700">No clients found</p>
-          <p className="mt-1 text-sm text-slate-500">{clients.length === 0 && !searchQuery.trim() && selectedFilterTagIds.length === 0 ? 'Add your first client to start building the workspace.' : 'Try changing the search or tag filters.'}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Clients</p>
+          <p className="mt-3 text-sm font-semibold text-slate-900">No clients found</p>
+          <p className="mt-2 text-sm text-slate-500">{clients.length === 0 && !searchQuery.trim() && selectedFilterTagIds.length === 0 ? 'Add your first client to start building the relationship layer.' : 'Try changing the search, relationship focus, or tag filters.'}</p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500">
+            <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{clients.length} total clients</span>
+            <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{selectedFilterTagIds.length} tag filters active</span>
+          </div>
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">

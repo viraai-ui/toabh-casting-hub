@@ -446,7 +446,8 @@ export function Tasks() {
         <div className="divide-y divide-slate-100">
           {tasks.length === 0 ? (
             <div className="px-5 py-16 text-center">
-              <p className="text-sm font-semibold text-slate-900">No tasks found</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Execution queue</p>
+              <p className="mt-3 text-sm font-semibold text-slate-900">No tasks found</p>
               <p className="mt-2 text-sm text-slate-500">Try another queue filter or create the next follow-up task.</p>
             </div>
           ) : tasks.map((task) => {
