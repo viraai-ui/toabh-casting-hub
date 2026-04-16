@@ -408,6 +408,7 @@ export function ClientTags() {
               <p className="mt-3 text-sm font-semibold text-slate-900">No client tags yet</p>
               <p className="mt-2 text-sm text-slate-500">Create your first tag to start grouping clients visually and shaping relationship views.</p>
               <p className="mt-2 text-xs text-slate-400">This becomes the lightweight relationship system for priority, category, and workflow grouping across the client base.</p>
+              <p className="mt-2 text-xs text-slate-400">Use it to separate agencies, direct brands, hot accounts, and repeat business without clutter.</p>
             </div>
           ) : (
             tags.map((tag) =>

@@ -171,6 +171,7 @@ export function EmailTemplates() {
             <p className="mt-3 text-sm font-semibold text-slate-900">No email templates yet</p>
             <p className="mt-2 text-sm text-slate-500">Create the first reusable template to speed up outreach and job communication.</p>
             <p className="mt-2 text-xs text-slate-400">This becomes the reusable messaging layer for briefs, follow-ups, and consistent client communication.</p>
+            <p className="mt-2 text-xs text-slate-400">Good templates also help the team keep tone and information quality consistent at scale.</p>
           </div>
         )}
         {templates.map((template) => (
