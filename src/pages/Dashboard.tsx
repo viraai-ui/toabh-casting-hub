@@ -324,6 +324,7 @@ export function Dashboard() {
               <EmptyState
                 title="No active pipeline yet"
                 description="As jobs move through stages, this space will become the high-level morning scan. Once the first job is live, pipeline health will show up here."
+                note="This is the top-level operating snapshot for where casting momentum is building or slowing down."
                 ctaLabel="Open jobs"
                 onClick={() => navigate('/castings')}
               />
@@ -359,6 +360,7 @@ export function Dashboard() {
               <EmptyState
                 title="No assignments yet"
                 description="Once jobs are distributed, this will show who is overloaded and who has room. Assign ownership to turn this into a real load view."
+                note="It becomes the fastest way to read team capacity before the day gets busy."
                 ctaLabel="Open team"
                 onClick={() => navigate('/team')}
               />

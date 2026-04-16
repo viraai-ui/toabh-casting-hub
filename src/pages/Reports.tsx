@@ -301,6 +301,7 @@ export function Reports() {
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Performance</p>
                 <p className="mt-3 text-sm font-semibold text-slate-900">No performance data yet</p>
                 <p className="mt-2 text-sm text-slate-500">New job creation and closures in this range will turn this into a usable trend view.</p>
+                <p className="mt-2 text-xs text-slate-400">This becomes the quick read on throughput once intake and closures start happening consistently.</p>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
@@ -374,6 +375,7 @@ export function Reports() {
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Team load</p>
                 <p className="mt-3 text-sm font-semibold text-slate-900">No team performance visible yet</p>
                 <p className="mt-2 text-sm text-slate-500">Once jobs have clear owners, this will show who is carrying the most active work.</p>
+                <p className="mt-2 text-xs text-slate-400">It becomes the balancing view for spotting overload, idle capacity, and resourcing gaps.</p>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
@@ -408,6 +410,7 @@ export function Reports() {
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Revenue</p>
                 <p className="mt-3 text-sm font-semibold text-slate-900">No revenue trend yet</p>
                 <p className="mt-2 text-sm text-slate-500">Budgeted jobs in this reporting window will shape the revenue curve here.</p>
+                <p className="mt-2 text-xs text-slate-400">Once budgets start landing reliably, this becomes the commercial pulse for TOABH.</p>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">

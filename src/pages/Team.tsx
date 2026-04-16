@@ -291,6 +291,7 @@ export function Team() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Team board</p>
           <p className="mt-3 text-sm font-semibold text-slate-900">No operators added yet</p>
           <p className="mt-2 text-sm text-slate-500">Bring in your first team member to unlock ownership, handoffs, and cleaner follow-through across every casting.</p>
+          <p className="mt-2 text-xs text-slate-400">This becomes the live ownership board once operators, roles, and active jobs start lining up.</p>
         </div>
       ) : filteredTeam.length === 0 ? (
         <div className="card p-12 text-center">
