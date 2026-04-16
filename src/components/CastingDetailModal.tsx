@@ -63,12 +63,18 @@ function FieldRow({ label, value, action }: { label: string; value: React.ReactN
   )
 }
 
-function EmptyState({ message }: { message: string }) {
+function EmptyState({
+  message,
+  eyebrow = 'Waiting on data',
+}: {
+  message: string
+  eyebrow?: string
+}) {
   return (
     <div className="px-4 pb-4">
-      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-center">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Waiting on data</p>
-        <p className="mt-2 text-[12px] text-slate-600">{message}</p>
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/90 px-4 py-4 text-center">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{eyebrow}</p>
+        <p className="mt-2 text-[12px] leading-5 text-slate-600">{message}</p>
       </div>
     </div>
   )
@@ -717,7 +723,10 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                         <span className="text-[12px] text-slate-400">Loading talents...</span>
                       </div>
                     ) : talents.length === 0 ? (
-                      <EmptyState message="No talents assigned" />
+                      <EmptyState
+                        eyebrow="Talent queue open"
+                        message="No talent has been linked yet. Add the first shortlist here to move this casting into active submission flow."
+                      />
                     ) : (
                       <div className="px-4 pb-3 pt-1 flex flex-col gap-2">
                         {talents.map((talent) => (
@@ -750,7 +759,10 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                   <SectionCard>
                     <SectionHeader icon={User} label="Team" />
                     {assignedTo.length === 0 ? (
-                      <EmptyState message="No team members assigned" />
+                      <EmptyState
+                        eyebrow="Ownership missing"
+                        message="This casting still has no internal owner. Assign a team member so follow-through stays visible and accountable."
+                      />
                     ) : (
                       <div className="px-4 pb-3 pt-1 flex flex-col gap-2">
                         {assignedTo.map((member) => (

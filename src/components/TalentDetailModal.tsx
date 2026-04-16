@@ -180,7 +180,7 @@ export function TalentDetailModal({ open, onClose, talent, onSave }: TalentDetai
                       {mode === 'create' ? 'Add New Talent' : talent?.name}
                     </h2>
                     <p className="text-xs text-slate-500">
-                      {mode === 'view' ? 'Viewing details' : mode === 'create' ? 'Fill in talent details' : 'Editing information'}
+                      {mode === 'view' ? 'Talent record overview' : mode === 'create' ? 'Capture the core details to make this profile usable fast' : 'Tighten the record and fill any missing contact fields'}
                     </p>
                   </div>
                 </div>
@@ -267,7 +267,7 @@ export function TalentDetailModal({ open, onClose, talent, onSave }: TalentDetai
                       </span>
                     </div>
                     <p className="text-xs text-slate-400">
-                      {mode === 'create' ? 'New talent profile' : 'Updating profile'}
+                      {mode === 'create' ? 'Start with the essentials, then enrich the profile over time' : 'Make the record cleaner, clearer, and easier to action'}
                     </p>
                   </div>
                 )}
@@ -307,7 +307,7 @@ export function TalentDetailModal({ open, onClose, talent, onSave }: TalentDetai
                         rel="noopener noreferrer"
                         className={cn('text-sm', form.instagram_handle ? 'text-purple-600 underline' : 'text-slate-400')}
                       >
-                        {form.instagram_handle ? `@${form.instagram_handle.replace(/^@/, '')}` : 'Not set'}
+                        {form.instagram_handle ? `@${form.instagram_handle.replace(/^@/, '')}` : 'Instagram handle not added'}
                       </a>
                     </div>
                   ) : (
@@ -330,7 +330,7 @@ export function TalentDetailModal({ open, onClose, talent, onSave }: TalentDetai
                   {mode === 'view' ? (
                     <div className="flex items-center gap-2 py-2 px-3 bg-slate-50 rounded-xl">
                       <Phone className="w-4 h-4 text-slate-400" />
-                      <span className="text-sm text-slate-900">{form.phone || 'Not set'}</span>
+                      <span className="text-sm text-slate-900">{form.phone || 'Phone number not added'}</span>
                     </div>
                   ) : (
                     <div className="relative">
@@ -353,7 +353,7 @@ export function TalentDetailModal({ open, onClose, talent, onSave }: TalentDetai
                     <div className="flex items-center gap-2 py-2 px-3 bg-slate-50 rounded-xl">
                       <Mail className="w-4 h-4 text-slate-400" />
                       <a href={form.email ? `mailto:${form.email}` : '#'} className={cn('text-sm', form.email ? 'text-blue-600 underline' : 'text-slate-400')}>
-                        {form.email || 'Not set'}
+                        {form.email || 'Email not added'}
                       </a>
                     </div>
                   ) : (

@@ -162,8 +162,8 @@ export function Calendar() {
   const schedulePriority = useMemo(() => {
     if (scheduleSummary.total === 0) {
       return {
-        label: 'No schedule load yet',
-        note: 'Create or import jobs to build the booking and availability layer.',
+        label: 'Your schedule board is still empty',
+        note: 'Create the first casting to start building booking visibility, staffing clarity, and upcoming date coverage.',
         tone: 'border-slate-200 bg-slate-50 text-slate-700',
       }
     }
@@ -443,7 +443,7 @@ export function Calendar() {
                   <div className="flex items-start justify-between gap-3">
                     <button onClick={() => openDetail(casting)} className="text-left min-w-0 flex-1">
                       <p className="text-sm font-semibold text-slate-900 line-clamp-1">{casting.project_name || 'Untitled job'}</p>
-                      <p className="mt-1 text-xs text-slate-500">{casting.client_name || 'No client'}</p>
+                      <p className="mt-1 text-xs text-slate-500">{casting.client_name || 'Client not added yet'}</p>
                     </button>
                     <span
                       className="rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em]"
@@ -456,8 +456,8 @@ export function Calendar() {
                     </span>
                   </div>
                   <div className="mt-3 space-y-1.5 text-xs text-slate-600">
-                    <p>{casting.shoot_date_start ? `Date: ${format(parseISO(casting.shoot_date_start), 'EEE, MMM d')}` : 'Date: Scheduling still open'}</p>
-                    <p>{hasOwner ? `Owner: ${ownerLabel}` : 'Owner: Ownership not assigned yet'}</p>
+                    <p>{casting.shoot_date_start ? `Date: ${format(parseISO(casting.shoot_date_start), 'EEE, MMM d')}` : 'Date: Shoot date not locked yet'}</p>
+                    <p>{hasOwner ? `Owner: ${ownerLabel}` : 'Owner: Team owner not assigned yet'}</p>
                     {casting.location && <p className="line-clamp-1">Location: {casting.location}</p>}
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
@@ -622,14 +622,14 @@ function MonthView({
                     >
                       <p className="truncate">{casting.project_name || casting.client_name}</p>
                       <p className="truncate text-[8px] sm:text-[9px]" style={{ opacity: 0.78 }}>
-                        {hasOwner ? 'Owner assigned' : 'Owner needed'}
+                        {hasOwner ? 'Owner assigned' : 'Owner still needed'}
                       </p>
                     </button>
                   )
                 })}
                 {overflow > 0 && (
                   <span className="truncate pl-1 text-[9px] leading-tight text-slate-400 sm:text-[10px]">
-                    +{overflow} more
+                    +{overflow} more on this date
                   </span>
                 )}
               </div>
@@ -712,7 +712,7 @@ function WeekView({
                       >
                         <p className="truncate">{hourCasting.project_name || hourCasting.client_name}</p>
                         <p className="mt-0.5 truncate text-[8px] sm:text-[10px]" style={{ opacity: 0.8 }}>
-                          {hasOwner ? 'Owner assigned' : 'Owner needed'}
+                          {hasOwner ? 'Owner assigned' : 'Owner still needed'}
                         </p>
                       </button>
                     )
@@ -749,14 +749,17 @@ function DayView({
         {format(currentDate, 'EEE, MMM d')}
       </h3>
       {dayCastings.length === 0 ? (
-        <p className="text-slate-400 text-sm py-8 text-center">No jobs scheduled</p>
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-8 text-center">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Clear day</p>
+          <p className="mt-2 text-sm text-slate-600">No castings are scheduled for this day yet.</p>
+        </div>
       ) : (
         <div className="space-y-2">
           {dayCastings.map((casting) => {
             const hasOwner = Array.isArray(casting.assigned_to) ? casting.assigned_to.length > 0 : Boolean(casting.assigned_names?.trim())
             const ownerLabel = Array.isArray(casting.assigned_to) && casting.assigned_to.length > 0
               ? casting.assigned_to.map((member) => member.name).join(', ')
-              : casting.assigned_names?.trim() || 'No owner assigned'
+              : casting.assigned_names?.trim() || 'Owner not assigned yet'
 
             return (
               <button
@@ -780,7 +783,7 @@ function DayView({
                       'rounded-full px-2 py-1 text-[10px] font-medium',
                       hasOwner ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
                     )}>
-                      {hasOwner ? ownerLabel : 'Owner needed'}
+                      {hasOwner ? ownerLabel : 'Owner not assigned yet'}
                     </span>
                   </div>
                   {casting.location && (

@@ -310,7 +310,10 @@ export function ProfileDashboard({ open, onClose }: ProfileDashboardProps) {
                           <h3 className="text-sm font-semibold text-slate-900">Activity Summary</h3>
                           <div className="mt-4 space-y-3">
                             {profile.recent_activity.length === 0 ? (
-                              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">No recent activity yet.</div>
+                              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
+                                <p className="text-sm font-semibold text-slate-700">No activity yet</p>
+                                <p className="mt-1 text-sm text-slate-400">Profile updates, task changes, and team actions will appear here once work starts moving.</p>
+                              </div>
                             ) : profile.recent_activity.map((item) => {
                               const activityUserName = item.user_name?.trim() || 'System'
                               return (
@@ -330,7 +333,10 @@ export function ProfileDashboard({ open, onClose }: ProfileDashboardProps) {
                           <h3 className="text-sm font-semibold text-slate-900">My Tasks</h3>
                           <div className="mt-4 space-y-3">
                             {profile.tasks.length === 0 ? (
-                              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">No assigned items right now.</div>
+                              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
+                                <p className="text-sm font-semibold text-slate-700">No active tasks right now</p>
+                                <p className="mt-1 text-sm text-slate-400">Once jobs or follow-ups are assigned to you, they will land here for quick review.</p>
+                              </div>
                             ) : profile.tasks.map((task) => (
                               <div key={task.id} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
                                 <div className="flex items-start justify-between gap-3">

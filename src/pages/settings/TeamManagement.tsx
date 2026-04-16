@@ -124,7 +124,15 @@ export function TeamManagement() {
 
       {/* Team List */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {team.map((member) => (
+        {team.length === 0 ? (
+          <div className="md:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Team setup</p>
+            <p className="mt-3 text-sm font-semibold text-slate-900 sm:text-base">No team members added yet</p>
+            <p className="mt-2 text-sm text-slate-500 max-w-md mx-auto">
+              Invite your core casting team so permissions, ownership, and communication stay clear from day one.
+            </p>
+          </div>
+        ) : team.map((member) => (
           <motion.div
             key={member.id}
             layout

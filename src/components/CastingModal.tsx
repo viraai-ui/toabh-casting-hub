@@ -1061,7 +1061,14 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                             const ids: number[] = Array.isArray(assigned)
                               ? assigned.map((member) => member.id).filter(Boolean)
                               : []
-                            if (!ids.length) return <p className="text-sm text-slate-400 text-center py-4">No team members assigned</p>;
+                            if (!ids.length) {
+                              return (
+                                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-5 text-center">
+                                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Ownership pending</p>
+                                  <p className="mt-2 text-sm text-slate-600">No team member is assigned to this casting yet.</p>
+                                </div>
+                              )
+                            };
                             return ids.map((mid: number) => {
                               const m = teamMembers.find((tm) => tm.id === mid);
                               if (!m) return null;

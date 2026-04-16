@@ -115,7 +115,7 @@ export function TalentPicker({ selectedIds, onChange, disabled = false }: Talent
               setDropdownOpen(true)
             }}
             onFocus={() => setDropdownOpen(true)}
-            placeholder="Search talents..."
+            placeholder="Search by name, phone, email, or Instagram"
             className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 text-sm"
           />
         </div>
@@ -149,13 +149,16 @@ export function TalentPicker({ selectedIds, onChange, disabled = false }: Talent
       )}
 
       {dropdownOpen && !disabled && !loading && available.length === 0 && search.trim() && (
-        <div className="px-3 py-2 text-xs text-slate-400">No matching talents found</div>
+        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3">
+          <p className="text-xs font-semibold text-slate-700">No matches for “{search.trim()}”</p>
+          <p className="mt-1 text-xs text-slate-400">Try a broader name, phone, email, or Instagram search.</p>
+        </div>
       )}
 
       {loading && (
-        <div className="flex items-center gap-2 text-xs text-slate-400">
+        <div className="flex items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-xs text-slate-400">
           <Loader2 className="w-3 h-3 animate-spin" />
-          Loading talents...
+          Loading talent options...
         </div>
       )}
     </div>

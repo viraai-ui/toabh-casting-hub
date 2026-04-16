@@ -276,7 +276,7 @@ export function Header() {
                     <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">Notifications</p>
-                        <p className="text-xs text-slate-500">Recent activity from your agency workspace</p>
+                        <p className="text-xs text-slate-500">Signals, handoffs, and movement across your agency workspace</p>
                       </div>
                       <button
                         onClick={markAllRead}
@@ -298,8 +298,8 @@ export function Header() {
                           <Bell className="h-5 w-5 text-slate-300" />
                           <div>
                             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Notifications</p>
-                            <p className="mt-3 text-sm font-semibold text-slate-800">No notifications yet</p>
-                            <p className="mt-1 text-xs text-slate-500">New activity, assignments, and workspace updates will show up here automatically.</p>
+                            <p className="mt-3 text-sm font-semibold text-slate-800">All quiet for now</p>
+                            <p className="mt-1 text-xs text-slate-500">The moment a job moves, an invite lands, or a handoff needs attention, it will surface here.</p>
                           </div>
                         </div>
                       ) : (

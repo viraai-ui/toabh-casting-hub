@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Briefcase, Mail, MessageCircle, Phone, Pencil, Trash2, X } from 'lucide-react'
+import { Briefcase, Mail, MessageCircle, Phone, Pencil, Sparkles, Trash2, X } from 'lucide-react'
 import { cn, formatDate, getInitials } from '@/lib/utils'
 import type { Casting, Client, ClientTag } from '@/types'
 import { ClientTagPill } from '@/components/clients/ClientTagPill'
@@ -164,7 +164,19 @@ export function ClientDetailModal({ open, client, castings, onClose, onEdit, onD
                   Castings · {castings.length} total
                 </span>
                 {castings.length === 0 ? (
-                  <p className="text-sm italic text-slate-400">No castings yet</p>
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+                        <Sparkles className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">No castings linked yet</p>
+                        <p className="mt-1 text-sm leading-6 text-slate-500">
+                          This client is ready to be attached to upcoming casting activity. Once a project is assigned, it will show up here for quick tracking.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     {castings.slice(0, 5).map((casting) => (
@@ -204,9 +216,23 @@ export function ClientDetailModal({ open, client, castings, onClose, onEdit, onD
               <div className="space-y-3">
                 <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Notes</span>
                 <div className="rounded-xl border border-slate-100 bg-slate-50/60 px-3 py-3">
-                  <p className="whitespace-pre-wrap text-sm leading-6 text-slate-600">
-                    {client.notes?.trim() || 'No internal notes added yet.'}
-                  </p>
+                  {client.notes?.trim() ? (
+                    <p className="whitespace-pre-wrap text-sm leading-6 text-slate-600">
+                      {client.notes}
+                    </p>
+                  ) : (
+                    <div className="flex items-start gap-3 rounded-2xl border border-dashed border-slate-200 bg-white/80 px-4 py-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+                        <Pencil className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">No internal notes yet</p>
+                        <p className="mt-1 text-sm leading-6 text-slate-500">
+                          Add context like preferences, billing cues, team contacts, or follow-up instructions so handoffs stay sharp.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

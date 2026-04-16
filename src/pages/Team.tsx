@@ -289,14 +289,14 @@ export function Team() {
       ) : team.length === 0 ? (
         <div className="card p-12 text-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Team board</p>
-          <p className="mt-3 text-sm font-semibold text-slate-900">No team members yet</p>
-          <p className="mt-2 text-sm text-slate-500">Invite the first operator to start assigning ownership across jobs and follow-ups.</p>
+          <p className="mt-3 text-sm font-semibold text-slate-900">No operators added yet</p>
+          <p className="mt-2 text-sm text-slate-500">Bring in your first team member to unlock ownership, handoffs, and cleaner follow-through across every casting.</p>
         </div>
       ) : filteredTeam.length === 0 ? (
         <div className="card p-12 text-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Team board</p>
-          <p className="mt-3 text-sm font-semibold text-slate-900">No matching team members</p>
-          <p className="mt-2 text-sm text-slate-500">Try another search or focus filter.</p>
+          <p className="mt-3 text-sm font-semibold text-slate-900">Nothing matches this view</p>
+          <p className="mt-2 text-sm text-slate-500">Adjust the search or switch filters to bring the right owners back into focus.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
@@ -634,7 +634,7 @@ function MemberViewModal({
               <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shadow-sm">
                 <User className="w-4 h-4 text-slate-400" />
               </div>
-              <p className="text-sm text-slate-400 italic">No contact info provided</p>
+              <p className="text-sm text-slate-400 italic">Contact details have not been added yet</p>
             </div>
           )}
         </div>
@@ -645,7 +645,7 @@ function MemberViewModal({
             Assigned Castings ({assignedCastings.length})
           </p>
           {assignedCastings.length === 0 ? (
-            <p className="text-sm text-slate-400 italic">No castings assigned</p>
+            <p className="text-sm text-slate-400 italic">No live castings are assigned right now. This operator is fully open for the next brief.</p>
           ) : (
             <div className="space-y-2">
               {assignedCastings.slice(0, 5).map((c) => (
@@ -656,7 +656,7 @@ function MemberViewModal({
               ))}
               {assignedCastings.length > 5 && (
                 <p className="text-xs text-slate-400 text-center">
-                  +{assignedCastings.length - 5} more
+                  +{assignedCastings.length - 5} more assignments in motion
                 </p>
               )}
             </div>

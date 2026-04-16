@@ -429,8 +429,12 @@ export function LeadSources() {
         </AnimatePresence>
 
         {sources.length === 0 && !isAdding && (
-          <div className="text-center py-12 px-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-            <p className="text-sm text-slate-400">No lead sources yet. Add your first source above.</p>
+          <div className="text-center py-12 px-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Lead pipeline</p>
+            <p className="mt-3 text-sm font-semibold text-slate-900 sm:text-base">No lead sources added yet</p>
+            <p className="mt-2 text-sm text-slate-500 max-w-md mx-auto">
+              Add your first source to keep inbound leads organized across referrals, Instagram, agencies, and direct outreach.
+            </p>
           </div>
         )}
       </div>

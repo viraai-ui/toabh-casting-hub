@@ -860,7 +860,12 @@ function ClientExpandedPanel({
               </div>
 
               {castings.length === 0 ? (
-                <p className="mt-3 text-sm italic text-slate-400">No castings yet</p>
+                <div className="mt-3 rounded-2xl border border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-4">
+                  <p className="text-sm font-semibold text-slate-800">No castings linked yet</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                    This relationship is staged and ready. Once a casting is mapped to this client, it will appear here as an active work trail.
+                  </p>
+                </div>
               ) : (
                 <div className="mt-3 space-y-2">
                   {castings.map((casting) => (
@@ -898,9 +903,18 @@ function ClientExpandedPanel({
 
             <div className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm">
               <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Notes</span>
-              <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600">
-                {client.notes?.trim() || 'No internal notes added yet.'}
-              </p>
+              {client.notes?.trim() ? (
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600">
+                  {client.notes}
+                </p>
+              ) : (
+                <div className="mt-3 rounded-2xl border border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-4">
+                  <p className="text-sm font-semibold text-slate-800">No operating notes yet</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-500">
+                    Capture preferences, key decision-makers, payment nuances, or coordination history to make future follow-ups faster.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
@@ -1245,8 +1259,11 @@ function ClientFormModal({
               <div className="mt-4">
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">Client Tags</label>
                 {availableTags.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
-                    No tags created yet. Add tags in Settings → Client Tags.
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-4">
+                    <p className="text-sm font-semibold text-slate-800">No client tags configured yet</p>
+                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                      Set up tags in Settings → Client Tags to organise relationships by agency, brand, priority, or workflow stage.
+                    </p>
                   </div>
                 ) : (
                   <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
