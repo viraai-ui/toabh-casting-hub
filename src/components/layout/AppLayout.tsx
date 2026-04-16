@@ -57,7 +57,7 @@ export function AppLayout() {
 
   return (
     <OverlayProvider>
-      <div className="min-h-screen bg-transparent">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.08),_transparent_28%),linear-gradient(180deg,_#fffdf8_0%,_#ffffff_22%,_#f8fafc_100%)]">
         <Sidebar />
         <BottomNav />
         <Header />
@@ -65,13 +65,15 @@ export function AppLayout() {
         {/* Main content area */}
         <main
           className={cn(
-            'min-h-screen bg-transparent pb-24 pt-16 transition-all duration-300 lg:pb-8',
+            'min-h-screen pb-24 pt-16 transition-all duration-300 lg:pb-8',
             sidebarCollapsed ? 'lg:pl-[72px]' : 'lg:pl-[260px]'
           )}
         >
-          <div className="px-3 pb-10 pt-3 sm:px-4 lg:px-6 lg:pt-6 lg:pr-20 xl:pr-24">
-            <div className="mx-auto w-full max-w-[1600px]">
-              <Outlet />
+          <div className="px-3 pb-10 pt-4 sm:px-4 lg:px-6 lg:pt-6 lg:pr-20 xl:pr-24">
+            <div className="mx-auto w-full max-w-[1560px]">
+              <div className="rounded-[32px] border border-white/60 bg-white/55 p-2 shadow-[0_24px_80px_rgba(15,23,42,0.05)] backdrop-blur-[2px] sm:p-3 lg:p-4">
+                <Outlet />
+              </div>
             </div>
           </div>
         </main>
