@@ -311,7 +311,8 @@ export function ActivityLog() {
         </div>
       ) : activities.length === 0 ? (
         <div className="card p-12 text-center">
-          <p className="text-sm font-semibold text-slate-900">No inbox activity found</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Inbox feed</p>
+          <p className="mt-3 text-sm font-semibold text-slate-900">No inbox activity found</p>
           <p className="mt-2 text-sm leading-6 text-slate-500">Try widening the filters or switch back to the full activity feed.</p>
         </div>
       ) : (

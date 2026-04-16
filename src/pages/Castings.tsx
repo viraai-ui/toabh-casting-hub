@@ -887,8 +887,13 @@ export function Castings() {
         </div>
       ) : filteredCastings.length === 0 ? (
         <div className="rounded-[28px] border border-slate-200 bg-white px-5 py-16 text-center shadow-sm">
-          <p className="text-sm font-medium text-slate-700">No jobs found</p>
-          <p className="mt-1 text-sm text-slate-500">Try clearing filters, changing search, or creating a new job.</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Jobs pipeline</p>
+          <p className="mt-3 text-sm font-semibold text-slate-900">No jobs found</p>
+          <p className="mt-2 text-sm text-slate-500">Try clearing filters, changing search, or creating a new job.</p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500">
+            <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{castings.length} total jobs</span>
+            <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">View: {castingViewMode}</span>
+          </div>
         </div>
       ) : castingViewMode === 'kanban' ? (
         <KanbanBoard

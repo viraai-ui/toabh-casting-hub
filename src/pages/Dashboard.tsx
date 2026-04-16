@@ -288,7 +288,7 @@ export function Dashboard() {
           {recentActivity.length === 0 ? (
             <EmptyState
               title="No fresh activity yet"
-              description="New job movement, notes, and updates will land here as the team starts operating."
+              description="New job movement, notes, and updates will land here as the team starts operating. Build the first job to wake up the inbox."
               ctaLabel="Create a job"
               onClick={() => window.dispatchEvent(new CustomEvent('toabh-global-action', { detail: { action: 'open-casting-modal' } }))}
             />
@@ -323,7 +323,7 @@ export function Dashboard() {
             {pipeline.length === 0 ? (
               <EmptyState
                 title="No active pipeline yet"
-                description="As jobs move through stages, this space will become the high-level morning scan."
+                description="As jobs move through stages, this space will become the high-level morning scan. Once the first job is live, pipeline health will show up here."
                 ctaLabel="Open jobs"
                 onClick={() => navigate('/castings')}
               />
@@ -358,7 +358,7 @@ export function Dashboard() {
             {workload.length === 0 ? (
               <EmptyState
                 title="No assignments yet"
-                description="Once jobs are distributed, this will show who is overloaded and who has room."
+                description="Once jobs are distributed, this will show who is overloaded and who has room. Assign ownership to turn this into a real load view."
                 ctaLabel="Open team"
                 onClick={() => navigate('/team')}
               />
