@@ -158,6 +158,45 @@ export function Reports() {
     a.click()
   }
 
+  const statusData = getStatusData()
+  const teamData = getTeamData()
+  const revenueData = getRevenueData()
+  const weeklyData = getWeeklyData()
+
+  const reportSummary = {
+    total: filteredCastings.length,
+    completed: filteredCastings.filter((c) => c.status === 'COMPLETED').length,
+    assigned: filteredCastings.filter((c) => getAssignedNames(c).length > 0).length,
+    revenue: filteredCastings.reduce((sum, c) => sum + (c.budget_max || 0), 0),
+  }
+
+  const reportPriority = (() => {
+    const unassigned = Math.max(reportSummary.total - reportSummary.assigned, 0)
+    const openCount = Math.max(reportSummary.total - reportSummary.completed, 0)
+
+    if (unassigned > 0) {
+      return {
+        label: 'Ownership coverage needs attention',
+        note: `${unassigned} casting${unassigned === 1 ? '' : 's'} in this range still have no clear owner.`,
+        tone: 'border-amber-200 bg-amber-50 text-amber-700',
+      }
+    }
+
+    if (openCount > 0) {
+      return {
+        label: 'Execution queue is still active',
+        note: `${openCount} casting${openCount === 1 ? '' : 's'} are still in motion in this window.`,
+        tone: 'border-blue-200 bg-blue-50 text-blue-700',
+      }
+    }
+
+    return {
+      label: 'This window looks clean',
+      note: 'Completed work is dominant and ownership coverage looks healthy.',
+      tone: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    }
+  })()
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -168,20 +207,41 @@ export function Reports() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900">Reports</h2>
-          <p className="text-sm text-slate-500">Analytics and insights for your castings</p>
+      <section className="card overflow-hidden p-5 sm:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700">
+              Reports
+            </div>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]">
+              Operational reporting, not just charts.
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              Phase 1 reframes reporting into a faster management readout for volume, ownership, and revenue signals.
+            </p>
+          </div>
+          <button
+            onClick={exportCSV}
+            className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-[0_16px_30px_rgba(15,23,42,0.18)] transition hover:bg-slate-800"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
         </div>
-        <button
-          onClick={exportCSV}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Download className="w-4 h-4" />
-          Export CSV
-        </button>
-      </div>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <ReportSummaryCard label="Castings in view" value={reportSummary.total} note="Projects inside the current reporting window." tone="border-slate-200/70 bg-slate-50 text-slate-700" />
+        <ReportSummaryCard label="Completed" value={reportSummary.completed} note="Closed work inside this time range." tone="border-emerald-200/70 bg-emerald-50 text-emerald-700" />
+        <ReportSummaryCard label="Assigned" value={reportSummary.assigned} note="Castings with clear ownership." tone="border-blue-200/70 bg-blue-50 text-blue-700" />
+        <ReportSummaryCard label="Budget volume" value={formatCurrency(reportSummary.revenue)} note="Budget max total across visible castings." tone="border-amber-200/70 bg-amber-50 text-amber-700" />
+      </section>
+
+      <section className={cn('rounded-3xl border px-5 py-4 shadow-sm', reportPriority.tone)}>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-75">Reporting priority</p>
+        <p className="mt-1 text-base font-semibold text-slate-950">{reportPriority.label}</p>
+        <p className="mt-1 text-sm leading-6 text-slate-600">{reportPriority.note}</p>
+      </section>
 
       {/* Date Range Selector */}
       <div className="card p-4">
@@ -237,7 +297,7 @@ export function Reports() {
           <h3 className="font-semibold text-slate-900 mb-4">Casting Performance</h3>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={getWeeklyData()}>
+              <BarChart data={weeklyData}>
                 <XAxis dataKey="week" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
                 <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
                 <Tooltip
@@ -267,7 +327,7 @@ export function Reports() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={getStatusData()}
+                  data={statusData}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -275,7 +335,7 @@ export function Reports() {
                   paddingAngle={2}
                   dataKey="value"
                 >
-                  {getStatusData().map((_, index) => (
+                  {statusData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -302,7 +362,7 @@ export function Reports() {
           <h3 className="font-semibold text-slate-900 mb-4">Team Performance</h3>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={getTeamData()} layout="vertical">
+              <BarChart data={teamData} layout="vertical">
                 <XAxis type="number" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} width={80} />
                 <Tooltip
@@ -328,7 +388,7 @@ export function Reports() {
           <h3 className="font-semibold text-slate-900 mb-4">Revenue Trend</h3>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={getRevenueData()}>
+              <AreaChart data={revenueData}>
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
@@ -362,6 +422,26 @@ export function Reports() {
           </div>
         </motion.div>
       </div>
+    </div>
+  )
+}
+
+function ReportSummaryCard({
+  label,
+  value,
+  note,
+  tone,
+}: {
+  label: string
+  value: number | string
+  note: string
+  tone: string
+}) {
+  return (
+    <div className={cn('rounded-3xl border p-5 shadow-sm', tone)}>
+      <p className="text-sm font-medium text-current/80">{label}</p>
+      <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{value}</p>
+      <p className="mt-3 text-sm leading-6 text-slate-600">{note}</p>
     </div>
   )
 }
