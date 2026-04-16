@@ -1269,6 +1269,7 @@ function ClientFormModal({
                     <p className="mt-1 text-sm leading-6 text-slate-500">
                       Set up tags in Settings → Client Tags to organise relationships by agency, brand, priority, or workflow stage.
                     </p>
+                    <p className="mt-2 text-xs text-slate-400">Once tags are live, this becomes the fastest way to read account type, priority, and relationship health at a glance.</p>
                   </div>
                 ) : (
                   <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
