@@ -165,7 +165,8 @@ export function ClientDetailModal({ open, client, castings, onClose, onEdit, onD
                 </span>
                 {castings.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-4">
-                    <div className="flex items-start gap-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Castings</p>
+                    <div className="mt-3 flex items-start gap-3">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
                         <Sparkles className="h-4 w-4" />
                       </div>
@@ -221,15 +222,18 @@ export function ClientDetailModal({ open, client, castings, onClose, onEdit, onD
                       {client.notes}
                     </p>
                   ) : (
-                    <div className="flex items-start gap-3 rounded-2xl border border-dashed border-slate-200 bg-white/80 px-4 py-4">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
-                        <Pencil className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-800">No internal notes yet</p>
-                        <p className="mt-1 text-sm leading-6 text-slate-500">
-                          Add context like preferences, billing cues, team contacts, or follow-up instructions so handoffs stay sharp.
-                        </p>
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-white/80 px-4 py-4">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Notes</p>
+                      <div className="mt-3 flex items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+                          <Pencil className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800">No internal notes yet</p>
+                          <p className="mt-1 text-sm leading-6 text-slate-500">
+                            Add context like preferences, billing cues, team contacts, or follow-up instructions so handoffs stay sharp.
+                          </p>
+                        </div>
                       </div>
                     </div>
                   )}

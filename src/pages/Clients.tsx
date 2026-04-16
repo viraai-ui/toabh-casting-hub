@@ -862,7 +862,8 @@ function ClientExpandedPanel({
 
               {castings.length === 0 ? (
                 <div className="mt-3 rounded-2xl border border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-4">
-                  <p className="text-sm font-semibold text-slate-800">No castings linked yet</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Castings</p>
+                  <p className="mt-3 text-sm font-semibold text-slate-800">No castings linked yet</p>
                   <p className="mt-1 text-sm leading-6 text-slate-500">
                     This relationship is staged and ready. Once a casting is mapped to this client, it will appear here as an active work trail.
                   </p>
@@ -910,7 +911,8 @@ function ClientExpandedPanel({
                 </p>
               ) : (
                 <div className="mt-3 rounded-2xl border border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-4">
-                  <p className="text-sm font-semibold text-slate-800">No operating notes yet</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Notes</p>
+                  <p className="mt-3 text-sm font-semibold text-slate-800">No operating notes yet</p>
                   <p className="mt-1 text-sm leading-6 text-slate-500">
                     Capture preferences, key decision-makers, payment nuances, or coordination history to make future follow-ups faster.
                   </p>

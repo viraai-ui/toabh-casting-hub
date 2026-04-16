@@ -726,6 +726,7 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                       <EmptyState
                         eyebrow="Talent queue open"
                         message="No talent has been linked yet. Add the first shortlist here to move this casting into active submission flow."
+                        note="This is where the active shortlist starts taking shape for client review and internal decision-making."
                       />
                     ) : (
                       <div className="px-4 pb-3 pt-1 flex flex-col gap-2">
