@@ -894,6 +894,7 @@ export function Castings() {
             <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{castings.length} total jobs</span>
             <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">View: {castingViewMode}</span>
           </div>
+          <p className="mt-3 text-xs text-slate-400">Once jobs are live, this becomes the main operating queue for movement, ownership, and attachments.</p>
         </div>
       ) : castingViewMode === 'kanban' ? (
         <KanbanBoard

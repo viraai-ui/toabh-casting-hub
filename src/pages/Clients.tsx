@@ -441,6 +441,7 @@ export function Clients() {
             <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{clients.length} total clients</span>
             <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{selectedFilterTagIds.length} tag filters active</span>
           </div>
+          <p className="mt-3 text-xs text-slate-400">This becomes the relationship map for brands, agencies, and repeat business once the first records are in place.</p>
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">

@@ -311,8 +311,9 @@ export function ProfileDashboard({ open, onClose }: ProfileDashboardProps) {
                           <div className="mt-4 space-y-3">
                             {profile.recent_activity.length === 0 ? (
                               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
-                                <p className="text-sm font-semibold text-slate-700">No activity yet</p>
-                                <p className="mt-1 text-sm text-slate-400">Profile updates, task changes, and team actions will appear here once work starts moving.</p>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Activity summary</p>
+                                <p className="mt-3 text-sm font-semibold text-slate-700">No activity yet</p>
+                                <p className="mt-2 text-sm text-slate-400">Profile updates, task changes, and team actions will appear here once work starts moving.</p>
                               </div>
                             ) : profile.recent_activity.map((item) => {
                               const activityUserName = item.user_name?.trim() || 'System'
