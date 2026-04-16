@@ -432,6 +432,7 @@ export function Talents() {
               <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{talents.length} total talents</span>
               <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">Focus: {focusFilter}</span>
             </div>
+            <p className="mt-3 text-xs text-slate-400">Once the database fills out, this becomes the casting bench for discovery, outreach, and shortlist depth.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">

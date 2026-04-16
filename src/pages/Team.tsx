@@ -298,6 +298,7 @@ export function Team() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Team board</p>
           <p className="mt-3 text-sm font-semibold text-slate-900">Nothing matches this view</p>
           <p className="mt-2 text-sm text-slate-500">Adjust the search or switch filters to bring the right owners back into focus.</p>
+          <p className="mt-2 text-xs text-slate-400">Use this view to isolate exactly who is active, overloaded, or currently off the board.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">

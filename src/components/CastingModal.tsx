@@ -1067,6 +1067,7 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Ownership pending</p>
                                   <p className="mt-3 text-sm font-semibold text-slate-900">No team member assigned yet</p>
                                   <p className="mt-2 text-sm text-slate-600">Assign the first owner here so this casting has clear accountability before it moves further.</p>
+                                  <p className="mt-2 text-xs text-slate-400">This becomes the responsibility anchor for approvals, follow-through, and day-to-day coordination.</p>
                                 </div>
                               )
                             };
