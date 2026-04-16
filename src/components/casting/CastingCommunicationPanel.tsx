@@ -437,6 +437,7 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Comments</p>
                 <p className="mt-3 text-sm font-semibold text-slate-900">No internal comments yet</p>
                 <p className="mt-2 text-sm text-slate-500">Use this thread to capture client notes, approvals, and internal handoffs on the job.</p>
+                <p className="mt-2 text-xs text-slate-400">Once the job is active, this becomes the decision trail for the team behind the submission flow.</p>
               </div>
             ) : (
               threadTree.map((thread) => (

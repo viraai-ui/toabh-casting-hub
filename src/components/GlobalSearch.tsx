@@ -300,6 +300,7 @@ export function GlobalSearch() {
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Global search</p>
                   <p className="mt-3 text-base font-semibold tracking-tight text-slate-900">No matches found</p>
                   <p className="mt-1.5 text-sm leading-6 text-slate-500">Try a project name, client, phone number, email, or team member.</p>
+                  <p className="mt-2 text-xs text-slate-400">Search starts feeling powerful once jobs, talent, and client relationships are all in motion.</p>
                 </div>
               </div>
             )}

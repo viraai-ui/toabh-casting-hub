@@ -389,6 +389,7 @@ export function Profile() {
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Personal activity</p>
                     <p className="mt-3 text-sm font-semibold text-slate-900">No recent activity yet</p>
                     <p className="mt-2 text-sm text-slate-500">New movement tied to your account will show up here as the workspace becomes active.</p>
+                    <p className="mt-2 text-xs text-slate-400">This becomes the personal trail for the jobs, follow-ups, and team actions you touched most recently.</p>
                   </div>
                 ) : profile.recent_activity.map((item) => {
                   const activityUserName = item.user_name?.trim() || 'System'
