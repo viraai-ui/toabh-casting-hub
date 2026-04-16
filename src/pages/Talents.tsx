@@ -75,7 +75,7 @@ export function Talents() {
   const [talents, setTalents] = useState<Talent[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [focusFilter, setFocusFilter] = useState<'all' | 'needs-attention' | 'ops-ready'>('all')
+  const [focusFilter, setFocusFilter] = useState<'all' | 'needs-attention' | 'ops-ready' | 'contactable' | 'missing-instagram'>('all')
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
     key: 'updated_at',
     direction: 'desc',
@@ -127,6 +127,14 @@ export function Talents() {
       results = results.filter((talent) => getTalentProfileSignal(talent).score === 100)
     }
 
+    if (focusFilter === 'contactable') {
+      results = results.filter((talent) => Boolean(talent.phone?.trim()) || Boolean(talent.email?.trim()))
+    }
+
+    if (focusFilter === 'missing-instagram') {
+      results = results.filter((talent) => !talent.instagram_handle?.trim())
+    }
+
     return [...results].sort((a, b) => {
       const key = sortConfig.key
 
@@ -162,6 +170,7 @@ export function Talents() {
     ).length
     const contactable = filteredTalents.filter((talent) => Boolean(talent.phone?.trim()) || Boolean(talent.email?.trim())).length
     const opsReady = filteredTalents.filter((talent) => getTalentProfileSignal(talent).score === 100).length
+    const missingInstagram = filteredTalents.filter((talent) => !talent.instagram_handle?.trim()).length
     const partialProfiles = filteredTalents.filter((talent) => {
       const score = getTalentProfileSignal(talent).score
       return score > 0 && score < 100
@@ -175,6 +184,7 @@ export function Talents() {
       completeProfiles,
       contactable,
       opsReady,
+      missingInstagram,
       partialProfiles,
       incompleteProfiles: Math.max(filteredTalents.length - completeProfiles, 0),
     }
@@ -368,12 +378,14 @@ export function Talents() {
             { key: 'all', label: `All roster (${talentSummary.total})` },
             { key: 'needs-attention', label: `Needs attention (${talentSummary.incompleteProfiles})` },
             { key: 'ops-ready', label: `Ops-ready (${talentSummary.opsReady})` },
+            { key: 'contactable', label: `Contactable (${talentSummary.contactable})` },
+            { key: 'missing-instagram', label: `Missing Instagram (${talentSummary.missingInstagram})` },
           ].map((option) => {
             const active = focusFilter === option.key
             return (
               <button
                 key={option.key}
-                onClick={() => setFocusFilter(option.key as 'all' | 'needs-attention' | 'ops-ready')}
+                onClick={() => setFocusFilter(option.key as 'all' | 'needs-attention' | 'ops-ready' | 'contactable' | 'missing-instagram')}
                 className={`rounded-full border px-3 py-2 text-xs font-semibold transition-colors ${active ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
               >
                 {option.label}
@@ -391,9 +403,11 @@ export function Talents() {
 
       {/* Results count */}
       {(searchQuery || focusFilter !== 'all') && (
-        <p className="text-xs text-slate-500">
-          Showing {filteredTalents.length} of {talents.length} talent{talents.length !== 1 ? 's' : ''}
-        </p>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+          <span>Showing {filteredTalents.length} of {talents.length} talent{talents.length !== 1 ? 's' : ''}</span>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">{talentSummary.contactable} contactable</span>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">{talentSummary.missingInstagram} missing Instagram</span>
+        </div>
       )}
 
       {/* Table */}
