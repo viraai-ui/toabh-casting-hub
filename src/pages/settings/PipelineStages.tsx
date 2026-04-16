@@ -584,6 +584,7 @@ export function PipelineStages() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Pipeline stages</p>
             <p className="mt-3 text-sm font-semibold text-slate-900">No pipeline stages yet</p>
             <p className="mt-2 text-sm text-slate-500">Add the first stage above to define how jobs move through the agency workflow.</p>
+            <p className="mt-2 text-xs text-slate-400">Once stages are defined, the entire casting pipeline gets a clearer operating rhythm from intake to closure.</p>
           </div>
         )}
       </div>
