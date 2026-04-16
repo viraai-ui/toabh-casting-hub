@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { BellRing, Loader2, Mail } from 'lucide-react'
+import { BellRing, Loader2, Mail, Sparkles } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
@@ -69,6 +69,16 @@ export function NotificationsSettings() {
     }))
   }, [rules])
 
+  const notificationStats = useMemo(() => {
+    const inAppEnabled = normalizedRules.filter((rule) => rule.channels.includes('in_app')).length
+    const emailEnabled = normalizedRules.filter((rule) => rule.channels.includes('email')).length
+    return {
+      total: normalizedRules.length,
+      inAppEnabled,
+      emailEnabled,
+    }
+  }, [normalizedRules])
+
   const toggleChannel = (id: string, channel: 'in_app' | 'email') => {
     setRules((current) => current.map((rule) => {
       if (rule.id !== id) return rule
@@ -114,62 +124,96 @@ export function NotificationsSettings() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h2 className="text-xl font-semibold text-slate-900">Notifications</h2>
-          <p className="text-sm text-slate-500">Choose how you want to receive updates across the workspace.</p>
+          <p className="text-sm text-slate-500">Choose which updates should reach operators in-app, by email, or both.</p>
         </div>
-        <div className="flex items-center gap-3 self-start sm:self-auto">
+        <div className="flex items-center gap-3 self-start lg:self-auto">
           {message && (
             <div className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm">
               {message}
             </div>
           )}
           <button onClick={saveRules} disabled={saving} className="btn-primary">
-            {saving ? 'Saving...' : 'Save Notification Settings'}
+            {saving ? 'Saving...' : 'Save notification settings'}
           </button>
         </div>
       </div>
 
-      <div className="space-y-3">
-        {normalizedRules.map((rule) => {
-          const hasInApp = rule.channels.includes('in_app')
-          const hasEmail = rule.channels.includes('email')
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Rules tracked</p>
+          <p className="mt-2 text-base font-semibold text-slate-900">{notificationStats.total} active notification rules</p>
+          <p className="mt-1 text-sm text-slate-500">Each rule can route to one or both channels.</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">In-app enabled</p>
+          <p className="mt-2 text-base font-semibold text-slate-900">{notificationStats.inAppEnabled} rules</p>
+          <p className="mt-1 text-sm text-slate-500">Best for fast handoffs and real-time queue awareness.</p>
+        </div>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-amber-700">
+            <Sparkles className="h-4 w-4" />
+            <p className="text-xs font-semibold uppercase tracking-[0.2em]">Delivery note</p>
+          </div>
+          <p className="mt-2 text-sm font-medium text-slate-900">Use email for high-friction handoffs, in-app for live operating flow.</p>
+          <p className="mt-1 text-sm text-slate-600">That split keeps the workspace quieter without hiding important changes.</p>
+        </div>
+      </div>
 
-          return (
-            <div key={rule.id} className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-900">{rule.label}</p>
-                  <p className="mt-1 text-sm text-slate-500">{rule.description}</p>
-                </div>
+      {normalizedRules.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50/80 px-6 py-10 text-center">
+          <BellRing className="mx-auto h-10 w-10 text-slate-300" />
+          <h3 className="mt-4 text-base font-semibold text-slate-900">No notification rules yet</h3>
+          <p className="mt-2 text-sm text-slate-500">Once automation rules exist, your delivery preferences will appear here for routing control.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {normalizedRules.map((rule) => {
+            const hasInApp = rule.channels.includes('in_app')
+            const hasEmail = rule.channels.includes('email')
 
-                <div className="flex flex-wrap items-center gap-4 sm:gap-6 lg:justify-end">
-                  <div className="flex items-center gap-2">
-                    <BellRing className="h-4 w-4 text-slate-400" />
-                    <span className="text-sm font-medium text-slate-600">In-app</span>
-                    <Toggle
-                      checked={hasInApp}
-                      onChange={() => toggleChannel(rule.id, 'in_app')}
-                      label={`${rule.label} in-app notifications`}
-                    />
+            return (
+              <div key={rule.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-semibold text-slate-900">{rule.label}</p>
+                      <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+                        {hasInApp || hasEmail ? 'Live' : 'Muted'}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-slate-500">{rule.description}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-slate-400" />
-                    <span className="text-sm font-medium text-slate-600">Email</span>
-                    <Toggle
-                      checked={hasEmail}
-                      onChange={() => toggleChannel(rule.id, 'email')}
-                      label={`${rule.label} email notifications`}
-                    />
+
+                  <div className="flex flex-wrap items-center gap-4 sm:gap-6 xl:justify-end">
+                    <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
+                      <BellRing className="h-4 w-4 text-slate-400" />
+                      <span className="text-sm font-medium text-slate-600">In-app</span>
+                      <Toggle
+                        checked={hasInApp}
+                        onChange={() => toggleChannel(rule.id, 'in_app')}
+                        label={`${rule.label} in-app notifications`}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2">
+                      <Mail className="h-4 w-4 text-slate-400" />
+                      <span className="text-sm font-medium text-slate-600">Email</span>
+                      <Toggle
+                        checked={hasEmail}
+                        onChange={() => toggleChannel(rule.id, 'email')}
+                        label={`${rule.label} email notifications`}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
