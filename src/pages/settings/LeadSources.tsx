@@ -435,6 +435,7 @@ export function LeadSources() {
             <p className="mt-2 text-sm text-slate-500 max-w-md mx-auto">
               Add your first source to keep inbound leads organized across referrals, Instagram, agencies, and direct outreach.
             </p>
+            <p className="mt-2 text-xs text-slate-400 max-w-md mx-auto">Once sources are defined, this becomes the intake map for where the strongest TOABH demand is coming from.</p>
           </div>
         )}
       </div>

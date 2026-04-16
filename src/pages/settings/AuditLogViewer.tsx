@@ -84,6 +84,7 @@ export function AuditLogViewer() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Audit log</p>
           <p className="mt-3 text-sm font-semibold text-slate-900">No audit entries yet</p>
           <p className="mt-2 text-sm text-slate-500">Workspace changes, permission updates, and sensitive actions will start appearing here.</p>
+          <p className="mt-2 text-xs text-slate-400">Once the team is active, this becomes the accountability trail for admin-level decisions and system changes.</p>
         </div>
       ) : (
         <div className="rounded-2xl border border-slate-200 overflow-hidden">

@@ -131,6 +131,7 @@ export function TeamManagement() {
             <p className="mt-2 text-sm text-slate-500 max-w-md mx-auto">
               Invite your core casting team so permissions, ownership, and communication stay clear from day one.
             </p>
+            <p className="mt-2 text-xs text-slate-400 max-w-md mx-auto">This becomes the operating roster for assignment clarity, approvals, and role-based access as the workspace scales.</p>
           </div>
         ) : team.map((member) => (
           <motion.div
