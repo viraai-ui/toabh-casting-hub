@@ -235,7 +235,7 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
     if (casting.shoot_date_start) {
       return `Shoot starts ${fmtDate(casting.shoot_date_start)}`
     }
-    return 'No shoot date locked yet'
+    return 'Shoot date still being aligned'
   }, [casting.shoot_date_start])
 
   // Phone links

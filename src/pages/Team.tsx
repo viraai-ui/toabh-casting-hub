@@ -647,7 +647,7 @@ function MemberViewModal({
             Assigned Castings ({assignedCastings.length})
           </p>
           {assignedCastings.length === 0 ? (
-            <p className="text-sm text-slate-400 italic">No live castings are assigned right now. This operator is fully open for the next brief.</p>
+            <p className="text-sm text-slate-400 italic">No live castings are assigned right now. This operator is fully open for the next brief and can absorb fresh ownership immediately.</p>
           ) : (
             <div className="space-y-2">
               {assignedCastings.slice(0, 5).map((c) => (

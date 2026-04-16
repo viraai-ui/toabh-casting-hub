@@ -314,6 +314,7 @@ export function ProfileDashboard({ open, onClose }: ProfileDashboardProps) {
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Activity summary</p>
                                 <p className="mt-3 text-sm font-semibold text-slate-700">No activity yet</p>
                                 <p className="mt-2 text-sm text-slate-400">Profile updates, task changes, and team actions will appear here once work starts moving.</p>
+                                <p className="mt-2 text-xs text-slate-400">It becomes the clean personal log for everything this operator touched most recently.</p>
                               </div>
                             ) : profile.recent_activity.map((item) => {
                               const activityUserName = item.user_name?.trim() || 'System'
