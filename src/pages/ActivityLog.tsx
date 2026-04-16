@@ -314,6 +314,7 @@ export function ActivityLog() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Inbox feed</p>
           <p className="mt-3 text-sm font-semibold text-slate-900">No inbox activity found</p>
           <p className="mt-2 text-sm leading-6 text-slate-500">Try widening the filters or switch back to the full activity feed.</p>
+          <p className="mt-2 text-xs text-slate-400">Filters here help narrow the feed into approvals, uploads, status changes, and team handoffs.</p>
           <p className="mt-2 text-xs text-slate-400">Once work starts moving, this becomes the running record for notes, updates, and handoffs.</p>
         </div>
       ) : (

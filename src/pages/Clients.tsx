@@ -437,6 +437,7 @@ export function Clients() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Clients</p>
           <p className="mt-3 text-sm font-semibold text-slate-900">No clients found</p>
           <p className="mt-2 text-sm text-slate-500">{clients.length === 0 && !searchQuery.trim() && selectedFilterTagIds.length === 0 ? 'Add your first client to start building the relationship layer.' : 'Try changing the search, relationship focus, or tag filters.'}</p>
+          <p className="mt-2 text-xs text-slate-400">Use filters here to separate active relationships, dormant contacts, and priority accounts once the book starts growing.</p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500">
             <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{clients.length} total clients</span>
             <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{selectedFilterTagIds.length} tag filters active</span>

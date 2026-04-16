@@ -890,6 +890,7 @@ export function Castings() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Jobs pipeline</p>
           <p className="mt-3 text-sm font-semibold text-slate-900">No jobs found</p>
           <p className="mt-2 text-sm text-slate-500">Try clearing filters, changing search, or creating a new job.</p>
+          <p className="mt-2 text-xs text-slate-400">Filters here become the fastest way to isolate urgent jobs, blocked jobs, or specific pipeline slices.</p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500">
             <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{castings.length} total jobs</span>
             <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">View: {castingViewMode}</span>
