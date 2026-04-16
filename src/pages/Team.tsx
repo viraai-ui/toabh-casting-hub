@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Pencil, Trash2, Loader2, Mail, Phone, X, Camera, User, MailQuestion, Shield, ShieldCheck, ShieldAlert } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, Mail, Phone, Search, X, Camera, User, MailQuestion, Shield, ShieldCheck, ShieldAlert } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import { useOverlay } from '@/hooks/useOverlayManager'
@@ -35,6 +35,8 @@ export function Team() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null)
   const [viewMember, setViewMember] = useState<TeamMember | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [focusFilter, setFocusFilter] = useState<'all' | 'active' | 'pending' | 'unassigned'>('all')
 
   const fetchTeam = useCallback(async () => {
     try {
@@ -175,21 +177,109 @@ export function Team() {
     }
   }
 
+  const teamStats = useMemo(() => {
+    const activeCount = teamWithInvite.filter((member) => member.is_active !== false && member.is_active !== 0).length
+    const pendingInvites = teamWithInvite.filter((member) => member.is_active !== false && member.is_active !== 0 && (((member as TeamMemberWithInviteStatus).invite_status || 'pending') === 'pending')).length
+    const assignedCount = teamWithInvite.filter((member) => getMemberAssignments(member.id) > 0).length
+    const unassignedCount = Math.max(teamWithInvite.length - assignedCount, 0)
+    return { activeCount, pendingInvites, assignedCount, unassignedCount }
+  }, [teamWithInvite, castings])
+
+  const filteredTeam = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    return teamWithInvite.filter((member) => {
+      const assignments = getMemberAssignments(member.id)
+      const inviteStatus = (member as TeamMemberWithInviteStatus).invite_status || 'pending'
+      const matchesQuery =
+        !query ||
+        member.name.toLowerCase().includes(query) ||
+        member.role?.toLowerCase().includes(query) ||
+        member.email?.toLowerCase().includes(query) ||
+        member.phone?.toLowerCase().includes(query)
+
+      const matchesFocus =
+        focusFilter === 'all' ||
+        (focusFilter === 'active' && assignments > 0) ||
+        (focusFilter === 'pending' && inviteStatus === 'pending') ||
+        (focusFilter === 'unassigned' && assignments === 0)
+
+      return matchesQuery && matchesFocus
+    })
+  }, [teamWithInvite, searchQuery, focusFilter, castings])
+
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <button
-          onClick={() => {
-            setEditingMember(null)
-            setModalOpen(true)
-          }}
-          className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
-        >
-          <Plus className="w-4 h-4" />
-          Add Member
-        </button>
-      </div>
+      <section className="card overflow-hidden p-5 sm:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700">
+              Team
+            </div>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]">
+              Team ownership, invite health, and workload in one view.
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              Phase 1 reframes this into an operating surface so you can spot active owners, pending invites, and unused capacity faster.
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              setEditingMember(null)
+              setModalOpen(true)
+            }}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-[0_16px_30px_rgba(15,23,42,0.18)]"
+          >
+            <Plus className="w-4 h-4" />
+            Add member
+          </button>
+        </div>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <TeamStatCard label="Team size" value={teamWithInvite.length} note="Everyone currently loaded into the workspace." tone="border-slate-200/70 bg-slate-50 text-slate-600" />
+        <TeamStatCard label="Active owners" value={teamStats.assignedCount} note="Members currently carrying at least one casting." tone="border-amber-200/70 bg-amber-50 text-amber-700" />
+        <TeamStatCard label="Pending invites" value={teamStats.pendingInvites} note="People who still need to complete access setup." tone="border-blue-200/70 bg-blue-50 text-blue-700" />
+        <TeamStatCard label="Free capacity" value={teamStats.unassignedCount} note="Members with zero casting assignments right now." tone="border-emerald-200/70 bg-emerald-50 text-emerald-700" />
+      </section>
+
+      <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search team members, role, email, or phone..."
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 py-3 pl-10 pr-4 text-sm text-slate-900 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {[
+              { key: 'all', label: `All (${teamWithInvite.length})` },
+              { key: 'active', label: `Active owners (${teamStats.assignedCount})` },
+              { key: 'pending', label: `Pending invites (${teamStats.pendingInvites})` },
+              { key: 'unassigned', label: `Free capacity (${teamStats.unassignedCount})` },
+            ].map((option) => {
+              const active = focusFilter === option.key
+              return (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => setFocusFilter(option.key as 'all' | 'active' | 'pending' | 'unassigned')}
+                  className={cn(
+                    'rounded-full border px-3 py-2 text-xs font-semibold transition-colors',
+                    active ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  )}
+                >
+                  {option.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </section>
 
       {/* Team Grid */}
       {loading ? (
@@ -200,9 +290,14 @@ export function Team() {
         <div className="card p-12 text-center">
           <p className="text-slate-500">No team members yet</p>
         </div>
+      ) : filteredTeam.length === 0 ? (
+        <div className="card p-12 text-center">
+          <p className="text-sm font-semibold text-slate-900">No matching team members</p>
+          <p className="mt-2 text-sm text-slate-500">Try another search or focus filter.</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
-          {teamWithInvite.map((member) => {
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+          {filteredTeam.map((member) => {
             const assignments = getMemberAssignments(member.id)
             const maxAssignments = Math.max(...team.map((m) => getMemberAssignments(m.id)), 1)
 
@@ -363,6 +458,16 @@ export function Team() {
         }}
         castings={castings}
       />
+    </div>
+  )
+}
+
+function TeamStatCard({ label, value, note, tone }: { label: string; value: number; note: string; tone: string }) {
+  return (
+    <div className={cn('rounded-3xl border p-5 shadow-sm', tone)}>
+      <p className="text-sm font-medium text-current/80">{label}</p>
+      <p className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{value}</p>
+      <p className="mt-3 text-sm leading-6 text-slate-600">{note}</p>
     </div>
   )
 }
