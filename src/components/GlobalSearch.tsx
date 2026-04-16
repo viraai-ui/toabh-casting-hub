@@ -297,8 +297,9 @@ export function GlobalSearch() {
                   <Search className="h-5 w-5 text-slate-400" />
                 </div>
                 <div className="max-w-sm">
-                  <p className="text-base font-semibold tracking-tight text-slate-900">No matches found</p>
-                  <p className="mt-1.5 text-sm leading-6 text-slate-500">Try a project name, client, phone number, or email.</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Global search</p>
+                  <p className="mt-3 text-base font-semibold tracking-tight text-slate-900">No matches found</p>
+                  <p className="mt-1.5 text-sm leading-6 text-slate-500">Try a project name, client, phone number, email, or team member.</p>
                 </div>
               </div>
             )}

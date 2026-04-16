@@ -433,8 +433,10 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
 
           <div className="mt-4 max-h-[420px] space-y-3 overflow-y-auto pr-1">
             {threadTree.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
-                No internal comments yet.
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Comments</p>
+                <p className="mt-3 text-sm font-semibold text-slate-900">No internal comments yet</p>
+                <p className="mt-2 text-sm text-slate-500">Use this thread to capture client notes, approvals, and internal handoffs on the job.</p>
               </div>
             ) : (
               threadTree.map((thread) => (
@@ -457,8 +459,10 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
 
             <div className="mt-3 max-h-[220px] space-y-2 overflow-y-auto pr-1">
               {attachments.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
-                  No attachments yet.
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Files</p>
+                  <p className="mt-3 text-sm font-semibold text-slate-900">No attachments yet</p>
+                  <p className="mt-2 text-sm text-slate-500">Decks, briefs, and reference files added to this job will show up here.</p>
                 </div>
               ) : (
                 attachments.map((attachment) => (
@@ -485,8 +489,10 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
 
             <div className="mt-3 max-h-[280px] space-y-2.5 overflow-y-auto pr-1">
               {activities.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
-                  No activity yet.
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Timeline</p>
+                  <p className="mt-3 text-sm font-semibold text-slate-900">No activity yet</p>
+                  <p className="mt-2 text-sm text-slate-500">Status changes, uploads, and team actions on this job will appear here.</p>
                 </div>
               ) : (
                 activities.slice(0, 12).map((activity) => {

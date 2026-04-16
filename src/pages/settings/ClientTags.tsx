@@ -404,8 +404,9 @@ export function ClientTags() {
             </div>
           ) : tags.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-12 text-center">
-              <p className="text-sm font-medium text-slate-700">No client tags yet</p>
-              <p className="mt-1 text-sm text-slate-500">Create your first tag to start grouping clients visually.</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Client tags</p>
+              <p className="mt-3 text-sm font-semibold text-slate-900">No client tags yet</p>
+              <p className="mt-2 text-sm text-slate-500">Create your first tag to start grouping clients visually and shaping relationship views.</p>
             </div>
           ) : (
             tags.map((tag) =>
