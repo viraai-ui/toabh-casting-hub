@@ -521,7 +521,7 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                       <WorkflowStat
                         label="Linked talent"
                         value={talentsLoading ? '...' : String(talents.length)}
-                        note={talents.length > 0 ? 'Talent already linked to this job.' : 'No talent attached yet, shortlist building still open.'}
+                        note={talents.length > 0 ? 'Talent already linked to this job.' : 'No talent attached yet, shortlist building is still open.'}
                         tone="bg-white text-slate-700 border-slate-200"
                       />
                       <WorkflowStat

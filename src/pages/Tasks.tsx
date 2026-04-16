@@ -449,6 +449,7 @@ export function Tasks() {
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Execution queue</p>
               <p className="mt-3 text-sm font-semibold text-slate-900">No tasks found</p>
               <p className="mt-2 text-sm text-slate-500">Try another queue filter or create the next follow-up task.</p>
+              <p className="mt-2 text-xs text-slate-400">Once work is assigned, this queue becomes the day-to-day execution view for reminders, callbacks, and next actions.</p>
             </div>
           ) : tasks.map((task) => {
             const overdue = Boolean(task.due_date && new Date(task.due_date) < new Date() && !['done', 'completed'].includes((task.status || '').toLowerCase()))

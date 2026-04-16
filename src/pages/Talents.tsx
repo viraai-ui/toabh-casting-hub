@@ -425,6 +425,9 @@ export function Talents() {
             <p className="mt-2 text-sm text-slate-500">
               {searchQuery ? 'No results match your search or focus filters.' : 'Add your first talent or import a CSV to start building the roster.'}
             </p>
+            <p className="mt-2 text-xs text-slate-400">
+              The roster will become your fast scan for contactability, Instagram coverage, and shortlist readiness.
+            </p>
             <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500">
               <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{talents.length} total talents</span>
               <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">Focus: {focusFilter}</span>
