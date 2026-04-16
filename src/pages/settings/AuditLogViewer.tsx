@@ -81,7 +81,9 @@ export function AuditLogViewer() {
 
       {entries.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-4 py-12 text-center">
-          <p className="text-sm text-slate-400">No audit entries yet.</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Audit log</p>
+          <p className="mt-3 text-sm font-semibold text-slate-900">No audit entries yet</p>
+          <p className="mt-2 text-sm text-slate-500">Workspace changes, permission updates, and sensitive actions will start appearing here.</p>
         </div>
       ) : (
         <div className="rounded-2xl border border-slate-200 overflow-hidden">

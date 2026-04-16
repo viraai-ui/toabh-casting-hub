@@ -167,7 +167,9 @@ export function EmailTemplates() {
       <div className="flex flex-col gap-2">
         {templates.length === 0 && !isCreating && (
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center">
-            <p className="text-sm text-slate-400">No email templates yet</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Email templates</p>
+            <p className="mt-3 text-sm font-semibold text-slate-900">No email templates yet</p>
+            <p className="mt-2 text-sm text-slate-500">Create the first reusable template to speed up outreach and job communication.</p>
           </div>
         )}
         {templates.map((template) => (

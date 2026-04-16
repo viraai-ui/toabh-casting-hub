@@ -297,8 +297,9 @@ export function Header() {
                         <div className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-slate-50 px-6 py-10 text-center">
                           <Bell className="h-5 w-5 text-slate-300" />
                           <div>
-                            <p className="text-sm font-medium text-slate-800">No notifications yet</p>
-                            <p className="mt-1 text-xs text-slate-500">New activity will show up here automatically.</p>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Notifications</p>
+                            <p className="mt-3 text-sm font-semibold text-slate-800">No notifications yet</p>
+                            <p className="mt-1 text-xs text-slate-500">New activity, assignments, and workspace updates will show up here automatically.</p>
                           </div>
                         </div>
                       ) : (

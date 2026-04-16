@@ -581,7 +581,9 @@ export function PipelineStages() {
         {/* Empty state */}
         {stages.length === 0 && !isAdding && (
           <div className="text-center py-12 px-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-            <p className="text-sm text-slate-400">No pipeline stages yet. Add your first stage above.</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Pipeline stages</p>
+            <p className="mt-3 text-sm font-semibold text-slate-900">No pipeline stages yet</p>
+            <p className="mt-2 text-sm text-slate-500">Add the first stage above to define how jobs move through the agency workflow.</p>
           </div>
         )}
       </div>
