@@ -433,7 +433,7 @@ export function Calendar() {
               const hasOwner = Array.isArray(casting.assigned_to) ? casting.assigned_to.length > 0 : Boolean(casting.assigned_names?.trim())
               const ownerLabel = Array.isArray(casting.assigned_to) && casting.assigned_to.length > 0
                 ? casting.assigned_to.map((member) => member.name).join(', ')
-                : casting.assigned_names?.trim() || 'No owner yet'
+                : casting.assigned_names?.trim() || 'Ownership not assigned yet'
 
               return (
                 <div
@@ -456,8 +456,8 @@ export function Calendar() {
                     </span>
                   </div>
                   <div className="mt-3 space-y-1.5 text-xs text-slate-600">
-                    <p>{casting.shoot_date_start ? `Date: ${format(parseISO(casting.shoot_date_start), 'EEE, MMM d')}` : 'Date: Not scheduled yet'}</p>
-                    <p>{hasOwner ? `Owner: ${ownerLabel}` : 'Owner: Not assigned yet'}</p>
+                    <p>{casting.shoot_date_start ? `Date: ${format(parseISO(casting.shoot_date_start), 'EEE, MMM d')}` : 'Date: Scheduling still open'}</p>
+                    <p>{hasOwner ? `Owner: ${ownerLabel}` : 'Owner: Ownership not assigned yet'}</p>
                     {casting.location && <p className="line-clamp-1">Location: {casting.location}</p>}
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">

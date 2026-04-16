@@ -151,6 +151,7 @@ export function Settings() {
           <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
             <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{tabs.length} settings areas</span>
             <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">Admin only</span>
+            <span className="rounded-full bg-amber-50 px-3 py-1.5 text-amber-700 ring-1 ring-amber-200">Active: {activeTabMeta?.label || 'Settings'}</span>
           </div>
           <div className="overflow-x-auto scrollbar-hide [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar:hidden]">
             <div className="flex gap-1.5 px-1 pb-1 w-max min-w-full">

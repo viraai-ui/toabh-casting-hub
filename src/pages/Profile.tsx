@@ -385,7 +385,11 @@ export function Profile() {
               </div>
               <div className="mt-4 space-y-3">
                 {profile.recent_activity.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">No recent activity yet.</div>
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Personal activity</p>
+                    <p className="mt-3 text-sm font-semibold text-slate-900">No recent activity yet</p>
+                    <p className="mt-2 text-sm text-slate-500">New movement tied to your account will show up here as the workspace becomes active.</p>
+                  </div>
                 ) : profile.recent_activity.map((item) => {
                   const activityUserName = item.user_name?.trim() || 'System'
                   return (
@@ -437,7 +441,11 @@ export function Profile() {
                 </div>
                 <div className="space-y-3">
                   {filteredTasks.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">No tasks in this category.</div>
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">My queue</p>
+                      <p className="mt-3 text-sm font-semibold text-slate-900">No tasks in this category</p>
+                      <p className="mt-2 text-sm text-slate-500">Shift the filter or add the next follow-up to bring your personal queue into view.</p>
+                    </div>
                   ) : filteredTasks.map((task) => {
                     const overdue = isOverdue(task)
                     return (
