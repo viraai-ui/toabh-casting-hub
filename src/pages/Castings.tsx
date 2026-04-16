@@ -1246,7 +1246,7 @@ function ListView({
     const latestAttachmentUrl = casting.latest_attachment_url
 
     if (!attachmentsCount && !latestAttachmentUrl) {
-      toast.info('No attachments uploaded for this casting yet')
+      toast.info('No files have been added to this casting yet')
       return
     }
 
@@ -1262,7 +1262,7 @@ function ListView({
       }
       const fallbackAttachmentUrl = response?.attachments?.[0]?.url
       if (!fallbackAttachmentUrl) {
-        toast.info('No downloadable attachment found for this casting')
+        toast.info('No downloadable file is available for this casting yet')
         return
       }
       window.open(fallbackAttachmentUrl, '_blank', 'noopener,noreferrer')

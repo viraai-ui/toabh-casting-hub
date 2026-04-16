@@ -621,7 +621,7 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                     <SectionHeader icon={User} label="Client" />
                     <FieldRow
                       label="Name"
-                      value={pb(casting.client_name) ?? '—'}
+                      value={pb(casting.client_name) ?? 'Client not added yet'}
                     />
                     {casting.client_contact && (
                       <FieldRow
@@ -668,7 +668,7 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                     )}
                     <FieldRow
                       label="Company"
-                      value={pb(casting.client_company) ?? '—'}
+                      value={pb(casting.client_company) ?? 'Company not added yet'}
                     />
                   </SectionCard>
 
@@ -685,7 +685,7 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                     />
                     <FieldRow
                       label="Location"
-                      value={pb(casting.location) ?? '—'}
+                      value={pb(casting.location) ?? 'Location not added yet'}
                       action={
                         casting.location ? (
                           <a
@@ -702,15 +702,15 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                     />
                     <FieldRow
                       label="Start Date"
-                      value={fmtDate(casting.shoot_date_start) ?? '—'}
+                      value={fmtDate(casting.shoot_date_start) ?? 'Shoot date not locked yet'}
                     />
                     <FieldRow
                       label="End Date"
-                      value={fmtDate(casting.shoot_date_end) ?? '—'}
+                      value={fmtDate(casting.shoot_date_end) ?? 'Wrap date not locked yet'}
                     />
                     <FieldRow
                       label="Lead Source"
-                      value={pb(casting.source) ?? '—'}
+                      value={pb(casting.source) ?? 'Source not added yet'}
                     />
                   </SectionCard>
 

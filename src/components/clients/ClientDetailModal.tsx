@@ -189,7 +189,7 @@ export function ClientDetailModal({ open, client, castings, onClose, onEdit, onD
                             {casting.project_name || 'Untitled'}
                           </p>
                           <p className="mt-0.5 text-xs text-slate-400">
-                            {casting.shoot_date_start ? formatDate(casting.shoot_date_start) : 'No date'}
+                            {casting.shoot_date_start ? formatDate(casting.shoot_date_start) : 'Shoot date not locked yet'}
                           </p>
                         </div>
                         <span
@@ -206,7 +206,7 @@ export function ClientDetailModal({ open, client, castings, onClose, onEdit, onD
                       </div>
                     ))}
                     {castings.length > 5 && (
-                      <p className="text-xs text-slate-400 text-center">+{castings.length - 5} more castings</p>
+                      <p className="text-xs text-slate-400 text-center">+{castings.length - 5} more castings in this relationship</p>
                     )}
                   </div>
                 )}

@@ -209,8 +209,8 @@ export function Profile() {
               <h1 className="mt-1 truncate text-2xl font-semibold text-slate-900">{profile.name || 'My Profile'}</h1>
               <p className="mt-1 text-sm text-slate-500">{profile.role}</p>
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{profile.email || 'No email yet'}</span>
-                <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{profile.phone || 'No phone yet'}</span>
+                <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{profile.email || 'Email not added yet'}</span>
+                <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{profile.phone || 'Phone not added yet'}</span>
               </div>
             </div>
           </div>

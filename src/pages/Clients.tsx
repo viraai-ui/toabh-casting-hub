@@ -878,7 +878,7 @@ function ClientExpandedPanel({
                           {casting.project_name || 'Untitled'}
                         </p>
                         <p className="mt-0.5 text-xs text-slate-400">
-                          {casting.shoot_date_start ? formatDate(casting.shoot_date_start) : 'No date set'}
+                          {casting.shoot_date_start ? formatDate(casting.shoot_date_start) : 'Shoot date not locked yet'}
                         </p>
                       </div>
                       <span
