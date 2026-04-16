@@ -199,6 +199,11 @@ export function BottomNav() {
                 <div className="w-9 h-1 bg-slate-200 rounded-full" />
               </div>
 
+              <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">More space</p>
+                <p className="mt-1 text-sm font-semibold text-slate-900">Secondary areas and admin tools</p>
+              </div>
+
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-base font-semibold text-slate-900">More</h3>
                 <button
@@ -211,6 +216,7 @@ export function BottomNav() {
               </div>
 
               <div className="space-y-1">
+                <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Browse</p>
                 {visibleMoreItems.map((item) => {
                   const isActive = location.pathname === item.path
                   return (
