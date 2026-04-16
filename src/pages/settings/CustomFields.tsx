@@ -201,6 +201,7 @@ export function CustomFields() {
             <p className="mt-2 text-sm text-slate-500 max-w-md mx-auto">
               Add the details your team actually needs here so every casting stays consistent from intake to final delivery.
             </p>
+            <p className="mt-2 text-xs text-slate-400 max-w-md mx-auto">This becomes the structure layer for capturing the exact information TOABH wants every brief to carry.</p>
           </div>
         )}
         {groupedFields.map((field) => (
