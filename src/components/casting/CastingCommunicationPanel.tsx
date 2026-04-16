@@ -463,6 +463,7 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Files</p>
                   <p className="mt-3 text-sm font-semibold text-slate-900">No attachments yet</p>
                   <p className="mt-2 text-sm text-slate-500">Decks, briefs, and reference files added to this job will show up here.</p>
+                  <p className="mt-2 text-xs text-slate-400">Keep the latest client-facing material and internal reference files together in this workspace.</p>
                 </div>
               ) : (
                 attachments.map((attachment) => (
@@ -493,6 +494,7 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Timeline</p>
                   <p className="mt-3 text-sm font-semibold text-slate-900">No activity yet</p>
                   <p className="mt-2 text-sm text-slate-500">Status changes, uploads, and team actions on this job will appear here.</p>
+                  <p className="mt-2 text-xs text-slate-400">This becomes the audit trail for how the casting actually moved forward.</p>
                 </div>
               ) : (
                 activities.slice(0, 12).map((activity) => {

@@ -1260,7 +1260,8 @@ function ClientFormModal({
                 <label className="mb-1.5 block text-sm font-medium text-slate-700">Client Tags</label>
                 {availableTags.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-4">
-                    <p className="text-sm font-semibold text-slate-800">No client tags configured yet</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Client tags</p>
+                    <p className="mt-3 text-sm font-semibold text-slate-800">No client tags configured yet</p>
                     <p className="mt-1 text-sm leading-6 text-slate-500">
                       Set up tags in Settings → Client Tags to organise relationships by agency, brand, priority, or workflow stage.
                     </p>
