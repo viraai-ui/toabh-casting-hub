@@ -457,7 +457,7 @@ export function Profile() {
                           <div className="min-w-0">
                             <p className="truncate text-sm font-medium text-slate-800">{task.project_name || 'Untitled Job'}</p>
                             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                              <span className="inline-flex items-center gap-1"><Mail className="h-3 w-3" />{task.client_name || 'No client'}</span>
+                              <span className="inline-flex items-center gap-1"><Mail className="h-3 w-3" />{task.client_name || 'Client not added yet'}</span>
                               {(task.due_date || task.shoot_date_start) && <span className={cn('inline-flex items-center gap-1', overdue && 'text-red-500')}><Calendar className="h-3 w-3" />{formatDate(task.due_date || task.shoot_date_start)}</span>}
                             </div>
                           </div>

@@ -751,7 +751,8 @@ function DayView({
       {dayCastings.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-8 text-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Clear day</p>
-          <p className="mt-2 text-sm text-slate-600">No castings are scheduled for this day yet.</p>
+          <p className="mt-3 text-sm font-semibold text-slate-900">Nothing scheduled here yet</p>
+          <p className="mt-2 text-sm text-slate-600">When jobs land on this date, the schedule stack will appear here for quick scanning.</p>
         </div>
       ) : (
         <div className="space-y-2">

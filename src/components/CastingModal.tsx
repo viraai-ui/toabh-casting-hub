@@ -1065,7 +1065,8 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                               return (
                                 <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-5 text-center">
                                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Ownership pending</p>
-                                  <p className="mt-2 text-sm text-slate-600">No team member is assigned to this casting yet.</p>
+                                  <p className="mt-3 text-sm font-semibold text-slate-900">No team member assigned yet</p>
+                                  <p className="mt-2 text-sm text-slate-600">Assign the first owner here so this casting has clear accountability before it moves further.</p>
                                 </div>
                               )
                             };
