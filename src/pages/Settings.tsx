@@ -83,8 +83,30 @@ export function Settings() {
     )
   }
 
+  const activeTabMeta = tabs.find((tab) => tab.id === activeTab)
+
   return (
-    <div className="mx-auto w-full max-w-[1440px]">
+    <div className="mx-auto w-full max-w-[1440px] space-y-6">
+      <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700">
+              Settings
+            </div>
+            <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]">
+              Workspace controls, cleaner and easier to operate.
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              Phase 1 reframes settings as an admin operating surface, with clearer navigation and stronger tab context.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 shadow-sm">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Active section</div>
+            <div className="mt-1 font-medium text-slate-800">{activeTabMeta?.label || 'Settings'}</div>
+          </div>
+        </div>
+      </section>
+
       <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[272px_minmax(0,1fr)] lg:gap-8 lg:items-start">
         <div className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
           <aside className="rounded-[28px] border border-slate-200/80 bg-white px-3 py-3 shadow-sm">
@@ -126,6 +148,10 @@ export function Settings() {
         </div>
 
         <div className="lg:hidden flex-shrink-0">
+          <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{tabs.length} settings areas</span>
+            <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">Admin only</span>
+          </div>
           <div className="overflow-x-auto scrollbar-hide [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar:hidden]">
             <div className="flex gap-1.5 px-1 pb-1 w-max min-w-full">
               {tabs.map((tab) => {
@@ -151,6 +177,17 @@ export function Settings() {
         </div>
 
         <div className="min-w-0 lg:pt-0">
+          <div className="mb-4 rounded-3xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Current settings area</p>
+                <p className="mt-1 text-base font-semibold text-slate-950">{activeTabMeta?.label || 'Settings'}</p>
+              </div>
+              <div className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
+                {activeTabMeta?.label || 'Settings'} selected
+              </div>
+            </div>
+          </div>
           <div className="w-full max-w-[1040px]">
             <motion.div
               key={activeTab}
