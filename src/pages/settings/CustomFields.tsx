@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react'
+import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import type { CustomField } from '@/types'
@@ -13,19 +13,19 @@ type SettingsCustomField = CustomField & {
   tab?: string
 }
 
+const groups = [
+  { value: 'contact_info', label: 'Contact Info' },
+  { value: 'project_info', label: 'Project Info' },
+  { value: 'financials', label: 'Financials' },
+  { value: 'custom', label: 'Custom' },
+]
+
 const fieldTypes = [
   { value: 'text', label: 'Text' },
   { value: 'dropdown', label: 'Dropdown' },
   { value: 'date', label: 'Date' },
   { value: 'number', label: 'Number' },
   { value: 'file', label: 'File' },
-]
-
-const groups = [
-  { value: 'contact_info', label: 'Contact Info' },
-  { value: 'project_info', label: 'Project Info' },
-  { value: 'financials', label: 'Financials' },
-  { value: 'custom', label: 'Custom' },
 ]
 
 export function CustomFields() {
@@ -71,15 +71,12 @@ export function CustomFields() {
     fetchFields()
   }, [])
 
-  const groupedFields = fields.filter((f) => {
-    if (activeGroup === 'all') return true
-    return normalizeTab(f.tab) === activeGroup
-  })
+  const groupedFields = fields.filter((f) => normalizeTab(f.tab) === activeGroup)
+  const requiredCount = useMemo(() => fields.filter((field) => field.required).length, [fields])
 
   const handleSave = async () => {
     setSaving(true)
     try {
-      // Build payload with consistent 'type' field
       const tabMap: Record<string, string> = {
         contact_info: 'Contact Info',
         project_info: 'Project Info',
@@ -89,13 +86,11 @@ export function CustomFields() {
         name: form.name,
         type: form.field_type,
         tab: tabMap[form.group as string] || form.group || 'Custom',
-        options: typeof form.options === 'string' ? form.options.split(',').map(o => o.trim()).filter(Boolean) : form.options,
+        options: typeof form.options === 'string' ? form.options.split(',').map((o) => o.trim()).filter(Boolean) : form.options,
         required: form.required,
       }
       if (editingField) {
-        const updated = fields.map((f) =>
-          f.id === editingField.id ? { ...f, ...payload } : f
-        )
+        const updated = fields.map((f) => f.id === editingField.id ? { ...f, ...payload } : f)
         await api.put('/settings/custom-fields', { fields: updated })
         await fetchFields()
       } else {
@@ -124,13 +119,12 @@ export function CustomFields() {
   const resetForm = () => {
     setEditingField(null)
     setIsCreating(false)
-    setForm({ name: '', field_type: 'text' as CustomFieldType, group: 'project_info' as CustomFieldGroup, options: '', required: false })
+    setForm({ name: '', field_type: 'text', group: 'project_info', options: '', required: false })
   }
 
   const startEdit = (field: SettingsCustomField) => {
     setEditingField(field)
-    // Normalize tab (API) to group (form)
-    const groupKey = normalizeTab(field.tab) as 'custom' | 'contact_info' | 'project_info' | 'financials'
+    const groupKey = normalizeTab(field.tab) as CustomFieldGroup
     setForm({
       name: field.name,
       field_type: field.type,
@@ -143,7 +137,7 @@ export function CustomFields() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
       </div>
     )
   }
@@ -151,37 +145,54 @@ export function CustomFields() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="text-red-500 mb-2">{error}</p>
+        <p className="mb-2 text-red-500">{error}</p>
         <button onClick={fetchFields} className="btn-primary">Retry</button>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-base sm:text-lg font-semibold text-slate-900 truncate">Custom Fields</h2>
-          <p className="text-xs sm:text-sm text-slate-400">{fields.length} field{fields.length !== 1 ? 's' : ''}</p>
+          <h2 className="text-xl font-semibold text-slate-900">Custom fields</h2>
+          <p className="text-sm text-slate-500">Define the structured data your team wants to capture across briefs, contacts, and financials.</p>
         </div>
         <button
           onClick={() => setIsCreating(true)}
-          className="btn-primary flex items-center gap-1.5 text-xs sm:text-sm shrink-0"
+          className="btn-primary flex shrink-0 items-center gap-1.5 text-xs sm:text-sm"
         >
-          <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline">Add Field</span>
+          <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">Add field</span>
           <span className="sm:hidden">Add</span>
         </button>
       </div>
 
-      {/* Group Tabs */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Fields</p>
+          <p className="mt-2 text-base font-semibold text-slate-900">{fields.length} total</p>
+          <p className="mt-1 text-sm text-slate-500">Treat this like the schema layer for TOABH intake and operations.</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Required</p>
+          <p className="mt-2 text-base font-semibold text-slate-900">{requiredCount} required fields</p>
+          <p className="mt-1 text-sm text-slate-500">Only mark fields required when they are truly essential to downstream work.</p>
+        </div>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Modeling tip</p>
+          <p className="mt-2 text-sm font-medium text-slate-900">Prefer reusable fields over one-off edge-case fields.</p>
+          <p className="mt-1 text-sm text-slate-600">Cleaner structure now makes reports, filters, and automations much easier later.</p>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
         {groups.map((group) => (
           <button
             key={group.value}
             onClick={() => setActiveGroup(group.value)}
             className={cn(
-              'px-4 py-2 rounded-xl text-sm font-medium transition-colors',
+              'rounded-xl px-4 py-2 text-sm font-medium transition-colors',
               activeGroup === group.value
                 ? 'bg-amber-500/10 text-amber-600'
                 : 'bg-slate-100 text-slate-600'
@@ -192,27 +203,24 @@ export function CustomFields() {
         ))}
       </div>
 
-      {/* Fields List */}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         {groupedFields.length === 0 && !isCreating && (
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{groups.find(group => group.value === activeGroup)?.label || 'Custom fields'}</p>
+          <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{groups.find((group) => group.value === activeGroup)?.label || 'Custom fields'}</p>
             <p className="mt-3 text-sm font-semibold text-slate-900 sm:text-base">No fields in this group yet</p>
-            <p className="mt-2 text-sm text-slate-500 max-w-md mx-auto">
-              Add the details your team actually needs here so every casting stays consistent from intake to final delivery.
-            </p>
-            <p className="mt-2 text-xs text-slate-400 max-w-md mx-auto">This becomes the structure layer for capturing the exact information TOABH wants every brief to carry.</p>
+            <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">Add the details your team actually needs here so every casting stays consistent from intake to final delivery.</p>
+            <p className="mx-auto mt-2 max-w-md text-xs text-slate-400">This becomes the structure layer for capturing the exact information TOABH wants every brief to carry.</p>
           </div>
         )}
         {groupedFields.map((field) => (
           <motion.div
             key={field.id}
             layout
-            className="flex items-center gap-2 bg-white rounded-xl border border-slate-100 px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm hover:shadow-md transition-shadow"
+            className="flex items-center gap-2 rounded-xl border border-slate-100 bg-white px-3 py-3 shadow-sm transition-shadow hover:shadow-md sm:px-4"
           >
-            <span className="flex-1 min-w-0 text-sm sm:text-[15px] font-medium text-slate-800 truncate">{field.name}</span>
+            <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800 sm:text-[15px]">{field.name}</span>
             <span className={cn(
-              'shrink-0 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold',
+              'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold sm:text-xs',
               field.type === 'text' ? 'bg-blue-100 text-blue-700' :
               field.type === 'dropdown' ? 'bg-purple-100 text-purple-700' :
               field.type === 'date' ? 'bg-emerald-100 text-emerald-700' :
@@ -221,56 +229,58 @@ export function CustomFields() {
             )}>
               {field.type}
             </span>
+            {field.required && (
+              <span className="hidden shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-600 sm:block">Required</span>
+            )}
             {field.options && (
-              <span className="hidden sm:block shrink-0 text-xs text-slate-400">
+              <span className="hidden shrink-0 text-xs text-slate-400 sm:block">
                 {Array.isArray(field.options) ? field.options.length : String(field.options).split(',').length} opt
               </span>
             )}
             <button
               onClick={() => startEdit(field)}
               title="Edit"
-              className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl hover:bg-amber-50 text-slate-400 hover:text-amber-600 active:scale-95 transition-all shrink-0"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-400 transition-all hover:bg-amber-50 hover:text-amber-600"
             >
-              <Pencil className="w-4 h-4" />
+              <Pencil className="h-4 w-4" />
             </button>
             <button
               onClick={() => handleDelete(field.id)}
               title="Delete"
-              className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl hover:bg-red-50 text-slate-400 hover:text-red-500 active:scale-95 transition-all shrink-0"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-400 transition-all hover:bg-red-50 hover:text-red-500"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="h-4 w-4" />
             </button>
           </motion.div>
         ))}
       </div>
 
-      {/* Create/Edit Form */}
       {(isCreating || editingField) && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-amber-50/60 rounded-xl border-2 border-amber-200 p-4 sm:p-6 space-y-4"
+          className="space-y-4 rounded-xl border-2 border-amber-200 bg-amber-50/60 p-4 sm:p-6"
         >
           <h3 className="font-semibold text-slate-900">
-            {editingField ? 'Edit Field' : 'Add New Field'}
+            {editingField ? 'Edit field' : 'Add new field'}
           </h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Name</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">Name</label>
               <input
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2"
                 placeholder="Field name"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Type</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">Type</label>
               <select
                 value={form.field_type}
                 onChange={(e) => setForm({ ...form, field_type: e.target.value as CustomFieldType })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2"
               >
                 {fieldTypes.map((t) => (
                   <option key={t.value} value={t.value}>{t.label}</option>
@@ -278,25 +288,33 @@ export function CustomFields() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Group</label>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">Group</label>
               <select
                 value={form.group}
-                onChange={(e) => setForm({ ...form, group: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                onChange={(e) => setForm({ ...form, group: e.target.value as CustomFieldGroup })}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2"
               >
                 {groups.map((g) => (
                   <option key={g.value} value={g.value}>{g.label}</option>
                 ))}
               </select>
             </div>
+            <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.required}
+                onChange={(e) => setForm({ ...form, required: e.target.checked })}
+              />
+              Required field
+            </label>
             {form.field_type === 'dropdown' && (
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Options (comma-separated)</label>
+              <div className="sm:col-span-2">
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">Options (comma-separated)</label>
                 <input
                   type="text"
                   value={form.options}
                   onChange={(e) => setForm({ ...form, options: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2"
                   placeholder="Option 1, Option 2, Option 3"
                 />
               </div>
@@ -309,7 +327,7 @@ export function CustomFields() {
               disabled={saving || !form.name.trim()}
               className="btn-primary"
             >
-              {saving ? 'Saving...' : 'Save Field'}
+              {saving ? 'Saving...' : 'Save field'}
             </button>
           </div>
         </motion.div>
