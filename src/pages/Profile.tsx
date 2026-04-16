@@ -184,10 +184,10 @@ export function Profile() {
   }
 
   const statCards = useMemo(() => [
-    { label: 'Total Jobs', value: profile.stats?.total_jobs ?? 0 },
-    { label: 'Active Jobs', value: profile.stats?.active_jobs ?? 0 },
-    { label: 'Completed Jobs', value: profile.stats?.completed_jobs ?? 0 },
-    { label: 'Pending Tasks', value: profile.stats?.pending_tasks ?? 0 },
+    { label: 'Total Jobs', value: profile.stats?.total_jobs ?? 0, note: 'All jobs connected to your account view.', tone: 'border-slate-200/70 bg-slate-50 text-slate-700' },
+    { label: 'Active Jobs', value: profile.stats?.active_jobs ?? 0, note: 'Live work still moving through execution.', tone: 'border-amber-200/70 bg-amber-50 text-amber-700' },
+    { label: 'Completed Jobs', value: profile.stats?.completed_jobs ?? 0, note: 'Jobs already closed out successfully.', tone: 'border-emerald-200/70 bg-emerald-50 text-emerald-700' },
+    { label: 'Pending Tasks', value: profile.stats?.pending_tasks ?? 0, note: 'Follow-ups still needing your attention.', tone: 'border-blue-200/70 bg-blue-50 text-blue-700' },
   ], [profile.stats])
 
   if (loading) {
@@ -208,6 +208,10 @@ export function Profile() {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Profile</p>
               <h1 className="mt-1 truncate text-2xl font-semibold text-slate-900">{profile.name || 'My Profile'}</h1>
               <p className="mt-1 text-sm text-slate-500">{profile.role}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{profile.email || 'No email yet'}</span>
+                <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{profile.phone || 'No phone yet'}</span>
+              </div>
             </div>
           </div>
 
@@ -260,9 +264,10 @@ export function Profile() {
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
             {statCards.map((card) => (
-              <div key={card.label} className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{card.label}</p>
+              <div key={card.label} className={cn('rounded-[24px] border p-4 shadow-sm', card.tone)}>
+                <p className="text-xs font-medium uppercase tracking-wide text-current/75">{card.label}</p>
                 <p className="mt-2 text-2xl font-semibold text-slate-900">{card.value}</p>
+                <p className="mt-2 text-xs leading-5 text-slate-600">{card.note}</p>
               </div>
             ))}
           </div>
@@ -369,7 +374,15 @@ export function Profile() {
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
             <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-              <h2 className="text-sm font-semibold text-slate-900">Activity Summary</h2>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900">Activity Summary</h2>
+                  <p className="mt-1 text-sm text-slate-500">Recent movement tied to your account and workflow.</p>
+                </div>
+                <div className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                  {profile.recent_activity.length} item{profile.recent_activity.length === 1 ? '' : 's'}
+                </div>
+              </div>
               <div className="mt-4 space-y-3">
                 {profile.recent_activity.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">No recent activity yet.</div>
@@ -413,6 +426,15 @@ export function Profile() {
               </div>
 
               <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-sm font-semibold text-slate-900">My task queue</h2>
+                    <p className="mt-1 text-sm text-slate-500">A cleaner read of personal follow-ups and due items.</p>
+                  </div>
+                  <div className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                    {filteredTasks.length} visible
+                  </div>
+                </div>
                 <div className="space-y-3">
                   {filteredTasks.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">No tasks in this category.</div>
