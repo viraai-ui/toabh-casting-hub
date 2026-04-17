@@ -66,15 +66,18 @@ function FieldRow({ label, value, action }: { label: string; value: React.ReactN
 function EmptyState({
   message,
   eyebrow = 'Waiting on data',
+  note,
 }: {
   message: string
   eyebrow?: string
+  note?: string
 }) {
   return (
     <div className="px-4 pb-4">
       <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/90 px-4 py-4 text-center">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{eyebrow}</p>
         <p className="mt-2 text-[12px] leading-5 text-slate-600">{message}</p>
+        {note && <p className="mt-2 text-[11px] leading-5 text-slate-400">{note}</p>}
       </div>
     </div>
   )
@@ -454,21 +457,32 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100/80 shrink-0">
-                <button
-                  onClick={handleModalClose}
-                  disabled={closeDisabled}
-                  className="p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <X size={18} />
-                </button>
-                <button
-                  onClick={onEdit}
-                  className="flex items-center gap-1.5 px-4 py-1.5 text-[13px] font-medium text-amber-600 border border-amber-200 rounded-xl hover:bg-amber-50 hover:border-amber-400 transition-all"
-                >
-                  <Edit2 size={13} />
-                  Edit
-                </button>
+              <div className="shrink-0 border-b border-slate-100/80 bg-[linear-gradient(180deg,#fffdf8_0%,#ffffff_100%)] px-5 py-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">
+                      Casting review
+                    </div>
+                    <p className="mt-3 text-sm font-semibold text-slate-900">Premium workflow view</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">Review readiness, communication context, and next actions without leaving the record.</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={onEdit}
+                      className="flex items-center gap-1.5 rounded-xl border border-amber-200 px-4 py-1.5 text-[13px] font-medium text-amber-600 transition-all hover:border-amber-400 hover:bg-amber-50"
+                    >
+                      <Edit2 size={13} />
+                      Edit
+                    </button>
+                    <button
+                      onClick={handleModalClose}
+                      disabled={closeDisabled}
+                      className="rounded-xl p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Scrollable content */}
@@ -476,15 +490,21 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                 <div className="mx-auto w-full max-w-5xl p-5 flex flex-col gap-4">
 
                   {/* Title + Status */}
-                  <div className="flex items-start justify-between gap-3">
-                    <h2 className="text-[17px] font-bold text-slate-800 leading-snug">
-                      {pb(casting.project_name) ?? <span className="text-slate-400 italic font-normal">Untitled Casting</span>}
-                    </h2>
-                    {casting.status && (
-                      <span className={`shrink-0 px-2.5 py-0.5 text-[11px] font-semibold rounded-full border ${statusColors.bg}`}>
-                        {casting.status}
-                      </span>
-                    )}
+                  <div className="rounded-[24px] border border-slate-200 bg-white px-4 py-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Casting record</p>
+                        <h2 className="mt-2 text-[17px] font-bold leading-snug text-slate-800">
+                          {pb(casting.project_name) ?? <span className="font-normal italic text-slate-400">Untitled Casting</span>}
+                        </h2>
+                        <p className="mt-1 text-[12px] text-slate-500">{pb(casting.client_name) ?? 'Client not attached yet'} • {timelineNote}</p>
+                      </div>
+                      {casting.status && (
+                        <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${statusColors.bg}`}>
+                          {casting.status}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* WORKFLOW */}
