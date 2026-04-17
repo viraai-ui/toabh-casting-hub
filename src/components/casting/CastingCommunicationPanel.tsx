@@ -346,6 +346,20 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
+      <div className="mb-4 rounded-[24px] border border-amber-200 bg-amber-50/70 px-4 py-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-700">Communication workspace</p>
+            <p className="mt-2 text-sm font-semibold text-slate-900">Keep team discussion, files, and activity in one decision trail.</p>
+            <p className="mt-1 text-xs leading-5 text-slate-600">Use comments for internal coordination, mentions for handoffs, and attachments/activity as the working history for this casting.</p>
+          </div>
+          <div className="flex flex-wrap gap-2 text-[11px] text-slate-500">
+            <span className="rounded-full bg-white px-2.5 py-1">{threadTree.length} threads</span>
+            <span className="rounded-full bg-white px-2.5 py-1">{attachments.length} files</span>
+            <span className="rounded-full bg-white px-2.5 py-1">{activities.length} updates</span>
+          </div>
+        </div>
+      </div>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)] xl:items-start">
         <div className="rounded-3xl border border-white bg-white p-4 shadow-sm sm:p-5">
           <div className="flex items-center justify-between gap-3">
@@ -418,7 +432,10 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
             </div>
 
             <div className="mt-3 flex items-center justify-between gap-3">
-              <p className="text-xs text-slate-400">Only assigned project team members can be tagged.</p>
+              <div>
+                <p className="text-xs text-slate-400">Only assigned project team members can be tagged.</p>
+                <p className="mt-1 text-[11px] text-slate-400">Tip: press Ctrl+Enter to post quickly.</p>
+              </div>
               <button
                 type="button"
                 onClick={() => void submitNote()}
@@ -457,6 +474,9 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
               <h4 className="text-sm font-semibold text-slate-900">Attachments</h4>
             </div>
             <p className="mt-1 text-xs text-slate-400">View existing files here. Uploads are available only in edit mode.</p>
+            <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-500">
+              Keep the latest client briefs, decks, references, and internal working files here so review and follow-up stay in one place.
+            </div>
 
             <div className="mt-3 max-h-[220px] space-y-2 overflow-y-auto pr-1">
               {attachments.length === 0 ? (
@@ -488,6 +508,7 @@ export function CastingCommunicationPanel({ casting }: CastingCommunicationPanel
               <Clock3 className="h-4 w-4 text-amber-500" />
               <h4 className="text-sm font-semibold text-slate-900">Activity</h4>
             </div>
+            <p className="mt-1 text-xs text-slate-400">Recent status movement, uploads, and team actions on this casting.</p>
 
             <div className="mt-3 max-h-[280px] space-y-2.5 overflow-y-auto pr-1">
               {activities.length === 0 ? (
