@@ -53,57 +53,64 @@ export function ClientDetailModal({ open, client, castings, onClose, onEdit, onD
             transition={{ type: 'spring', damping: 28, stiffness: 350 }}
             onClick={(e) => e.stopPropagation()}
             className={cn(
-              'relative w-full sm:w-auto sm:max-w-lg sm:rounded-2xl',
+              'relative w-full sm:w-auto sm:max-w-lg sm:rounded-[28px]',
               'max-h-[92vh] sm:max-h-[90vh] bg-white overflow-y-auto',
               'shadow-2xl',
             )}
           >
             {/* Sticky Header */}
             <div className={cn(
-              'sticky top-0 z-10 flex items-center justify-between',
-              'border-b border-slate-100 bg-white/95 backdrop-blur-sm',
+              'sticky top-0 z-10 border-b border-slate-100 bg-[linear-gradient(180deg,#fffdf8_0%,#ffffff_100%)] backdrop-blur-sm',
               'px-5 py-4 sm:px-6',
             )}>
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-sm font-semibold text-white">
-                  {getInitials(client.name)}
-                </div>
-                <div className="min-w-0">
-                  <h3 className="truncate text-base font-semibold text-slate-900">{client.name}</h3>
-                  {client.company && (
-                    <p className="truncate text-xs text-slate-500">{client.company}</p>
-                  )}
-                </div>
+              <div className="mb-3 inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">
+                Client relationship
               </div>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setConfirmDelete(true)}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-red-50 hover:text-red-500"
-                  aria-label="Delete client"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={onEdit}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-amber-50 hover:text-amber-600"
-                  aria-label="Edit client"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={onClose}
-                  className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                  aria-label="Close detail"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-sm font-semibold text-white">
+                    {getInitials(client.name)}
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="truncate text-base font-semibold text-slate-900">{client.name}</h3>
+                    {client.company && (
+                      <p className="truncate text-xs text-slate-500">{client.company}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(true)}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                    aria-label="Delete client"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onEdit}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-amber-50 hover:text-amber-600"
+                    aria-label="Edit client"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={onClose}
+                    className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                    aria-label="Close detail"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Content */}
             <div className="px-5 py-5 sm:px-6 space-y-6">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-xs leading-5 text-slate-600">
+                Review contact context, current casting relationship, and internal notes in one place so this account stays easy to pick up during handoffs.
+              </div>
               {/* Contact */}
               <div className="space-y-3">
                 <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Contact</span>
@@ -163,6 +170,7 @@ export function ClientDetailModal({ open, client, castings, onClose, onEdit, onD
                 <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                   Castings · {castings.length} total
                 </span>
+                <p className="text-xs text-slate-400">This shows the current depth of work attached to this relationship.</p>
                 {castings.length === 0 ? (
                   <div className="rounded-2xl border border-dashed border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-4">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">Castings</p>
