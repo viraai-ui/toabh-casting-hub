@@ -1,19 +1,19 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
-  Loader2,
-  Workflow,
-  Radio,
-  Rows3,
-  ShieldCheck,
-  Shield,
   Activity,
-  Users,
-  Mail,
   BellRing,
   LayoutDashboard,
+  Loader2,
+  Mail,
+  Radio,
+  Rows3,
+  Shield,
+  ShieldCheck,
   Tags,
+  Users,
+  Workflow,
 } from 'lucide-react'
 import { PipelineStages } from './settings/PipelineStages'
 import { LeadSources } from './settings/LeadSources'
@@ -30,17 +30,17 @@ import { cn } from '@/lib/utils'
 import { checkSession, getSessionUser, isAdminUser } from '@/lib/api'
 
 const tabs = [
-  { id: 'pipeline', label: 'Pipeline', icon: Workflow },
-  { id: 'sources', label: 'Sources', icon: Radio },
-  { id: 'custom-fields', label: 'Fields', icon: Rows3 },
-  { id: 'client-tags', label: 'Client Tags', icon: Tags },
-  { id: 'permissions', label: 'Roles & Permissions', icon: Shield },
-  { id: 'audit-log', label: 'Audit Log', icon: Activity },
-  { id: 'roles', label: 'Roles', icon: ShieldCheck },
-  { id: 'team', label: 'Team', icon: Users },
-  { id: 'email', label: 'Email', icon: Mail },
-  { id: 'notifications', label: 'Notifications', icon: BellRing },
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'pipeline', label: 'Pipeline', icon: Workflow, group: 'Workflow' },
+  { id: 'sources', label: 'Sources', icon: Radio, group: 'Workflow' },
+  { id: 'custom-fields', label: 'Fields', icon: Rows3, group: 'Data model' },
+  { id: 'client-tags', label: 'Client Tags', icon: Tags, group: 'Data model' },
+  { id: 'permissions', label: 'Roles & Permissions', icon: Shield, group: 'Access' },
+  { id: 'audit-log', label: 'Audit Log', icon: Activity, group: 'Access' },
+  { id: 'roles', label: 'Roles', icon: ShieldCheck, group: 'Access' },
+  { id: 'team', label: 'Team', icon: Users, group: 'People' },
+  { id: 'email', label: 'Email', icon: Mail, group: 'Comms' },
+  { id: 'notifications', label: 'Notifications', icon: BellRing, group: 'Comms' },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, group: 'Workspace' },
 ] as const
 
 export function Settings() {
@@ -60,19 +60,22 @@ export function Settings() {
     return () => { cancelled = true }
   }, [])
 
+  const activeTabMeta = tabs.find((tab) => tab.id === activeTab)
+  const groupCount = useMemo(() => new Set(tabs.map((tab) => tab.group)).size, [])
+
   if (checking) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
       </div>
     )
   }
 
   if (!isVerified) {
     return (
-      <div className="max-w-md mx-auto bg-white rounded-2xl border border-slate-100 shadow-sm p-8 text-center">
-        <h2 className="text-xl font-semibold text-slate-900 mb-2">Admin Access Required</h2>
-        <p className="text-slate-500 mb-6 text-sm">Only administrator accounts can access workspace settings.</p>
+      <div className="mx-auto max-w-md rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
+        <h2 className="mb-2 text-xl font-semibold text-slate-900">Admin Access Required</h2>
+        <p className="mb-6 text-sm text-slate-500">Only administrator accounts can access workspace settings.</p>
         <button
           onClick={() => navigate('/login')}
           className="btn-primary w-full justify-center"
@@ -83,8 +86,6 @@ export function Settings() {
     )
   }
 
-  const activeTabMeta = tabs.find((tab) => tab.id === activeTab)
-
   return (
     <div className="mx-auto w-full max-w-[1440px] space-y-6">
       <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -94,25 +95,31 @@ export function Settings() {
               Settings
             </div>
             <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]">
-              Workspace controls, cleaner and easier to operate.
+              Admin controls, organized like a real operating surface.
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Phase 1 reframes settings as an admin operating surface, with clearer navigation and stronger tab context.
+              Phase 4 turns settings into a clearer control layer for workflow, team setup, access, communications, and workspace defaults.
             </p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 shadow-sm">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Active section</div>
-            <div className="mt-1 font-medium text-slate-800">{activeTabMeta?.label || 'Settings'}</div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 shadow-sm">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Active section</div>
+              <div className="mt-1 font-medium text-slate-800">{activeTabMeta?.label || 'Settings'}</div>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 shadow-sm">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Coverage</div>
+              <div className="mt-1 font-medium text-slate-800">{tabs.length} areas across {groupCount} control groups</div>
+            </div>
           </div>
         </div>
       </section>
 
-      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[272px_minmax(0,1fr)] lg:gap-8 lg:items-start">
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[272px_minmax(0,1fr)] lg:items-start lg:gap-8">
         <div className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
           <aside className="rounded-[28px] border border-slate-200/80 bg-white px-3 py-3 shadow-sm">
             <div className="px-3 pb-3 pt-2">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Settings</p>
-              <p className="mt-1 text-sm text-slate-500">Manage your workspace setup and defaults.</p>
+              <p className="mt-1 text-sm text-slate-500">Manage workflow, data structure, access, team setup, and workspace defaults.</p>
             </div>
 
             <nav className="space-y-1.5">
@@ -139,7 +146,10 @@ export function Settings() {
                     >
                       <Icon className="h-4 w-4" />
                     </span>
-                    <span>{tab.label}</span>
+                    <div className="min-w-0">
+                      <div>{tab.label}</div>
+                      <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">{tab.group}</div>
+                    </div>
                   </button>
                 )
               })}
@@ -147,14 +157,14 @@ export function Settings() {
           </aside>
         </div>
 
-        <div className="lg:hidden flex-shrink-0">
+        <div className="flex-shrink-0 lg:hidden">
           <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
             <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{tabs.length} settings areas</span>
-            <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">Admin only</span>
+            <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{groupCount} control groups</span>
             <span className="rounded-full bg-amber-50 px-3 py-1.5 text-amber-700 ring-1 ring-amber-200">Active: {activeTabMeta?.label || 'Settings'}</span>
           </div>
           <div className="overflow-x-auto scrollbar-hide [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar:hidden]">
-            <div className="flex gap-1.5 px-1 pb-1 w-max min-w-full">
+            <div className="flex min-w-full w-max gap-1.5 px-1 pb-1">
               {tabs.map((tab) => {
                 const Icon = tab.icon
                 return (
@@ -162,7 +172,7 @@ export function Settings() {
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
-                      'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold capitalize transition-all duration-150 whitespace-nowrap shrink-0',
+                      'inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-semibold capitalize transition-all duration-150 sm:text-sm',
                       activeTab === tab.id
                         ? 'bg-amber-500 text-white shadow-sm'
                         : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'
@@ -183,6 +193,7 @@ export function Settings() {
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Current settings area</p>
                 <p className="mt-1 text-base font-semibold text-slate-950">{activeTabMeta?.label || 'Settings'}</p>
+                <p className="mt-1 text-sm text-slate-500">Control group: {activeTabMeta?.group || 'Workspace'}</p>
               </div>
               <div className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
                 {activeTabMeta?.label || 'Settings'} selected
