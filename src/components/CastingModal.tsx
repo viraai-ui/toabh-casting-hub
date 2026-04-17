@@ -594,30 +594,38 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                       {/* ─── View Mode (Read-Only) ─── */}
                       {!isEditing && casting && (
                         <div className="space-y-3 sm:space-y-4">
-                          <div>
-                            <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Project Title</p>
-                            <p className="text-sm sm:text-base font-semibold text-slate-900">{casting.project_name || '—'}</p>
+                          <div className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-xs leading-5 text-slate-600">
+                            This read-only view is meant for quick review, confirm the brief, client context, dates, and ownership before switching into edits.
                           </div>
-                          <div>
-                            <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Client</p>
-                            <p className="text-sm text-slate-900">{casting.client_name || '—'}</p>
-                          </div>
+                          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Casting brief</p>
+                            <div className="mt-3 space-y-3 sm:space-y-4">
+                              <div>
+                                <p className="mb-0.5 text-[11px] font-medium text-slate-500 sm:text-xs">Project Title</p>
+                                <p className="text-sm font-semibold text-slate-900 sm:text-base">{casting.project_name || '—'}</p>
+                              </div>
+                              <div>
+                                <p className="mb-0.5 text-[11px] font-medium text-slate-500 sm:text-xs">Client</p>
+                                <p className="text-sm text-slate-900">{casting.client_name || '—'}</p>
+                              </div>
                           {(casting.client_contact || casting.client_email || casting.client_company) && (
-                            <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-50 rounded-xl border border-slate-200">
-                              <div><p className="text-[11px] sm:text-xs text-slate-500">Phone</p><p className="text-xs sm:text-sm text-slate-900">{casting.client_contact || '—'}</p></div>
-                              <div><p className="text-[11px] sm:text-xs text-slate-500">Email</p><p className="text-xs sm:text-sm text-slate-900 truncate">{casting.client_email || '—'}</p></div>
-                              <div><p className="text-[11px] sm:text-xs text-slate-500">Company</p><p className="text-xs sm:text-sm text-slate-900 truncate">{casting.client_company || '—'}</p></div>
+                            <div className="grid grid-cols-1 gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2 sm:grid-cols-3 sm:gap-3 sm:p-3">
+                              <div><p className="text-[11px] text-slate-500 sm:text-xs">Phone</p><p className="text-xs text-slate-900 sm:text-sm">{casting.client_contact || '—'}</p></div>
+                              <div><p className="text-[11px] text-slate-500 sm:text-xs">Email</p><p className="truncate text-xs text-slate-900 sm:text-sm">{casting.client_email || '—'}</p></div>
+                              <div><p className="text-[11px] text-slate-500 sm:text-xs">Company</p><p className="truncate text-xs text-slate-900 sm:text-sm">{casting.client_company || '—'}</p></div>
                             </div>
                           )}
                           <div>
-                            <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Description</p>
-                            <p className="text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">{casting.requirements || '—'}</p>
+                            <p className="mb-0.5 text-[11px] font-medium text-slate-500 sm:text-xs">Description</p>
+                            <p className="whitespace-pre-wrap text-xs text-slate-800 sm:text-sm">{casting.requirements || '—'}</p>
                           </div>
                           <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                            <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Shoot Date</p><p className="text-xs sm:text-sm text-slate-900">{casting.shoot_date_start || '—'}</p></div>
-                            <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">End Date</p><p className="text-xs sm:text-sm text-slate-900">{casting.shoot_date_end || '—'}</p></div>
+                            <div><p className="mb-0.5 text-[11px] font-medium text-slate-500 sm:text-xs">Shoot Date</p><p className="text-xs text-slate-900 sm:text-sm">{casting.shoot_date_start || '—'}</p></div>
+                            <div><p className="mb-0.5 text-[11px] font-medium text-slate-500 sm:text-xs">End Date</p><p className="text-xs text-slate-900 sm:text-sm">{casting.shoot_date_end || '—'}</p></div>
                           </div>
-                          <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Location</p><p className="text-xs sm:text-sm text-slate-900">{casting.location || '—'}</p></div>
+                          <div><p className="mb-0.5 text-[11px] font-medium text-slate-500 sm:text-xs">Location</p><p className="text-xs text-slate-900 sm:text-sm">{casting.location || '—'}</p></div>
+                        </div>
+                      </div>
                           <div className="grid grid-cols-2 gap-2 sm:gap-4">
                             <div>
                               <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Status</p>
