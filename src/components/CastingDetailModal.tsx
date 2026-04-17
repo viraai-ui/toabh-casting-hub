@@ -491,6 +491,9 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
 
                   {/* Title + Status */}
                   <div className="rounded-[24px] border border-slate-200 bg-white px-4 py-4 shadow-sm">
+                    <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-xs leading-5 text-slate-600">
+                      Use this view as the production control layer for the brief, team ownership, client context, and talent movement before switching into edits.
+                    </div>
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Casting record</p>
@@ -512,6 +515,15 @@ export function CastingDetailModal({ open, onClose, onEdit, casting }: CastingDe
                     <SectionHeader icon={Briefcase} label="Workflow" />
                     <div className="px-4 pb-4 pt-1">
                       <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+                        <div className="mb-3 flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-semibold text-slate-900">Workflow checkpoint</p>
+                            <p className="mt-1 text-[11px] leading-5 text-slate-500">Read the current phase quickly, then use the cards below to spot the next operational push.</p>
+                          </div>
+                          <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold ${workflowRisk.tone}`}>
+                            {workflowRisk.label}
+                          </span>
+                        </div>
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                           {workflowPhaseSteps.map((step, index) => (
                             <React.Fragment key={step.label}>
