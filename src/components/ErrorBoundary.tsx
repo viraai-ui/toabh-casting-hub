@@ -42,6 +42,10 @@ export class ErrorBoundary extends Component<Props, State> {
               Workspace interruption
             </div>
 
+            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-left text-xs leading-5 text-slate-600">
+              The current screen lost its working state. Retry first, then reload the workspace if the issue keeps repeating.
+            </div>
+
             <h3 className="mt-4 text-xl font-semibold text-slate-900">Something went wrong</h3>
             <p className="mt-2 text-sm leading-6 text-slate-500">
               This screen hit an unexpected issue. You can retry now, and if it keeps happening the latest error message is shown below.
@@ -66,7 +70,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 onClick={() => window.location.reload()}
                 className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
               >
-                Reload page
+                Reload workspace
               </button>
             </div>
           </div>
