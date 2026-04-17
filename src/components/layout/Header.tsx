@@ -235,6 +235,12 @@ export function Header() {
               Command-ready workspace
             </span>
           </div>
+          <div className="mt-2 hidden items-center gap-2 sm:flex">
+            <div className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-medium text-slate-500">
+              Workspace control surface
+            </div>
+            <p className="text-[11px] text-slate-400">Search, notifications, and profile actions stay anchored here.</p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 pl-3">
@@ -281,6 +287,9 @@ export function Header() {
                   className="absolute right-0 top-full z-50 mt-2 w-[min(24rem,calc(100vw-1rem))] overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-2xl"
                 >
                   <div className="border-b border-slate-100 px-4 py-4">
+                    <div className="mb-3 rounded-2xl border border-amber-200 bg-amber-50/70 px-3 py-2 text-[11px] leading-5 text-slate-600">
+                      Use this queue as the fast triage layer for movement, handoffs, and casting follow-ups across the workspace.
+                    </div>
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">Notifications</p>
@@ -391,8 +400,11 @@ export function Header() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -6, scale: 0.97 }}
                     transition={{ duration: 0.15, ease: 'easeOut' }}
-                    className="absolute right-0 top-full z-50 mt-2 w-52 rounded-xl border border-slate-100 bg-white py-1.5 shadow-xl"
+                    className="absolute right-0 top-full z-50 mt-2 w-52 rounded-[20px] border border-slate-100 bg-white py-1.5 shadow-xl"
                   >
+                    <div className="mx-3 mb-2 rounded-2xl border border-amber-200 bg-amber-50/70 px-3 py-2 text-[11px] leading-5 text-slate-600">
+                      Personal account controls and admin shortcuts live here.
+                    </div>
                     <div className="mb-1 border-b border-slate-100 px-4 py-3">
                       <p className="text-sm font-semibold leading-tight text-slate-900">{currentUser?.name || 'Team Member'}</p>
                       <p className="mt-0.5 text-[11px] text-slate-400">{currentUser?.email || 'admin@toabh.com'}</p>
