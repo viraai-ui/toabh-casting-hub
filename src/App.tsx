@@ -1,7 +1,7 @@
 import { Suspense, lazy, useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ShieldCheck } from 'lucide-react'
 import { AppLayout } from './components/layout/AppLayout'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { checkSession, getSessionUser, isAdminUser } from './lib/api'
@@ -25,6 +25,28 @@ const queryClient = new QueryClient({
   },
 })
 
+function FullScreenLoader({
+  title,
+  subtitle,
+  icon = 'spinner',
+}: {
+  title: string
+  subtitle: string
+  icon?: 'spinner' | 'shield'
+}) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.08),_transparent_28%),linear-gradient(180deg,_#fffdf8_0%,_#ffffff_22%,_#f8fafc_100%)] px-4">
+      <div className="w-full max-w-md rounded-[28px] border border-slate-200 bg-white p-8 text-center shadow-sm">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+          {icon === 'shield' ? <ShieldCheck className="h-7 w-7" /> : <Loader2 className="h-7 w-7 animate-spin" />}
+        </div>
+        <h2 className="mt-5 text-xl font-semibold text-slate-900">{title}</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-500">{subtitle}</p>
+      </div>
+    </div>
+  )
+}
+
 function ProtectedRoute({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) {
   const [authorized, setAuthorized] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -42,9 +64,11 @@ function ProtectedRoute({ children, adminOnly = false }: { children: React.React
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-      </div>
+      <FullScreenLoader
+        title={adminOnly ? 'Checking admin access' : 'Loading workspace'}
+        subtitle={adminOnly ? 'Verifying administrator permissions for this control surface.' : 'Preparing your TOABH workspace and session context.'}
+        icon={adminOnly ? 'shield' : 'spinner'}
+      />
     )
   }
 
@@ -57,8 +81,12 @@ function ProtectedRoute({ children, adminOnly = false }: { children: React.React
 
 function RouteLoader() {
   return (
-    <div className="min-h-[50vh] flex items-center justify-center bg-transparent">
-      <Loader2 className="w-7 h-7 text-amber-500 animate-spin" />
+    <div className="flex min-h-[50vh] items-center justify-center bg-transparent px-4">
+      <div className="w-full max-w-sm rounded-[24px] border border-slate-200 bg-white/80 p-6 text-center shadow-sm backdrop-blur-sm">
+        <Loader2 className="mx-auto h-7 w-7 animate-spin text-amber-500" />
+        <p className="mt-4 text-sm font-medium text-slate-800">Loading view</p>
+        <p className="mt-1 text-sm text-slate-500">Bringing the next TOABH workspace surface into place.</p>
+      </div>
     </div>
   )
 }
