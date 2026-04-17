@@ -534,38 +534,50 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="relative w-full max-w-2xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+            className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-slate-200 bg-slate-50">
-              <h2 className="text-base sm:text-lg font-semibold text-slate-900">
-                {!casting ? 'New Casting' : isEditing ? 'Edit Casting' : 'Casting Details'}
-              </h2>
-              <button
-                onClick={handleModalClose}
-                disabled={saving}
-                className="p-2 rounded-lg hover:bg-slate-200 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <X className="w-5 h-5 text-slate-500" />
-              </button>
+            <div className="border-b border-slate-200 bg-[linear-gradient(180deg,#fffdf8_0%,#fffaf0_100%)] px-4 py-3 sm:px-6 sm:py-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">
+                    Casting workflow
+                  </div>
+                  <h2 className="mt-3 text-base font-semibold text-slate-900 sm:text-lg">
+                    {!casting ? 'New Casting' : isEditing ? 'Edit Casting' : 'Casting Details'}
+                  </h2>
+                  <p className="mt-1 text-xs leading-5 text-slate-500 sm:text-sm">
+                    Capture the brief, assign ownership, and keep all attachments tied to one active workflow record.
+                  </p>
+                </div>
+                <button
+                  onClick={handleModalClose}
+                  disabled={saving}
+                  className="rounded-lg p-2 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <X className="w-5 h-5 text-slate-500" />
+                </button>
+              </div>
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 px-4 py-1.5 sm:px-6 sm:py-2 border-b border-slate-200 bg-slate-50/50">
-              {TABS.map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={cn(
-                    'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-                    activeTab === tab
-                      ? 'bg-white text-amber-600 shadow-sm'
-                      : 'text-slate-600 hover:bg-white/50'
-                  )}
-                >
-                  {tab}
-                </button>
-              ))}
+            <div className="border-b border-slate-200 bg-slate-50/70 px-4 py-2 sm:px-6">
+              <div className="flex flex-wrap gap-1.5">
+                {TABS.map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={cn(
+                      'rounded-xl px-4 py-2 text-sm font-medium transition-colors',
+                      activeTab === tab
+                        ? 'bg-white text-amber-600 shadow-sm ring-1 ring-amber-100'
+                        : 'text-slate-600 hover:bg-white/70'
+                    )}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Content */}
@@ -877,18 +889,23 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                               : 'border-slate-200 hover:border-amber-300 hover:bg-amber-50/40'
                           )}
                         >
+                          <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+                            <span className="rounded-full bg-white px-2 py-1">Briefs</span>
+                            <span className="rounded-full bg-white px-2 py-1">References</span>
+                            <span className="rounded-full bg-white px-2 py-1">Decks and sheets</span>
+                          </div>
                           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex items-start gap-3">
                               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-100 bg-white text-amber-500 shadow-sm">
                                 <Upload className="h-4 w-4" />
                               </div>
                               <div className="min-w-0">
-                                <p className="text-sm font-semibold text-slate-900">Drag and drop files here</p>
+                                <p className="text-sm font-semibold text-slate-900">Drop files into this casting workspace</p>
                                 <p className="mt-1 text-xs text-slate-500">
-                                  PDF, images, PPT, Excel, Word, ZIP and other reference files.
+                                  PDF, images, PPT, Excel, Word, ZIP and other working references.
                                 </p>
                                 <p className="mt-1 text-[11px] text-slate-400">
-                                  Files are linked to this casting when you save.
+                                  Files stay queued until save, then attach directly to this casting record.
                                 </p>
                               </div>
                             </div>
