@@ -154,21 +154,27 @@ export function TalentImportModal({ open, onClose, onImported }: TalentImportMod
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
             className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
           >
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden max-h-[85vh] flex flex-col">
+            <div className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
               {/* Header with steps */}
-              <div className="px-6 py-4 border-b border-slate-100">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileSpreadsheet className="w-5 h-5 text-amber-500" />
-                    <h2 className="text-lg font-semibold text-slate-900">Import CSV</h2>
+              <div className="border-b border-slate-100 bg-[linear-gradient(180deg,#fffdf8_0%,#ffffff_100%)] px-6 py-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">
+                      Talent import
+                    </div>
+                    <div className="mt-3 flex items-center gap-2">
+                      <FileSpreadsheet className="h-5 w-5 text-amber-500" />
+                      <h2 className="text-lg font-semibold text-slate-900">Import CSV</h2>
+                    </div>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">Upload a roster sheet, review duplicates carefully, then confirm clean talent records into the system.</p>
                   </div>
-                  <button onClick={handleClose} disabled={uploading || importing} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <button onClick={handleClose} disabled={uploading || importing} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
                 {/* Step indicators */}
-                <div className="flex items-center gap-2 mt-3">
+                <div className="mt-3 flex items-center gap-2">
                   {[
                     { n: 1, label: 'Upload' },
                     { n: 2, label: 'Review' },
@@ -231,7 +237,7 @@ export function TalentImportModal({ open, onClose, onImported }: TalentImportMod
                       )}
                     </div>
 
-                    <div className="bg-slate-50 rounded-xl p-4">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                       <p className="text-xs font-medium text-slate-700 mb-2">Expected CSV columns:</p>
                       <div className="flex flex-wrap gap-1.5">
                         {['name', 'instagram_handle', 'phone', 'email'].map((col) => (
@@ -240,7 +246,8 @@ export function TalentImportModal({ open, onClose, onImported }: TalentImportMod
                           </span>
                         ))}
                       </div>
-                      <p className="text-xs text-slate-400 mt-2">Column order doesn't matter — headers are auto-matched.</p>
+                      <p className="mt-2 text-xs text-slate-400">Column order doesn't matter, headers are auto-matched.</p>
+                      <p className="mt-2 text-xs leading-5 text-slate-500">Best results come from one clean row per talent with consistent phone or email data for duplicate detection.</p>
                     </div>
                   </div>
                 )}
@@ -249,6 +256,9 @@ export function TalentImportModal({ open, onClose, onImported }: TalentImportMod
                 {step === 2 && results && (
                   <div className="space-y-4">
                     {/* Summary */}
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-xs leading-5 text-slate-600">
+                      Review importable rows, decide how duplicates should behave, and let error rows stay skipped so the import remains clean.
+                    </div>
                     <div className="grid grid-cols-2 gap-3">
                       <SummaryStat label="Parsed" value={results.total_rows} icon="📄" color="slate" />
                       <SummaryStat label="Importable" value={results.importable.length} icon="✅" color="green" />
