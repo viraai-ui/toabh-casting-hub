@@ -12,6 +12,8 @@ import {
   Phone,
   Mail,
   Sparkles,
+  FolderKanban,
+  CornerDownLeft,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -42,6 +44,11 @@ const normaliseSearchResults = (payload: unknown): SearchResult => {
     clients: Array.isArray(source.clients) ? source.clients : [],
     team: Array.isArray(source.team) ? source.team : [],
   }
+}
+
+const getProjectSubtitle = (project: SearchProjectResult) => {
+  const parts = [safeText(project.client_name), safeText(project.status), safeText(project.project_type)].filter(Boolean)
+  return parts.length > 0 ? parts.join(' • ') : 'Project'
 }
 
 const getCastingSubtitle = (casting: Casting) => {
@@ -153,6 +160,7 @@ export function GlobalSearch() {
 
   const allResults = useMemo<SearchItem[]>(() => {
     return [
+      ...results.projects.slice(0, 3).map((project) => ({ type: 'project' as const, data: project })),
       ...results.castings.slice(0, 6).map((casting) => ({ type: 'casting' as const, data: casting })),
       ...results.clients.slice(0, 4).map((client) => ({ type: 'client' as const, data: client })),
       ...results.team.slice(0, 3).map((member) => ({ type: 'team' as const, data: member })),
@@ -164,6 +172,7 @@ export function GlobalSearch() {
   const openResult = (item: SearchItem) => {
     saveSearch(query)
 
+    if (item.type === 'project') navigate(`/castings?id=${item.data.id}`)
     if (item.type === 'casting') navigate(`/castings?id=${item.data.id}`)
     if (item.type === 'client') navigate(`/clients?id=${item.data.id}`)
     if (item.type === 'team') navigate(`/team?id=${item.data.id}`)
@@ -202,9 +211,21 @@ export function GlobalSearch() {
 
   const hasResults = allResults.length > 0
 
-  const renderSectionHeader = (label: string) => (
-    <div className="px-3 pb-2 pt-4 first:pt-0">
+  const resultSummary = useMemo(() => {
+    if (!query.trim()) return 'Search jobs, clients, team members, and live records.'
+    const counts = [
+      results.projects.length ? `${results.projects.length} projects` : '',
+      results.castings.length ? `${results.castings.length} castings` : '',
+      results.clients.length ? `${results.clients.length} clients` : '',
+      results.team.length ? `${results.team.length} team` : '',
+    ].filter(Boolean)
+    return counts.length ? counts.join(' • ') : 'No matches yet'
+  }, [query, results])
+
+  const renderSectionHeader = (label: string, count?: number) => (
+    <div className="flex items-center justify-between px-3 pb-2 pt-4 first:pt-0">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{label}</p>
+      {typeof count === 'number' && count > 0 && <span className="text-[11px] font-medium text-slate-400">{count}</span>}
     </div>
   )
 
@@ -254,16 +275,27 @@ export function GlobalSearch() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Search job, client, team, phone, or email..."
+                placeholder="Search project, job, client, team, phone, or email..."
                 className="h-7 flex-1 bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400 sm:text-lg"
               />
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-100 bg-slate-50/70 px-3.5 py-2.5 text-xs text-slate-500">
+              <p>{resultSummary}</p>
+              <div className="flex items-center gap-2 text-slate-400">
+                <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1">
+                  <CornerDownLeft className="h-3.5 w-3.5" /> Open
+                </span>
+                <span className="inline-flex rounded-full bg-white px-2 py-1">↑↓ Navigate</span>
+                <span className="inline-flex rounded-full bg-white px-2 py-1">Esc Close</span>
+              </div>
             </div>
           </div>
 
           <div className="max-h-[min(68vh,560px)] overflow-y-auto px-5 pb-6 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
             {!query && recentSearches.length > 0 && (
               <div className="rounded-[22px] border border-slate-100 bg-slate-50/70 p-2.5 shadow-[0_16px_35px_-30px_rgba(15,23,42,0.28)]">
-                {renderSectionHeader('Recent')}
+                {renderSectionHeader('Recent', recentSearches.length)}
                 <div className="space-y-1">
                   {recentSearches.map((item, index) => (
                     <button
@@ -286,7 +318,7 @@ export function GlobalSearch() {
                 </div>
                 <div className="max-w-sm">
                   <p className="text-base font-semibold tracking-tight text-slate-900">Search everything instantly</p>
-                  <p className="mt-1.5 text-sm leading-6 text-slate-500">Find jobs, clients, phone numbers, emails, and team members in one place.</p>
+                  <p className="mt-1.5 text-sm leading-6 text-slate-500">Find projects, jobs, clients, phone numbers, emails, and team members in one place.</p>
                 </div>
               </div>
             )}
@@ -300,16 +332,46 @@ export function GlobalSearch() {
                   <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Global search</p>
                   <p className="mt-3 text-base font-semibold tracking-tight text-slate-900">No matches found</p>
                   <p className="mt-1.5 text-sm leading-6 text-slate-500">Try a project name, client, phone number, email, or team member.</p>
-                  <p className="mt-2 text-xs text-slate-400">Search starts feeling powerful once jobs, talent, and client relationships are all in motion.</p>
+                  <p className="mt-2 text-xs text-slate-400">Search gets more useful as castings, talent, and client relationships keep filling in.</p>
                 </div>
               </div>
             )}
 
             {hasResults && (
               <div className="space-y-4">
+                {results.projects.length > 0 && (
+                  <div className="rounded-[22px] border border-slate-100 bg-slate-50/70 p-2.5 shadow-[0_16px_35px_-30px_rgba(15,23,42,0.28)]">
+                    {renderSectionHeader('Projects', results.projects.length)}
+                    <div className="space-y-1">
+                      {results.projects.slice(0, 3).map((project) => {
+                        const rowIndex = currentIndex++
+                        const active = selectedIndex === rowIndex
+                        return (
+                          <button
+                            key={`project-${project.id}`}
+                            onClick={() => openResult({ type: 'project', data: project })}
+                            className={cn(
+                              'flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition-all',
+                              active ? 'bg-amber-50 ring-1 ring-amber-200' : 'hover:bg-white'
+                            )}
+                          >
+                            <div className={cn('mt-0.5 rounded-2xl p-2', active ? 'bg-amber-100 text-amber-600' : 'bg-white text-slate-400')}>
+                              <FolderKanban className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-semibold text-slate-900">{safeText(project.project_name) || 'Untitled project'}</p>
+                              <p className="mt-0.5 text-sm text-slate-500">{getProjectSubtitle(project)}</p>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {results.castings.length > 0 && (
                   <div className="rounded-[22px] border border-slate-100 bg-slate-50/70 p-2.5 shadow-[0_16px_35px_-30px_rgba(15,23,42,0.28)]">
-                    {renderSectionHeader('Castings')}
+                    {renderSectionHeader('Castings', results.castings.length)}
                     <div className="space-y-1">
                       {results.castings.slice(0, 6).map((casting) => {
                         const rowIndex = currentIndex++
@@ -339,7 +401,7 @@ export function GlobalSearch() {
 
                 {results.clients.length > 0 && (
                   <div className="rounded-[22px] border border-slate-100 bg-slate-50/70 p-2.5 shadow-[0_16px_35px_-30px_rgba(15,23,42,0.28)]">
-                    {renderSectionHeader('Clients')}
+                    {renderSectionHeader('Clients', results.clients.length)}
                     <div className="space-y-1">
                       {results.clients.slice(0, 4).map((client) => {
                         const rowIndex = currentIndex++
@@ -382,7 +444,7 @@ export function GlobalSearch() {
 
                 {results.team.length > 0 && (
                   <div className="rounded-[22px] border border-slate-100 bg-slate-50/70 p-2.5 shadow-[0_16px_35px_-30px_rgba(15,23,42,0.28)]">
-                    {renderSectionHeader('Team')}
+                    {renderSectionHeader('Team', results.team.length)}
                     <div className="space-y-1">
                       {results.team.slice(0, 3).map((member) => {
                         const rowIndex = currentIndex++
