@@ -219,15 +219,19 @@ export function ProfileDashboard({ open, onClose }: ProfileDashboardProps) {
             transition={{ duration: 0.18, ease: 'easeOut' }}
             className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6"
           >
-            <div className="flex w-full max-w-[600px] flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl max-h-[min(90vh,760px)]">
-              <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Profile</p>
-                  <h2 className="mt-1 text-lg font-semibold text-slate-900">My Profile</h2>
+            <div className="flex w-full max-w-[600px] max-h-[min(90vh,760px)] flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl">
+              <div className="border-b border-slate-100 bg-[linear-gradient(180deg,#fffdf8_0%,#ffffff_100%)] px-5 py-4 sm:px-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">Personal ops</div>
+                    <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Profile</p>
+                    <h2 className="mt-1 text-lg font-semibold text-slate-900">My Profile</h2>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">Keep your contact details, profile image, recent activity, and assigned work clean in one place.</p>
+                  </div>
+                  <button onClick={handleModalClose} disabled={closeDisabled} className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50">
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
-                <button onClick={handleModalClose} disabled={closeDisabled} className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-50">
-                  <X className="h-5 w-5" />
-                </button>
               </div>
 
               {loading ? (
@@ -239,6 +243,9 @@ export function ProfileDashboard({ open, onClose }: ProfileDashboardProps) {
                   <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
                     <div className="space-y-5">
                       <div className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+                        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-xs leading-5 text-slate-600">
+                          This profile acts as your personal operating record, the cleaner it is, the faster routing, contact, and visibility stay across the workspace.
+                        </div>
                         <div className="flex items-start gap-4">
                           <ProfileAvatar name={profile.name} avatarUrl={profile.avatar_url} size="h-20 w-20" />
                           <div className="min-w-0 flex-1">
@@ -303,6 +310,12 @@ export function ProfileDashboard({ open, onClose }: ProfileDashboardProps) {
                             <p className="mt-2 text-2xl font-semibold text-slate-900">{card.value}</p>
                           </div>
                         ))}
+                      </div>
+
+                      <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Profile view</p>
+                        <p className="mt-2 text-sm font-semibold text-slate-900">Your personal dashboard blends identity, workload, and recent movement.</p>
+                        <p className="mt-1 text-xs leading-5 text-slate-500">Use it to confirm how your profile is presented in the workspace and what work is currently landing on you.</p>
                       </div>
 
                       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
