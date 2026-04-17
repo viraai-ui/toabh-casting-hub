@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { Search, Bell, User, Settings, LogOut, ChevronDown, CheckCheck } from 'lucide-react'
+import { Search, Bell, User, Settings, LogOut, ChevronDown, CheckCheck, Sparkles, ArrowRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAppStore } from '@/hooks/useStore'
 import { useOverlay } from '@/hooks/useOverlayManager'
@@ -218,7 +218,7 @@ export function Header() {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-30 h-16 border-b border-slate-100 bg-white/95 backdrop-blur-sm">
+    <header className="fixed left-0 right-0 top-0 z-30 h-16 border-b border-slate-100 bg-white/95 backdrop-blur-sm">
       <div className="flex h-full items-center justify-between px-4 lg:px-6">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -227,7 +227,14 @@ export function Header() {
             </span>
             <h1 className="truncate text-lg font-semibold text-slate-900">{pageTitle}</h1>
           </div>
-          <p className="hidden truncate text-xs text-slate-500 sm:block">{pageSubtitle}</p>
+          <div className="mt-1 flex items-center gap-2">
+            <p className="hidden truncate text-xs text-slate-500 sm:block">{pageSubtitle}</p>
+            <span className="hidden h-1 w-1 rounded-full bg-slate-300 sm:block" />
+            <span className="hidden items-center gap-1 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-500 sm:inline-flex">
+              <Sparkles className="h-3 w-3 text-amber-500" />
+              Command-ready workspace
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 pl-3">
@@ -236,7 +243,7 @@ export function Header() {
             className="group relative inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
           >
             <Search className="h-4 w-4 text-slate-600" />
-            <span className="hidden sm:inline">Search</span>
+            <span className="hidden sm:inline">Search records</span>
             <span className="hidden rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 sm:inline">Ctrl+K</span>
             <span className="absolute -bottom-5 left-1/2 z-50 hidden -translate-x-1/2 whitespace-nowrap rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-white group-hover:block sm:hidden">
               Search
@@ -249,12 +256,12 @@ export function Header() {
               onClick={() => setNotificationsOpen((open) => !open)}
               onMouseDown={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
-              className="p-2 rounded-lg hover:bg-slate-100 transition-colors relative"
+              className="relative rounded-xl border border-slate-200 bg-white p-2 transition-colors hover:bg-slate-50"
               aria-label="Notifications"
             >
-              <Bell className="w-5 h-5 text-slate-600" />
+              <Bell className="h-5 w-5 text-slate-600" />
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-semibold flex items-center justify-center shadow-sm">
+                <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold text-white shadow-sm">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -262,21 +269,22 @@ export function Header() {
 
             <AnimatePresence>
               {notificationsOpen && (
-                  <motion.div
-                    ref={notificationPanelRef}
-                    initial={{ opacity: 0, y: -8, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -8, scale: 0.98 }}
-                    transition={{ duration: 0.15, ease: 'easeOut' }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onTouchStart={(e) => e.stopPropagation()}
-                    onClick={(e) => e.stopPropagation()}
-                    className="absolute right-0 top-full z-50 mt-2 w-[min(24rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
-                  >
-                    <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                <motion.div
+                  ref={notificationPanelRef}
+                  initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                  transition={{ duration: 0.15, ease: 'easeOut' }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-0 top-full z-50 mt-2 w-[min(24rem,calc(100vw-1rem))] overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-2xl"
+                >
+                  <div className="border-b border-slate-100 px-4 py-4">
+                    <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">Notifications</p>
-                        <p className="text-xs text-slate-500">Signals, handoffs, and movement across your agency workspace</p>
+                        <p className="mt-1 text-xs text-slate-500">Signals, handoffs, and movement across your agency workspace.</p>
                       </div>
                       <button
                         onClick={markAllRead}
@@ -287,46 +295,66 @@ export function Header() {
                         Mark all read
                       </button>
                     </div>
-
-                    <div className="max-h-[24rem] overflow-y-auto p-2">
-                      {loadingNotifications ? (
-                        <div className="flex items-center justify-center py-10 text-slate-400">
-                          <Bell className="h-5 w-5 animate-pulse" />
-                        </div>
-                      ) : notifications.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-slate-50 px-6 py-10 text-center">
-                          <Bell className="h-5 w-5 text-slate-300" />
-                          <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Notifications</p>
-                            <p className="mt-3 text-sm font-semibold text-slate-800">All quiet for now</p>
-                            <p className="mt-1 text-xs text-slate-500">The moment a job moves, an invite lands, or a handoff needs attention, it will surface here.</p>
-                          </div>
-                        </div>
-                      ) : (
-                        notifications.map((activity) => {
-                          const unread = !readIds.includes(activity.id)
-                          return (
-                            <button
-                              key={activity.id}
-                              onClick={() => openNotification(activity)}
-                              className="flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition-colors hover:bg-slate-50"
-                            >
-                              <div className="flex pt-1">
-                                <span className={`h-2.5 w-2.5 rounded-full ${unread ? 'bg-amber-500' : 'bg-slate-200'}`} />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-start justify-between gap-3">
-                                  <p className="text-sm font-medium text-slate-900">{getNotificationTitle(activity)}</p>
-                                  <span className="shrink-0 text-[11px] text-slate-400">{formatRelativeTime(activity.created_at)}</span>
-                                </div>
-                                <p className="mt-1 text-xs text-slate-500">{getNotificationMeta(activity)}</p>
-                              </div>
-                            </button>
-                          )
-                        })
-                      )}
+                    <div className="mt-3 flex items-center gap-2 text-[11px] text-slate-400">
+                      <span className="rounded-full bg-slate-100 px-2 py-1">{unreadCount} unread</span>
+                      <span className="rounded-full bg-slate-100 px-2 py-1">{notifications.length} recent signals</span>
                     </div>
-                  </motion.div>
+                  </div>
+
+                  <div className="max-h-[24rem] overflow-y-auto p-2">
+                    {loadingNotifications ? (
+                      <div className="flex items-center justify-center py-10 text-slate-400">
+                        <Bell className="h-5 w-5 animate-pulse" />
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center gap-2 rounded-2xl bg-slate-50 px-6 py-10 text-center">
+                        <Bell className="h-5 w-5 text-slate-300" />
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Notifications</p>
+                          <p className="mt-3 text-sm font-semibold text-slate-800">All quiet for now</p>
+                          <p className="mt-1 text-xs text-slate-500">The moment a job moves, an invite lands, or a handoff needs attention, it will surface here.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      notifications.map((activity) => {
+                        const unread = !readIds.includes(activity.id)
+                        return (
+                          <button
+                            key={activity.id}
+                            onClick={() => openNotification(activity)}
+                            className="flex w-full items-start gap-3 rounded-2xl px-3 py-3 text-left transition-colors hover:bg-slate-50"
+                          >
+                            <div className="flex pt-1">
+                              <span className={`h-2.5 w-2.5 rounded-full ${unread ? 'bg-amber-500' : 'bg-slate-200'}`} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-3">
+                                <p className="text-sm font-medium text-slate-900">{getNotificationTitle(activity)}</p>
+                                <span className="shrink-0 text-[11px] text-slate-400">{formatRelativeTime(activity.created_at)}</span>
+                              </div>
+                              <p className="mt-1 text-xs text-slate-500">{getNotificationMeta(activity)}</p>
+                            </div>
+                          </button>
+                        )
+                      })
+                    )}
+                  </div>
+
+                  {notifications.length > 0 && (
+                    <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-3">
+                      <button
+                        onClick={() => {
+                          setNotificationsOpen(false)
+                          navigate('/activity')
+                        }}
+                        className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 transition-colors hover:text-slate-900"
+                      >
+                        Open activity inbox
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                </motion.div>
               )}
             </AnimatePresence>
           </div>
@@ -334,21 +362,21 @@ export function Header() {
           <div className="relative">
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 active:bg-slate-200 transition-colors"
+              className="flex items-center gap-2 rounded-lg p-1.5 transition-colors hover:bg-slate-100 active:bg-slate-200"
             >
               {currentUser?.avatar ? (
                 <img
                   src={toApiUrl(currentUser.avatar)}
                   alt={currentUser.name}
-                  className="h-8 w-8 rounded-full object-cover bg-slate-100 shadow-sm"
+                  className="h-8 w-8 rounded-full bg-slate-100 object-cover shadow-sm"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white text-sm font-semibold shadow-sm">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-sm font-semibold text-white shadow-sm">
                   {currentUser ? getInitials(currentUser.name) : 'TB'}
                 </div>
               )}
               <ChevronDown
-                className={`w-4 h-4 text-slate-400 hidden sm:block transition-transform duration-200 ${
+                className={`hidden h-4 w-4 text-slate-400 transition-transform duration-200 sm:block ${
                   userMenuOpen ? 'rotate-180' : ''
                 }`}
               />
@@ -363,11 +391,11 @@ export function Header() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -6, scale: 0.97 }}
                     transition={{ duration: 0.15, ease: 'easeOut' }}
-                    className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-xl border border-slate-100 z-50 py-1.5"
+                    className="absolute right-0 top-full z-50 mt-2 w-52 rounded-xl border border-slate-100 bg-white py-1.5 shadow-xl"
                   >
-                    <div className="px-4 py-3 border-b border-slate-100 mb-1">
-                      <p className="text-sm font-semibold text-slate-900 leading-tight">{currentUser?.name || 'Team Member'}</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">{currentUser?.email || 'admin@toabh.com'}</p>
+                    <div className="mb-1 border-b border-slate-100 px-4 py-3">
+                      <p className="text-sm font-semibold leading-tight text-slate-900">{currentUser?.name || 'Team Member'}</p>
+                      <p className="mt-0.5 text-[11px] text-slate-400">{currentUser?.email || 'admin@toabh.com'}</p>
                     </div>
 
                     <button
@@ -375,9 +403,9 @@ export function Header() {
                         navigate('/profile')
                         setUserMenuOpen(false)
                       }}
-                      className="flex items-center gap-3 px-4 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 active:bg-slate-100 transition-colors text-sm font-medium rounded-lg mx-1.5 w-[calc(100%-12px)]"
+                      className="mx-1.5 flex w-[calc(100%-12px)] items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100"
                     >
-                      <User className="w-4 h-4 text-slate-400" />
+                      <User className="h-4 w-4 text-slate-400" />
                       <span>Profile</span>
                     </button>
                     <button
@@ -385,17 +413,17 @@ export function Header() {
                         navigate('/settings')
                         setUserMenuOpen(false)
                       }}
-                      className="flex items-center gap-3 px-4 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 active:bg-slate-100 transition-colors text-sm font-medium rounded-lg mx-1.5 w-[calc(100%-12px)]"
+                      className="mx-1.5 flex w-[calc(100%-12px)] items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100"
                     >
-                      <Settings className="w-4 h-4 text-slate-400" />
+                      <Settings className="h-4 w-4 text-slate-400" />
                       <span>Settings</span>
                     </button>
-                    <div className="my-1.5 mx-3 border-t border-slate-100" />
+                    <div className="mx-3 my-1.5 border-t border-slate-100" />
                     <button
                       onClick={handleLogout}
-                      className="flex items-center gap-3 px-4 py-2.5 text-red-500 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors text-sm font-medium rounded-lg mx-1.5 w-[calc(100%-12px)]"
+                      className="mx-1.5 flex w-[calc(100%-12px)] items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 active:bg-red-100"
                     >
-                      <LogOut className="w-4 h-4" />
+                      <LogOut className="h-4 w-4" />
                       <span>Logout</span>
                     </button>
                   </motion.div>
