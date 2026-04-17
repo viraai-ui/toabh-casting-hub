@@ -280,6 +280,9 @@ export function Clients() {
         </div>
       </section>
       <section className="rounded-[30px] border border-slate-200 bg-gradient-to-br from-white via-amber-50/70 to-orange-50 px-5 py-5 shadow-sm sm:px-6">
+        <div className="mb-5 rounded-2xl border border-amber-200 bg-white/80 px-4 py-3 text-xs leading-5 text-slate-600">
+          Use this page as the relationship control layer, scan active accounts, surface missing contact info, and tighten tagging before the next brief lands.
+        </div>
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
@@ -360,6 +363,7 @@ export function Clients() {
         </div>
 
         <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+          <p className="mb-3 text-xs leading-5 text-slate-500">Switch the relationship lens to quickly separate live accounts, untagged records, and contacts that still need basic details.</p>
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Relationship focus</span>
             {[
@@ -426,6 +430,7 @@ export function Clients() {
           <span className="rounded-full bg-white px-3 py-1.5 ring-1 ring-slate-200">{totalClientTagAssignments} total tag links</span>
           <span className="rounded-full bg-white px-3 py-1.5 ring-1 ring-slate-200">{castings.length} linked casting records</span>
         </div>
+        <p className="mt-3 text-xs text-slate-400">This is the fastest way to read relationship coverage before opening individual client records.</p>
       </section>
 
       {loading ? (
