@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ChevronDown, Mic, MicOff, Minimize2, SendHorizonal, Sparkles, X } from 'lucide-react'
+import { ChevronDown, Mic, MicOff, Minimize2, SendHorizonal, Sparkles, X, ArrowUpRight } from 'lucide-react'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { ASSISTANT_SUGGESTIONS, queryAssistant, type AssistantMessage } from '@/lib/assistant'
 import { useVoice, processVoiceQuery } from '@/hooks/useVoice'
@@ -34,7 +34,6 @@ export function CastingAssistant() {
   }, [messages, open, loading])
 
   const canSubmit = input.trim().length > 0 && !loading
-
   const isListening = voiceState === 'requesting' || voiceState === 'listening'
 
   const submitQuery = useCallback(
@@ -82,7 +81,6 @@ export function CastingAssistant() {
     [loading],
   )
 
-  // Handle final voice transcript auto-submission
   useEffect(() => {
     if (voiceState === 'processing' && interimTranscript && interimTranscript !== processedRef.current) {
       processedRef.current = interimTranscript
@@ -97,7 +95,6 @@ export function CastingAssistant() {
     }
   }, [voiceState, interimTranscript, resetState, submitQuery])
 
-  // Reset processedRef when voice returns to idle after an error
   useEffect(() => {
     if (voiceState === 'idle' || voiceState === 'error') {
       processedRef.current = ''
@@ -110,6 +107,8 @@ export function CastingAssistant() {
     () => [...messages].reverse().find((message) => message.response)?.response,
     [messages],
   )
+
+  const conversationCount = Math.max(0, messages.length - 1)
 
   const toggleVoice = () => {
     if (isListening) {
@@ -129,19 +128,21 @@ export function CastingAssistant() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.96 }}
             transition={{ duration: 0.18 }}
-            className="fixed bottom-24 right-4 z-50 flex flex-col w-[calc(100vw-2rem)] max-w-[420px] max-h-[85vh] overflow-hidden rounded-[28px] border border-white/60 bg-slate-950 text-white shadow-[0_25px_80px_rgba(15,23,42,0.35)] backdrop-blur-2xl lg:bottom-6 lg:right-6"
+            className="fixed bottom-24 right-4 z-50 flex max-h-[85vh] w-[calc(100vw-2rem)] max-w-[420px] flex-col overflow-hidden rounded-[28px] border border-white/60 bg-slate-950 text-white shadow-[0_25px_80px_rgba(15,23,42,0.35)] backdrop-blur-2xl lg:bottom-6 lg:right-6"
           >
-            {/* Header */}
-            <div className="shrink-0 relative overflow-hidden border-b border-white/10 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.25),_transparent_55%),linear-gradient(135deg,rgba(15,23,42,0.96),rgba(30,41,59,0.94))] px-4 py-3">
+            <div className="relative shrink-0 overflow-hidden border-b border-white/10 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.25),_transparent_55%),linear-gradient(135deg,rgba(15,23,42,0.96),rgba(30,41,59,0.94))] px-4 py-3">
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/80 to-transparent" />
               <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
                     <Sparkles className="h-4 w-4 text-amber-300" />
                   </div>
-                  <h2 className="text-sm font-semibold text-white leading-tight">Casting Concierge – TOABH Assistant</h2>
+                  <div className="min-w-0">
+                    <h2 className="truncate text-sm font-semibold leading-tight text-white">Casting Concierge</h2>
+                    <p className="mt-0.5 text-[11px] text-slate-300">Fast answers for queue, delays, assignments, and casting details.</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-0.5 shrink-0">
+                <div className="flex shrink-0 items-center gap-0.5">
                   <button
                     type="button"
                     onClick={() => setOpen(false)}
@@ -160,9 +161,13 @@ export function CastingAssistant() {
                   </button>
                 </div>
               </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-slate-300/80">
+                <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">Live workspace helper</span>
+                <span className="rounded-full border border-amber-300/20 bg-amber-400/10 px-2 py-1 text-amber-200">{conversationCount} exchanges</span>
+              </div>
             </div>
 
-            {/* Messages */}
             <div ref={scrollRef} className="flex-1 min-h-0 space-y-3 overflow-y-auto bg-slate-950/95 px-3 py-3">
               {messages.map((message) => (
                 <div key={message.id} className={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}>
@@ -218,7 +223,6 @@ export function CastingAssistant() {
                 </div>
               )}
 
-              {/* Voice processing indicator */}
               {voiceState === 'processing' && interimTranscript && (
                 <div className="flex justify-end">
                   <div className={cn(
@@ -235,7 +239,6 @@ export function CastingAssistant() {
                 </div>
               )}
 
-              {/* Voice error indicator */}
               {voiceState === 'error' && (
                 <div className="flex justify-center">
                   <div className="rounded-2xl border border-red-300/20 bg-red-500/10 px-3 py-2 text-[13px] text-red-200">
@@ -245,21 +248,22 @@ export function CastingAssistant() {
               )}
             </div>
 
-            {/* Footer */}
             <div className="shrink-0 border-t border-white/10 bg-slate-950/95 px-3 pb-3 pt-2">
-              {/* Quick Questions dropdown */}
-              <div className="mb-2">
-                <button
-                  type="button"
-                  onClick={() => setShowSuggestions((v) => !v)}
-                  className="flex items-center justify-between w-full px-2 py-1.5 rounded-lg text-[12px] font-medium text-slate-300 hover:text-white transition hover:bg-white/5"
-                >
-                  <span>Quick Questions</span>
-                  <ChevronDown className={cn(
-                    'h-3.5 w-3.5 transition-transform duration-200',
-                    showSuggestions && 'rotate-180'
-                  )} />
-                </button>
+              <div className="mb-2 rounded-2xl border border-white/8 bg-white/5 px-2.5 py-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Quick questions</p>
+                    <p className="mt-1 text-[11px] text-slate-500">Use a prompt to jump straight into a useful answer.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowSuggestions((v) => !v)}
+                    className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[12px] font-medium text-slate-300 transition hover:text-white"
+                  >
+                    <span>{showSuggestions ? 'Hide' : 'Show'}</span>
+                    <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-200', showSuggestions && 'rotate-180')} />
+                  </button>
+                </div>
                 <AnimatePresence>
                   {showSuggestions && (
                     <motion.div
@@ -269,7 +273,7 @@ export function CastingAssistant() {
                       transition={{ duration: 0.15 }}
                       className="overflow-hidden"
                     >
-                      <div className="flex flex-wrap gap-1.5 pt-1.5 pb-1">
+                      <div className="flex flex-wrap gap-1.5 pb-1 pt-2">
                         {(latestResponse?.suggestions?.length ? latestResponse.suggestions : ASSISTANT_SUGGESTIONS).map((suggestion) => (
                           <button
                             key={suggestion}
@@ -278,7 +282,7 @@ export function CastingAssistant() {
                               void submitQuery(suggestion)
                               setShowSuggestions(false)
                             }}
-                            className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-slate-200 transition hover:border-amber-300/40 hover:bg-amber-400/10 hover:text-white whitespace-nowrap"
+                            className="whitespace-nowrap rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-slate-200 transition hover:border-amber-300/40 hover:bg-amber-400/10 hover:text-white"
                           >
                             {suggestion}
                           </button>
@@ -289,20 +293,17 @@ export function CastingAssistant() {
                 </AnimatePresence>
               </div>
 
-              {/* Live voice transcript bar */}
               {isListening && liveTranscript && (
                 <motion.div
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mb-2 rounded-xl bg-amber-400/10 px-3 py-1.5 border border-amber-300/20"
+                  className="mb-2 rounded-xl border border-amber-300/20 bg-amber-400/10 px-3 py-1.5"
                 >
-                  <p className="text-[12px] text-amber-200 leading-relaxed">{liveTranscript}</p>
+                  <p className="text-[12px] leading-relaxed text-amber-200">{liveTranscript}</p>
                 </motion.div>
               )}
 
-              {/* Input bar */}
               <div className="flex items-end gap-1.5 rounded-[24px] border border-white/10 bg-white/6 p-1.5 shadow-inner shadow-black/10">
-                {/* Voice button */}
                 <button
                   type="button"
                   onClick={toggleVoice}
@@ -314,22 +315,20 @@ export function CastingAssistant() {
                       : 'Start voice input'
                   }
                   className={cn(
-                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all relative',
+                    'relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all',
                     isListening
-                      ? 'bg-red-500/20 border border-red-300/30 text-red-400 animate-pulse'
+                      ? 'border border-red-300/30 bg-red-500/20 text-red-400 animate-pulse'
                       : voiceState === 'unsupported'
-                      ? 'bg-white/5 border border-white/5 text-slate-600 opacity-50 cursor-not-allowed'
+                      ? 'cursor-not-allowed border border-white/5 bg-white/5 text-slate-600 opacity-50'
                       : 'border border-dashed border-amber-300/35 bg-amber-400/10 text-amber-200 hover:border-amber-300/60 hover:bg-amber-400/20',
                   )}
-                  aria-label={
-                    isListening ? 'Stop listening' : 'Start voice input'
-                  }
+                  aria-label={isListening ? 'Stop listening' : 'Start voice input'}
                   disabled={voiceState === 'unsupported'}
                 >
                   {isListening ? (
                     <>
                       <MicOff className="h-3.5 w-3.5" />
-                      <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-red-500 animate-ping" />
+                      <span className="absolute -right-0.5 -top-0.5 h-2 w-2 animate-ping rounded-full bg-red-500" />
                     </>
                   ) : (
                     <Mic className="h-3.5 w-3.5" />
@@ -368,13 +367,12 @@ export function CastingAssistant() {
                 </button>
               </div>
 
-              {/* Footer hint */}
-              <p className="mt-2 text-[11px] text-slate-500 text-center">
+              <p className="mt-2 text-center text-[11px] text-slate-500">
                 {voiceState === 'unsupported'
                   ? 'Voice input not supported in this browser. Use Chrome for best results.'
                   : isListening
                   ? 'Listening… tap mic to stop'
-                  : 'Tap the mic and speak to ask questions'}
+                  : 'Tap the mic or send a typed question for a quick workspace answer'}
               </p>
             </div>
           </motion.div>
@@ -386,7 +384,7 @@ export function CastingAssistant() {
         whileHover={{ y: -2, scale: 1.01 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => setOpen((value) => !value)}
-        className="fixed bottom-24 right-4 z-40 flex items-center gap-3 rounded-full border border-white/60 bg-[linear-gradient(135deg,rgba(15,23,42,0.96),rgba(30,41,59,0.92))] px-4 py-3 text-left text-white shadow-[0_20px_60px_rgba(15,23,42,0.32)] ring-1 ring-black/5 backdrop-blur-xl lg:bottom-4 lg:right-4 lg:px-2.5"
+        className="fixed bottom-24 right-4 z-40 flex items-center gap-3 rounded-full border border-white/60 bg-[linear-gradient(135deg,rgba(15,23,42,0.96),rgba(30,41,59,0.92))] px-4 py-3 text-left text-white shadow-[0_20px_60px_rgba(15,23,42,0.32)] ring-1 ring-black/5 backdrop-blur-xl lg:bottom-4 lg:right-4 lg:px-3"
         aria-label={open ? 'Hide assistant' : 'Open assistant'}
       >
         <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-amber-500 text-slate-950 shadow-inner shadow-white/20">
@@ -395,6 +393,10 @@ export function CastingAssistant() {
         <span className="hidden min-w-0 sm:block lg:hidden">
           <span className="block text-xs uppercase tracking-[0.24em] text-amber-200/80">AI assistant</span>
           <span className="mt-0.5 block text-sm font-semibold">Ask the Casting Hub</span>
+        </span>
+        <span className="hidden items-center gap-1 text-xs font-medium text-amber-100/85 xl:inline-flex">
+          Open
+          <ArrowUpRight className="h-3.5 w-3.5" />
         </span>
       </motion.button>
     </>
