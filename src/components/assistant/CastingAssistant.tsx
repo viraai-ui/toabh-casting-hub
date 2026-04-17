@@ -131,6 +131,18 @@ export function CastingAssistant() {
             className="fixed bottom-24 right-4 z-50 flex max-h-[85vh] w-[calc(100vw-2rem)] max-w-[420px] flex-col overflow-hidden rounded-[28px] border border-white/60 bg-slate-950 text-white shadow-[0_25px_80px_rgba(15,23,42,0.35)] backdrop-blur-2xl lg:bottom-6 lg:right-6"
           >
             <div className="relative shrink-0 overflow-hidden border-b border-white/10 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.25),_transparent_55%),linear-gradient(135deg,rgba(15,23,42,0.96),rgba(30,41,59,0.94))] px-4 py-3">
+               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/80 to-transparent" />
+               <div className="flex items-center justify-between gap-3">
+@@
+               <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-slate-300/80">
+                 <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">Live workspace helper</span>
+                 <span className="rounded-full border border-amber-300/20 bg-amber-400/10 px-2 py-1 text-amber-200">{conversationCount} exchanges</span>
+               </div>
++
++              <div className="mt-3 rounded-2xl border border-amber-300/15 bg-white/5 px-3 py-2 text-[11px] leading-5 text-slate-300">
++                Use this concierge for quick operational answers before opening deeper casting records or jumping into edits.
++              </div>
+             </div>
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/80 to-transparent" />
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
@@ -291,6 +303,10 @@ export function CastingAssistant() {
                     </motion.div>
                   )}
                 </AnimatePresence>
+              </div>
+
+              <div className="mb-2 rounded-2xl border border-white/8 bg-black/10 px-3 py-2 text-[11px] leading-5 text-slate-400">
+                Ask about delays, assignments, next actions, or the current queue to get a fast operational read.
               </div>
 
               {isListening && liveTranscript && (
