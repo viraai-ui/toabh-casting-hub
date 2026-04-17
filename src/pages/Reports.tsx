@@ -197,6 +197,43 @@ export function Reports() {
     }
   })()
 
+  const rangeLabel = dateRange === 'week'
+    ? 'This Week'
+    : dateRange === 'month'
+      ? 'This Month'
+      : dateRange === '30days'
+        ? 'Last 30 Days'
+        : dateRange === 'quarter'
+          ? 'This Quarter'
+          : customRange.from && customRange.to
+            ? `${customRange.from} to ${customRange.to}`
+            : 'Custom Range'
+
+  const reportSignals = [
+    {
+      label: 'Throughput signal',
+      value: weeklyData.length === 0 ? 'Waiting on live volume' : `${weeklyData.length} active checkpoint${weeklyData.length === 1 ? '' : 's'}`,
+      note: weeklyData.length === 0 ? 'Creation and closure activity has not populated this range yet.' : 'Creation versus closure momentum is now readable inside this reporting window.',
+    },
+    {
+      label: 'Ownership signal',
+      value: reportSummary.assigned === 0 ? 'No ownership mapped' : `${Math.round((reportSummary.assigned / Math.max(reportSummary.total, 1)) * 100)}% owned`,
+      note: reportSummary.assigned === 0 ? 'Assigned teammates will unlock team load reporting here.' : 'Ownership coverage is strong enough to spot workload concentration quickly.',
+    },
+    {
+      label: 'Revenue signal',
+      value: reportSummary.revenue === 0 ? 'Revenue curve not live yet' : formatCurrency(reportSummary.revenue),
+      note: reportSummary.revenue === 0 ? 'Budgeted castings will turn this into a commercial pulse.' : 'Budget totals are now giving this window a commercial readout.',
+    },
+  ]
+
+  const chartStatuses = {
+    performance: weeklyData.length === 0 ? 'Awaiting activity' : `${weeklyData.length} checkpoints live`,
+    distribution: statusData.length === 0 ? 'No statuses yet' : `${statusData.length} stage${statusData.length === 1 ? '' : 's'} mapped`,
+    team: teamData.length === 0 ? 'Ownership pending' : `${teamData.length} teammate${teamData.length === 1 ? '' : 's'} visible`,
+    revenue: revenueData.length === 0 ? 'Budgets pending' : `${revenueData.length} revenue checkpoint${revenueData.length === 1 ? '' : 's'}`,
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -238,9 +275,28 @@ export function Reports() {
       </section>
 
       <section className={cn('rounded-3xl border px-5 py-4 shadow-sm', reportPriority.tone)}>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-75">Reporting priority</p>
-        <p className="mt-1 text-base font-semibold text-slate-950">{reportPriority.label}</p>
-        <p className="mt-1 text-sm leading-6 text-slate-600">{reportPriority.note}</p>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-75">Reporting priority</p>
+            <p className="mt-1 text-base font-semibold text-slate-950">{reportPriority.label}</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600">{reportPriority.note}</p>
+          </div>
+          <div className="rounded-2xl border border-white/60 bg-white/70 px-4 py-3 text-sm text-slate-600 shadow-sm backdrop-blur">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Active window</p>
+            <p className="mt-1 font-semibold text-slate-900">{rangeLabel}</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">This range is shaping the management story for throughput, ownership, and budget coverage.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-3">
+        {reportSignals.map((signal) => (
+          <div key={signal.label} className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{signal.label}</p>
+            <p className="mt-3 text-lg font-semibold tracking-tight text-slate-950">{signal.value}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{signal.note}</p>
+          </div>
+        ))}
       </section>
 
       {/* Date Range Selector */}
@@ -294,7 +350,13 @@ export function Reports() {
           animate={{ opacity: 1, y: 0 }}
           className="card p-5"
         >
-          <h3 className="font-semibold text-slate-900 mb-4">Casting Performance</h3>
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <h3 className="font-semibold text-slate-900">Casting Performance</h3>
+              <p className="mt-1 text-sm text-slate-500">Created versus closed jobs across the active reporting window.</p>
+            </div>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{chartStatuses.performance}</span>
+          </div>
           <div className="h-[300px]">
             {weeklyData.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 text-center">
@@ -331,33 +393,48 @@ export function Reports() {
           transition={{ delay: 0.1 }}
           className="card p-5"
         >
-          <h3 className="font-semibold text-slate-900 mb-4">Status Distribution</h3>
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <h3 className="font-semibold text-slate-900">Status Distribution</h3>
+              <p className="mt-1 text-sm text-slate-500">Which pipeline stages are holding the most visible work right now.</p>
+            </div>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{chartStatuses.distribution}</span>
+          </div>
           <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={statusData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={2}
-                  dataKey="value"
-                >
-                  {statusData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    background: 'rgba(255,255,255,0.95)',
-                    border: '1px solid rgba(0,0,0,0.1)',
-                    borderRadius: 12,
-                  }}
-                />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            {statusData.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 text-center">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Pipeline mix</p>
+                <p className="mt-3 text-sm font-semibold text-slate-900">No stage distribution yet</p>
+                <p className="mt-2 text-sm text-slate-500">As castings move through real workflow states, this will become the quickest pressure map in reports.</p>
+                <p className="mt-2 text-xs text-slate-400">It is most useful once active jobs are no longer clustered in a single placeholder state.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={statusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {statusData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      background: 'rgba(255,255,255,0.95)',
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      borderRadius: 12,
+                    }}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </motion.div>
 
@@ -368,7 +445,13 @@ export function Reports() {
           transition={{ delay: 0.2 }}
           className="card p-5"
         >
-          <h3 className="font-semibold text-slate-900 mb-4">Team Performance</h3>
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <h3 className="font-semibold text-slate-900">Team Performance</h3>
+              <p className="mt-1 text-sm text-slate-500">Who is carrying active casting load in the selected reporting window.</p>
+            </div>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{chartStatuses.team}</span>
+          </div>
           <div className="h-[300px]">
             {teamData.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 text-center">
@@ -403,7 +486,13 @@ export function Reports() {
           transition={{ delay: 0.3 }}
           className="card p-5"
         >
-          <h3 className="font-semibold text-slate-900 mb-4">Revenue Trend</h3>
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <h3 className="font-semibold text-slate-900">Revenue Trend</h3>
+              <p className="mt-1 text-sm text-slate-500">Budget movement across the jobs that fall inside the current reporting window.</p>
+            </div>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{chartStatuses.revenue}</span>
+          </div>
           <div className="h-[300px]">
             {revenueData.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 text-center">
