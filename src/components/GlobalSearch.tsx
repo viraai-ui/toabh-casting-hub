@@ -254,6 +254,9 @@ export function GlobalSearch() {
                 <p className="text-sm font-semibold tracking-tight text-slate-900">Universal search</p>
                 <p className="mt-1 text-xs text-slate-500">Jump into jobs, clients, team, phone numbers, and live records.</p>
               </div>
+              <div className="hidden rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700 sm:inline-flex">
+                Command surface
+              </div>
               <button
                 onClick={closeSearch}
                 className="rounded-xl p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
@@ -280,7 +283,11 @@ export function GlobalSearch() {
               />
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-100 bg-slate-50/70 px-3.5 py-2.5 text-xs text-slate-500">
+            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/70 px-3.5 py-2.5 text-xs leading-5 text-slate-600">
+              Search is designed for quick routing, use names, clients, phone numbers, or email fragments to jump straight into active records.
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-100 bg-slate-50/70 px-3.5 py-2.5 text-xs text-slate-500">
               <p>{resultSummary}</p>
               <div className="flex items-center gap-2 text-slate-400">
                 <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1">
@@ -319,6 +326,7 @@ export function GlobalSearch() {
                 <div className="max-w-sm">
                   <p className="text-base font-semibold tracking-tight text-slate-900">Search everything instantly</p>
                   <p className="mt-1.5 text-sm leading-6 text-slate-500">Find projects, jobs, clients, phone numbers, emails, and team members in one place.</p>
+                  <p className="mt-2 text-xs text-slate-400">Start typing to turn this into the fastest navigation layer in the workspace.</p>
                 </div>
               </div>
             )}
