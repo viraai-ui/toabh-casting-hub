@@ -86,6 +86,9 @@ function TaskComposer({
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/40 p-4" onClick={handleComposerClose}>
       <div className="w-full max-w-xl rounded-3xl bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-xs leading-5 text-slate-600">
+          Capture the task, lock ownership, and set timing so follow-through stays visible instead of drifting.
+        </div>
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-slate-900">{task ? 'Edit Task' : 'New Task'}</h3>
           <button onClick={handleComposerClose} disabled={saving} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"><X className="h-4 w-4" /></button>
@@ -205,12 +208,17 @@ function TaskDetail({
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/40 p-4" onClick={handleDetailClose}>
       <div className="max-h-[90vh] w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-          <div>
-            <h3 className="text-lg font-semibold text-slate-900">{task.title}</h3>
-            <p className="mt-1 text-sm text-slate-500">{task.description || 'No description added.'}</p>
+        <div className="border-b border-slate-100 px-5 py-4">
+          <div className="mb-3 rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-xs leading-5 text-slate-600">
+            Use this task view to manage status, comments, and accountability without losing the running context.
           </div>
-          <button onClick={handleDetailClose} disabled={posting || statusUpdating} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"><X className="h-4 w-4" /></button>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">{task.title}</h3>
+              <p className="mt-1 text-sm text-slate-500">{task.description || 'No description added.'}</p>
+            </div>
+            <button onClick={handleDetailClose} disabled={posting || statusUpdating} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"><X className="h-4 w-4" /></button>
+          </div>
         </div>
 
         <div className="grid max-h-[calc(90vh-76px)] gap-6 overflow-y-auto p-5 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -234,6 +242,7 @@ function TaskDetail({
                 <MessageSquare className="h-4 w-4 text-amber-500" />
                 <h4 className="text-sm font-semibold text-slate-900">Comments</h4>
               </div>
+              <p className="mt-2 text-xs leading-5 text-slate-500">Keep updates, mentions, and decision notes here so the task stays easy to hand off.</p>
               <div className="relative mt-4">
                 <textarea
                   ref={textareaRef}
