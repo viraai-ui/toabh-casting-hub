@@ -166,27 +166,32 @@ export function TalentDetailModal({ open, onClose, talent, onSave }: TalentDetai
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
             className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
           >
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="w-full max-w-md overflow-hidden rounded-[28px] bg-white shadow-2xl">
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                    <span className="text-sm font-bold text-amber-700">
-                      {getInitials(form.name || talent?.name || 'T')}
-                    </span>
+              <div className="border-b border-slate-100 bg-[linear-gradient(180deg,#fffdf8_0%,#ffffff_100%)] px-6 py-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
+                      <span className="text-sm font-bold text-amber-700">
+                        {getInitials(form.name || talent?.name || 'T')}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">
+                        Talent profile
+                      </div>
+                      <h2 className="mt-2 text-lg font-semibold text-slate-900">
+                        {mode === 'create' ? 'Add New Talent' : talent?.name}
+                      </h2>
+                      <p className="text-xs text-slate-500">
+                        {mode === 'view' ? 'Talent record overview' : mode === 'create' ? 'Capture the core details to make this profile usable fast' : 'Tighten the record and fill any missing contact fields'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-slate-900">
-                      {mode === 'create' ? 'Add New Talent' : talent?.name}
-                    </h2>
-                    <p className="text-xs text-slate-500">
-                      {mode === 'view' ? 'Talent record overview' : mode === 'create' ? 'Capture the core details to make this profile usable fast' : 'Tighten the record and fill any missing contact fields'}
-                    </p>
-                  </div>
+                  <button onClick={handleModalClose} disabled={isBusy} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50">
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
-                <button onClick={handleModalClose} disabled={isBusy} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed">
-                  <X className="w-5 h-5" />
-                </button>
               </div>
 
               {/* Body */}
@@ -260,15 +265,15 @@ export function TalentDetailModal({ open, onClose, talent, onSave }: TalentDetai
                 )}
                 {/* Avatar area for edit/create */}
                 {mode !== 'view' && (
-                  <div className="flex flex-col items-center mb-2">
-                    <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mb-2">
+                  <div className="mb-2 flex flex-col items-center">
+                    <div className="mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
                       <span className="text-xl font-bold text-amber-700">
                         {getInitials(form.name || 'T')}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400">
-                      {mode === 'create' ? 'Start with the essentials, then enrich the profile over time' : 'Make the record cleaner, clearer, and easier to action'}
-                    </p>
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-center text-xs leading-5 text-slate-600">
+                      {mode === 'create' ? 'Start with the essentials, then enrich the profile over time.' : 'Make the record cleaner, clearer, and easier to action.'}
+                    </div>
                   </div>
                 )}
 
