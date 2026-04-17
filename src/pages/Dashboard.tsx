@@ -135,6 +135,9 @@ export function Dashboard() {
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       <section className="card overflow-hidden p-5 sm:p-6">
+        <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3 text-xs leading-5 text-slate-600">
+          This overview is the morning control layer for urgency, workload, and movement, use it to decide what needs attention before diving into individual records.
+        </div>
         <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700">
@@ -180,6 +183,7 @@ export function Dashboard() {
               </div>
             </div>
             <p className="mt-4 text-sm leading-6 text-slate-600">{card.note}</p>
+            <p className="mt-2 text-xs text-slate-500">A quick read for the current operating pulse.</p>
           </section>
         ))}
       </div>
@@ -190,6 +194,7 @@ export function Dashboard() {
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Urgent focus</p>
               <h2 className="mt-2 text-lg font-semibold text-slate-950">What the team should touch first</h2>
+              <p className="mt-1 text-sm text-slate-500">Start with the highest-friction work so callbacks, dates, and handoffs do not drift.</p>
             </div>
             <button
               type="button"
@@ -240,6 +245,7 @@ export function Dashboard() {
         <section className="card p-5 sm:p-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">Quick actions</p>
           <h2 className="mt-2 text-lg font-semibold text-slate-950">Fast paths for daily ops</h2>
+          <p className="mt-1 text-sm text-slate-500">Use these shortcuts when you already know the next move and want less navigation overhead.</p>
           <div className="mt-5 grid gap-3">
             <ActionButton
               icon={Plus}
