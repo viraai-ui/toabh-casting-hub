@@ -31,7 +31,14 @@ function TagCard({
     <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
       <ClientTagPill tag={tag} className="text-xs" />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-slate-900">{tag.name}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="truncate text-sm font-semibold text-slate-900">{tag.name}</p>
+          {tag.usage_count === 0 && (
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+              Unused
+            </span>
+          )}
+        </div>
         <p className="text-xs text-slate-500">{tag.usage_count ?? 0} client{(tag.usage_count ?? 0) === 1 ? '' : 's'}</p>
       </div>
       <AnimatePresence>
@@ -177,6 +184,7 @@ export function ClientTags() {
   }, [fetchTags])
 
   const totalUsage = useMemo(() => tags.reduce((sum, tag) => sum + (tag.usage_count ?? 0), 0), [tags])
+  const unusedCount = useMemo(() => tags.filter((tag) => (tag.usage_count ?? 0) === 0).length, [tags])
 
   const startEdit = (id: number) => {
     setTags((prev) =>
@@ -207,6 +215,12 @@ export function ClientTags() {
     const name = current.draftName.trim()
     if (!name) {
       setError('Tag name is required')
+      return
+    }
+
+    const duplicate = tags.find((tag) => tag.id !== id && tag.name.trim().toLowerCase() === name.toLowerCase())
+    if (duplicate) {
+      setError('A tag with this name already exists')
       return
     }
 
@@ -247,6 +261,12 @@ export function ClientTags() {
       return
     }
 
+    const duplicate = tags.find((tag) => tag.name.trim().toLowerCase() === name.toLowerCase())
+    if (duplicate) {
+      setError('A tag with this name already exists')
+      return
+    }
+
     setSavingId('new')
     setError('')
     try {
@@ -276,9 +296,7 @@ export function ClientTags() {
   }
 
   const deleteTag = async (tag: ClientTagState) => {
-    if (!window.confirm(`Delete tag “${tag.name}”? It will be removed from all tagged clients.`)) {
-      return
-    }
+    if (!window.confirm(`Delete tag “${tag.name}”? It will be removed from all tagged clients.`)) return
 
     setSavingId(tag.id)
     try {
@@ -307,7 +325,7 @@ export function ClientTags() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:min-w-[280px]">
+          <div className="grid grid-cols-3 gap-3 sm:min-w-[420px]">
             <div className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm">
               <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">Tags</p>
               <p className="mt-2 text-2xl font-semibold text-slate-900">{tags.length}</p>
@@ -315,6 +333,10 @@ export function ClientTags() {
             <div className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm">
               <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">Assignments</p>
               <p className="mt-2 text-2xl font-semibold text-slate-900">{totalUsage}</p>
+            </div>
+            <div className="rounded-2xl border border-white/80 bg-white/80 p-4 shadow-sm">
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">Unused</p>
+              <p className="mt-2 text-2xl font-semibold text-slate-900">{unusedCount}</p>
             </div>
           </div>
         </div>
@@ -338,6 +360,10 @@ export function ClientTags() {
               Add Tag
             </button>
           )}
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+          Keep names short and distinct. Good tags should help operators scan relationship context instantly, not add another layer of ambiguity.
         </div>
 
         <AnimatePresence>
