@@ -190,6 +190,60 @@ export function Profile() {
     { label: 'Pending Tasks', value: profile.stats?.pending_tasks ?? 0, note: 'Follow-ups still needing your attention.', tone: 'border-blue-200/70 bg-blue-50 text-blue-700' },
   ], [profile.stats])
 
+  const profilePriority = useMemo(() => {
+    const overdueCount = profile.stats?.overdue_tasks ?? 0
+    const pendingCount = profile.stats?.pending_tasks ?? 0
+    const activeJobs = profile.stats?.active_jobs ?? 0
+
+    if (overdueCount > 0) {
+      return {
+        label: 'Overdue follow-ups need recovery',
+        note: `${overdueCount} task${overdueCount === 1 ? '' : 's'} have slipped past due date and need attention first.`,
+        tone: 'border-red-200 bg-red-50 text-red-700',
+      }
+    }
+
+    if (pendingCount > 0) {
+      return {
+        label: 'Your queue is active',
+        note: `${pendingCount} pending task${pendingCount === 1 ? '' : 's'} are still waiting on your next move.`,
+        tone: 'border-amber-200 bg-amber-50 text-amber-700',
+      }
+    }
+
+    if (activeJobs > 0) {
+      return {
+        label: 'Execution load looks steady',
+        note: `${activeJobs} live job${activeJobs === 1 ? '' : 's'} are moving, with no pending tasks currently showing here.`,
+        tone: 'border-blue-200 bg-blue-50 text-blue-700',
+      }
+    }
+
+    return {
+      label: 'Your profile is ready for live work',
+      note: 'As tasks and activity start moving, this page will turn into your personal operating console.',
+      tone: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    }
+  }, [profile.stats])
+
+  const profileSignals = useMemo(() => ([
+    {
+      label: 'Queue health',
+      value: taskCounts.pending === 0 ? 'No pending tasks' : `${taskCounts.pending} pending`,
+      note: taskCounts.pending === 0 ? 'Your follow-up queue is currently clear.' : 'This is the live count of items still needing action.',
+    },
+    {
+      label: 'Risk level',
+      value: taskCounts.overdue === 0 ? 'No overdue items' : `${taskCounts.overdue} overdue`,
+      note: taskCounts.overdue === 0 ? 'Nothing in your personal queue is slipping right now.' : 'These items are the first ones to recover before adding new work.',
+    },
+    {
+      label: 'Activity trail',
+      value: profile.recent_activity.length === 0 ? 'Waiting on recent movement' : `${profile.recent_activity.length} recent update${profile.recent_activity.length === 1 ? '' : 's'}`,
+      note: profile.recent_activity.length === 0 ? 'Account-linked actions will begin to populate this trail as the workspace gets busier.' : 'You now have a readable trail of the latest actions tied to this profile.',
+    },
+  ]), [profile.recent_activity.length, taskCounts.overdue, taskCounts.pending])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -235,6 +289,22 @@ export function Profile() {
               {passwordOpen ? 'Close Password' : 'Change Password'}
             </button>
           </div>
+        </div>
+
+        <div className={cn('mt-5 rounded-[24px] border px-5 py-4 shadow-sm', profilePriority.tone)}>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-75">Personal operating priority</p>
+          <p className="mt-1 text-base font-semibold text-slate-950">{profilePriority.label}</p>
+          <p className="mt-1 text-sm leading-6 text-slate-600">{profilePriority.note}</p>
+        </div>
+
+        <div className="mt-4 grid gap-4 xl:grid-cols-3">
+          {profileSignals.map((signal) => (
+            <div key={signal.label} className="rounded-[24px] border border-slate-200/70 bg-slate-50 p-4 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{signal.label}</p>
+              <p className="mt-2 text-lg font-semibold text-slate-900">{signal.value}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{signal.note}</p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -388,8 +458,8 @@ export function Profile() {
                   <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Personal activity</p>
                     <p className="mt-3 text-sm font-semibold text-slate-900">No recent activity yet</p>
-                    <p className="mt-2 text-sm text-slate-500">New movement tied to your account will show up here as the workspace becomes active.</p>
-                    <p className="mt-2 text-xs text-slate-400">This becomes the personal trail for the jobs, follow-ups, and team actions you touched most recently.</p>
+                    <p className="mt-2 text-sm text-slate-500">As soon as you touch jobs, tasks, or account actions, this feed turns into your personal operating trail.</p>
+                    <p className="mt-2 text-xs text-slate-400">It will become the quickest way to recall what you moved, updated, or handed off most recently.</p>
                   </div>
                 ) : profile.recent_activity.map((item) => {
                   const activityUserName = item.user_name?.trim() || 'System'
@@ -445,7 +515,8 @@ export function Profile() {
                     <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">My queue</p>
                       <p className="mt-3 text-sm font-semibold text-slate-900">No tasks in this category</p>
-                      <p className="mt-2 text-sm text-slate-500">Shift the filter or add the next follow-up to bring your personal queue into view.</p>
+                      <p className="mt-2 text-sm text-slate-500">Your selected filter is clear right now. Shift the view or add the next follow-up to rebuild personal momentum here.</p>
+                      <p className="mt-2 text-xs text-slate-400">This queue is designed to become the fastest read on what you own next.</p>
                     </div>
                   ) : filteredTasks.map((task) => {
                     const overdue = isOverdue(task)
