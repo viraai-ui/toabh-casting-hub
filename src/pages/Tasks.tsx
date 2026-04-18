@@ -397,14 +397,73 @@ export function Tasks() {
     const completedCount = tasks.filter((task) => doneStatuses.has((task.status || '').toLowerCase())).length
     const overdueCount = tasks.filter((task) => task.due_date && new Date(task.due_date) < now && !doneStatuses.has((task.status || '').toLowerCase())).length
     const assignedCount = tasks.filter((task) => task.assigned_to.length > 0).length
+    const unassignedCount = Math.max(tasks.length - assignedCount, 0)
     const dueSoonCount = tasks.filter((task) => {
       if (!task.due_date || doneStatuses.has((task.status || '').toLowerCase())) return false
       const due = new Date(task.due_date)
       const diff = due.getTime() - now.getTime()
       return diff >= 0 && diff <= 1000 * 60 * 60 * 24 * 2
     }).length
-    return { completedCount, overdueCount, assignedCount, dueSoonCount }
+    return { completedCount, overdueCount, assignedCount, unassignedCount, dueSoonCount }
   }, [tasks])
+
+  const taskPriority = useMemo(() => {
+    if (tasks.length === 0) {
+      return {
+        label: 'The execution queue is clear right now',
+        note: 'Add the next follow-up to turn this back into the live operating queue for callbacks, reminders, and handoffs.',
+        tone: 'border-slate-200 bg-slate-50 text-slate-700',
+      }
+    }
+
+    if (taskStats.overdueCount > 0) {
+      return {
+        label: 'Overdue follow-through needs recovery first',
+        note: `${taskStats.overdueCount} task${taskStats.overdueCount === 1 ? '' : 's'} are past due and should be recovered before new work is added.`,
+        tone: 'border-red-200 bg-red-50 text-red-700',
+      }
+    }
+
+    if (taskStats.dueSoonCount > 0) {
+      return {
+        label: 'Near-term deadlines need attention',
+        note: `${taskStats.dueSoonCount} task${taskStats.dueSoonCount === 1 ? '' : 's'} are due in the next 48 hours and should be checked next.`,
+        tone: 'border-amber-200 bg-amber-50 text-amber-700',
+      }
+    }
+
+    if (taskStats.unassignedCount > 0) {
+      return {
+        label: 'Ownership gaps are the main task risk',
+        note: `${taskStats.unassignedCount} task${taskStats.unassignedCount === 1 ? '' : 's'} still have no owner assigned.`,
+        tone: 'border-blue-200 bg-blue-50 text-blue-700',
+      }
+    }
+
+    return {
+      label: 'Task flow looks healthy',
+      note: 'Ownership and due dates look stable enough for this page to act like a clean execution board.',
+      tone: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    }
+  }, [taskStats.dueSoonCount, taskStats.overdueCount, taskStats.unassignedCount, tasks.length])
+
+  const taskSignals = useMemo(() => ([
+    {
+      label: 'Queue lens',
+      value: filter === 'my' ? 'My queue' : filter === 'all' ? 'All tasks' : filter === 'completed' ? 'Completed tasks' : 'Overdue recovery',
+      note: filter === 'my' ? 'You are looking at the personal execution queue.' : 'This list is narrowed to a specific execution slice right now.',
+    },
+    {
+      label: 'Ownership coverage',
+      value: tasks.length === 0 ? 'No tasks loaded' : `${taskStats.assignedCount}/${tasks.length} assigned`,
+      note: tasks.length === 0 ? 'Ownership coverage will appear once tasks are loaded into this view.' : 'This shows how much of the visible queue already has a named owner.',
+    },
+    {
+      label: 'Deadline pressure',
+      value: taskStats.overdueCount > 0 ? `${taskStats.overdueCount} overdue` : taskStats.dueSoonCount > 0 ? `${taskStats.dueSoonCount} due soon` : 'No immediate deadline pressure',
+      note: taskStats.overdueCount > 0 ? 'Recovery work should happen before lower-priority follow-ups.' : taskStats.dueSoonCount > 0 ? 'This queue has near-term deadlines that need active monitoring.' : 'Nothing in the visible queue is demanding immediate deadline recovery.',
+    },
+  ]), [filter, taskStats.assignedCount, taskStats.dueSoonCount, taskStats.overdueCount, tasks.length])
 
   if (loading) {
     return <div className="flex items-center justify-center py-24"><Loader2 className="h-8 w-8 animate-spin text-amber-500" /></div>
@@ -436,6 +495,31 @@ export function Tasks() {
         <TaskStatCard label="Completed" value={taskStats.completedCount} note="Already closed out in the loaded queue." tone="border-emerald-200/70 bg-emerald-50 text-emerald-700" icon={CheckCircle2} />
       </section>
 
+      <section className={cn('rounded-3xl border px-5 py-4 shadow-sm', taskPriority.tone)}>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-75">Task priority</p>
+            <p className="mt-1 text-base font-semibold text-slate-950">{taskPriority.label}</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600">{taskPriority.note}</p>
+          </div>
+          <div className="rounded-2xl border border-white/60 bg-white/70 px-4 py-3 text-sm text-slate-600 shadow-sm backdrop-blur">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Execution snapshot</p>
+            <p className="mt-1 font-semibold text-slate-900">{tasks.length} visible task{tasks.length === 1 ? '' : 's'}</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">Track due pressure, owner coverage, and queue focus from one surface.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-3">
+        {taskSignals.map((signal) => (
+          <div key={signal.label} className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{signal.label}</p>
+            <p className="mt-3 text-lg font-semibold tracking-tight text-slate-950">{signal.value}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{signal.note}</p>
+          </div>
+        ))}
+      </section>
+
       <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -460,6 +544,7 @@ export function Tasks() {
               <p className="mt-2 text-sm text-slate-500">Try another queue filter or create the next follow-up task.</p>
               <p className="mt-2 text-xs text-slate-400">Once work is assigned, this queue becomes the day-to-day execution view for reminders, callbacks, and next actions.</p>
               <p className="mt-2 text-xs text-slate-400">Use it to separate urgent follow-through from longer-tail admin once the workload starts stacking up.</p>
+              <p className="mt-2 text-xs text-slate-400">If the queue should be visible here, reset the filter first. Otherwise, this usually means the selected execution slice is already clear.</p>
             </div>
           ) : tasks.map((task) => {
             const overdue = Boolean(task.due_date && new Date(task.due_date) < new Date() && !['done', 'completed'].includes((task.status || '').toLowerCase()))
