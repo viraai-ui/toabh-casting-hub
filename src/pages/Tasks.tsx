@@ -90,6 +90,9 @@ function TaskComposer({
           <h3 className="text-lg font-semibold text-slate-900">{task ? 'Edit Task' : 'New Task'}</h3>
           <button onClick={handleComposerClose} disabled={saving} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"><X className="h-4 w-4" /></button>
         </div>
+        <p className="mt-2 text-sm leading-6 text-slate-500">
+          Capture the task clearly, assign the right owner, and set a due date so follow-up does not get lost across the team.
+        </p>
         <div className="mt-4 space-y-4">
           <input value={form.title} onChange={(e) => setForm((c) => ({ ...c, title: e.target.value }))} placeholder="Task title" className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-100" />
           <textarea value={form.description} onChange={(e) => setForm((c) => ({ ...c, description: e.target.value }))} rows={3} placeholder="Description" className="w-full rounded-2xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-100" />
@@ -296,7 +299,11 @@ function TaskDetail({
                 <button onClick={postComment} disabled={posting || !draft.trim()} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white">{posting ? 'Posting...' : 'Post Comment'}</button>
               </div>
               <div className="mt-4 space-y-3">
-                {comments.map((comment) => {
+                {comments.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
+                    No comments yet. Use this thread for handoffs, blockers, and @mentions so task context stays with the work.
+                  </div>
+                ) : comments.map((comment) => {
                   const commentUserName = comment.user_name?.trim() || 'System'
                   return (
                     <div key={comment.id} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
@@ -315,7 +322,11 @@ function TaskDetail({
           <div className="rounded-3xl border border-slate-200 bg-white p-4 h-max">
             <h4 className="text-sm font-semibold text-slate-900">Activity</h4>
             <div className="mt-4 space-y-3">
-              {activities.map((activity) => {
+              {activities.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
+                  No task activity yet. Status changes, comments, and assignment updates will appear here once the task starts moving.
+                </div>
+              ) : activities.map((activity) => {
                 const activityUserName = activity.user_name?.trim() || 'System'
                 return (
                   <div key={activity.id} className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
@@ -413,10 +424,22 @@ export function Tasks() {
         <button onClick={() => setFilter('overdue')} className={cn('rounded-full border px-3 py-1.5 text-sm', filter === 'overdue' ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-200 bg-white text-slate-600')}>Overdue</button>
       </div>
 
+      <div className="rounded-[24px] border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-600 shadow-sm">
+        {filter === 'my' && 'Showing the work currently assigned to you so daily follow-ups stay focused.'}
+        {filter === 'all' && 'Showing the full team queue so admins can rebalance ownership and unblock execution.'}
+        {filter === 'completed' && 'Showing closed work for quick review, reporting, and handoff confirmation.'}
+        {filter === 'overdue' && 'Showing tasks that need immediate attention before they slip further.'}
+      </div>
+
       <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
         <div className="divide-y divide-slate-100">
           {tasks.length === 0 ? (
-            <div className="px-5 py-16 text-center text-sm text-slate-400">No tasks found.</div>
+            <div className="px-5 py-16 text-center text-sm text-slate-400">
+              {filter === 'my' && 'No tasks assigned to you right now. Add a task or switch views to review the wider team queue.'}
+              {filter === 'all' && 'No team tasks yet. Create the first task to start tracking follow-ups, owners, and deadlines.'}
+              {filter === 'completed' && 'No completed tasks yet. Finished work will appear here once the team starts closing items.'}
+              {filter === 'overdue' && 'No overdue tasks right now. That queue is clear.'}
+            </div>
           ) : tasks.map((task) => (
             <div key={task.id} className="flex flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="min-w-0 flex-1 cursor-pointer" onClick={() => { setSelectedTask(task); setDetailOpen(true) }}>
