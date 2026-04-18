@@ -252,6 +252,48 @@ export function Clients() {
     setQuickAddClientId(null)
   }
 
+  const clientPriority = clients.length === 0
+    ? {
+        label: 'Client relationships still need to be seeded',
+        note: 'Adding the first client record unlocks the relationship map for brands, agencies, and repeat business.',
+        tone: 'border-slate-200 bg-slate-50 text-slate-700',
+      }
+    : missingContactClientsCount > 0
+      ? {
+          label: 'Missing contact detail is the biggest relationship gap',
+          note: `${missingContactClientsCount} client${missingContactClientsCount === 1 ? '' : 's'} still need stronger phone or email coverage before handoffs are safe.`,
+          tone: 'border-amber-200 bg-amber-50 text-amber-700',
+        }
+      : untaggedClientsCount > 0
+        ? {
+            label: 'Tagging coverage needs cleanup',
+            note: `${untaggedClientsCount} client${untaggedClientsCount === 1 ? '' : 's'} are still untagged, so segmentation is weaker than it should be.`,
+            tone: 'border-blue-200 bg-blue-50 text-blue-700',
+          }
+        : {
+            label: 'Relationship coverage looks healthy',
+            note: 'Contacts, tags, and active client tracking are aligned well enough for this page to act like a live CRM board.',
+            tone: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+          }
+
+  const clientSignals = [
+    {
+      label: 'Relationship view',
+      value: relationshipFilter === 'all' ? 'Full client book' : relationshipFilter === 'active' ? 'Active accounts' : relationshipFilter === 'untagged' ? 'Untagged accounts' : 'Missing contact follow-up',
+      note: relationshipFilter === 'all' ? 'You are looking at the broadest relationship picture.' : 'The client list is narrowed to one relationship lens right now.',
+    },
+    {
+      label: 'Search + tags',
+      value: searchQuery.trim() || selectedFilterTagIds.length > 0 ? `${searchQuery.trim() ? 'Search active' : 'No search'}, ${selectedFilterTagIds.length} tag filter${selectedFilterTagIds.length === 1 ? '' : 's'}` : 'No search or tag filters',
+      note: searchQuery.trim() || selectedFilterTagIds.length > 0 ? 'The relationship board is narrowed before you assess coverage.' : 'You are reading the unfiltered relationship layer right now.',
+    },
+    {
+      label: 'Visible clients',
+      value: `${filteredClients.length}/${clients.length} visible`,
+      note: clients.length === 0 ? 'The client roster has not been created yet.' : 'This shows how much of the client book is visible in the current view.',
+    },
+  ]
+
   return (
     <div className="space-y-4">
       <section className="card overflow-hidden p-5 sm:p-6">
@@ -304,6 +346,31 @@ export function Clients() {
             <StatCard icon={CircleAlert} label="Missing Contact" value={missingContactClientsCount} />
           </div>
         </div>
+      </section>
+
+      <section className={cn('rounded-3xl border px-5 py-4 shadow-sm', clientPriority.tone)}>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-75">Client priority</p>
+            <p className="mt-1 text-base font-semibold text-slate-950">{clientPriority.label}</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600">{clientPriority.note}</p>
+          </div>
+          <div className="rounded-2xl border border-white/60 bg-white/70 px-4 py-3 text-sm text-slate-600 shadow-sm backdrop-blur">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Relationship snapshot</p>
+            <p className="mt-1 font-semibold text-slate-900">{activeClientsCount} active client{activeClientsCount === 1 ? '' : 's'}</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">Track active accounts, missing contact details, and tagging coverage from the same surface.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-3">
+        {clientSignals.map((signal) => (
+          <div key={signal.label} className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{signal.label}</p>
+            <p className="mt-3 text-lg font-semibold tracking-tight text-slate-950">{signal.value}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{signal.note}</p>
+          </div>
+        ))}
       </section>
 
       <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
@@ -446,8 +513,10 @@ export function Clients() {
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500">
             <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{clients.length} total clients</span>
             <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{selectedFilterTagIds.length} tag filters active</span>
+            <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">View: {viewMode}</span>
           </div>
-          <p className="mt-3 text-xs text-slate-400">This becomes the relationship map for brands, agencies, and repeat business once the first records are in place.</p>
+          <p className="mt-3 text-xs text-slate-400">If the book should be visible here, clear search and tag filters first. Otherwise, this usually means the selected relationship slice is already clean.</p>
+          <p className="mt-2 text-xs text-slate-400">This becomes the relationship map for brands, agencies, and repeat business once the first records are in place.</p>
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
