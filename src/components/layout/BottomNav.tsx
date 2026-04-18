@@ -126,6 +126,11 @@ export function BottomNav() {
                           transition={{ duration: 0.15 }}
                           className="absolute bottom-16 left-1/2 z-50 flex -translate-x-1/2 flex-col gap-2"
                         >
+                          <div className="glass-dark min-w-[190px] rounded-xl border border-white/10 px-4 py-3 text-left shadow-xl">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-200/80">Quick create</p>
+                            <p className="mt-1 text-sm font-semibold text-white">Start the next piece of work fast</p>
+                            <p className="mt-1 text-[11px] leading-5 text-white/65">Open a new job brief or capture a follow-up without leaving the current screen for long.</p>
+                          </div>
                           <button
                             onClick={() => {
                               setFabMenuOpen(false)
@@ -138,7 +143,7 @@ export function BottomNav() {
                             </div>
                             <div className="text-left">
                               <span className="block text-sm font-medium text-white">New Casting</span>
-                              <span className="block text-[11px] text-white/65">Open a fresh job brief</span>
+                              <span className="block text-[11px] text-white/65">Start a job brief and move straight into team setup</span>
                             </div>
                           </button>
                           <button
@@ -150,7 +155,7 @@ export function BottomNav() {
                             </div>
                             <div className="text-left">
                               <span className="block text-sm font-medium text-white">New Task</span>
-                              <span className="block text-[11px] text-white/65">Capture a follow-up fast</span>
+                              <span className="block text-[11px] text-white/65">Capture a follow-up before it slips out of the queue</span>
                             </div>
                           </button>
                         </motion.div>
