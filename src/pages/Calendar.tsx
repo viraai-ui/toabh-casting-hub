@@ -191,14 +191,32 @@ export function Calendar() {
     }
   }, [scheduleSummary])
 
+  const activeFilterCount = Object.values(filters).filter(Boolean).length
+  const activeWindowLabel = view === 'month' ? 'Month planning' : view === 'week' ? 'Week execution' : 'Day agenda'
+
+  const scheduleSignals = [
+    {
+      label: 'Today load',
+      value: scheduleSummary.todayCount === 0 ? 'No jobs today' : `${scheduleSummary.todayCount} job${scheduleSummary.todayCount === 1 ? '' : 's'} today`,
+      note: scheduleSummary.todayCount === 0 ? 'The day view is currently clear, so you can focus on upcoming scheduling gaps.' : 'These jobs should be the first execution check for the day.',
+    },
+    {
+      label: 'Staffing coverage',
+      value: scheduleSummary.scheduled === 0 ? 'No schedule coverage yet' : `${scheduleSummary.assigned}/${scheduleSummary.scheduled} staffed`,
+      note: scheduleSummary.scheduled === 0 ? 'Locked shoot dates will turn this into a live staffing readout.' : 'This shows how much of the active schedule already has clear ownership.',
+    },
+    {
+      label: 'Filter state',
+      value: activeFilterCount === 0 ? 'No filters applied' : `${activeFilterCount} active filter${activeFilterCount === 1 ? '' : 's'}`,
+      note: activeFilterCount === 0 ? 'You are reading the full schedule picture right now.' : 'Filters are narrowing the planning view to a smaller scheduling slice.',
+    },
+  ]
+
   const goToToday = () => {
     setCurrentDate(new Date())
     setScheduleFocus('today')
     setView('day')
   }
-
-  // Count active filters for badge
-  const activeFilterCount = Object.values(filters).filter(Boolean).length
 
   if (loading) {
     return (
@@ -229,7 +247,7 @@ export function Calendar() {
                 <ListTodo className="h-3.5 w-3.5" />
                 Recommended now
               </div>
-              <div className="mt-1 font-medium text-slate-800">{view === 'month' ? 'Month planning' : view === 'week' ? 'Week execution' : 'Day agenda'}</div>
+              <div className="mt-1 font-medium text-slate-800">{activeWindowLabel}</div>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 shadow-sm">
               <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
@@ -266,21 +284,28 @@ export function Calendar() {
       </section>
 
       <section className={`rounded-3xl border px-5 py-4 shadow-sm ${schedulePriority.tone}`}>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-75">Schedule priority</p>
             <p className="mt-1 text-base font-semibold text-slate-950">{schedulePriority.label}</p>
             <p className="mt-1 text-sm leading-6 text-slate-600">{schedulePriority.note}</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-black/5">
-              {scheduleSummary.todayCount} today
-            </div>
-            <div className="rounded-2xl bg-white/70 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-black/5">
-              {scheduleSummary.assigned}/{scheduleSummary.scheduled || 0} staffed
-            </div>
+          <div className="rounded-2xl border border-white/60 bg-white/70 px-4 py-3 text-sm text-slate-600 shadow-sm backdrop-blur">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Active planning window</p>
+            <p className="mt-1 font-semibold text-slate-900">{activeWindowLabel}</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">This schedule view is currently framed around {view === 'month' ? 'capacity and date coverage.' : view === 'week' ? 'execution timing and ownership.' : 'today’s live agenda and task handoff.'}</p>
           </div>
         </div>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-3">
+        {scheduleSignals.map((signal) => (
+          <div key={signal.label} className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{signal.label}</p>
+            <p className="mt-3 text-lg font-semibold tracking-tight text-slate-950">{signal.value}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{signal.note}</p>
+          </div>
+        ))}
       </section>
 
       {/* ── Header: month nav + today + view tabs ────────────────────── */}
@@ -429,7 +454,14 @@ export function Calendar() {
             </div>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {filteredCastings.slice(0, 6).map((casting) => {
+            {filteredCastings.length === 0 ? (
+              <div className="md:col-span-2 xl:col-span-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Focus queue</p>
+                <p className="mt-3 text-sm font-semibold text-slate-900">No jobs match this scheduling focus</p>
+                <p className="mt-2 text-sm text-slate-500">This queue is clear right now, which usually means this scheduling gap has been handled or filters are narrowing the list too far.</p>
+                <p className="mt-2 text-xs text-slate-400">Switch focus or clear filters to jump back into the full planning view.</p>
+              </div>
+            ) : filteredCastings.slice(0, 6).map((casting) => {
               const hasOwner = Array.isArray(casting.assigned_to) ? casting.assigned_to.length > 0 : Boolean(casting.assigned_names?.trim())
               const ownerLabel = Array.isArray(casting.assigned_to) && casting.assigned_to.length > 0
                 ? casting.assigned_to.map((member) => member.name).join(', ')
