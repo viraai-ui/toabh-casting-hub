@@ -66,6 +66,13 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+          {!sidebarCollapsed && (
+            <div className="mb-3 rounded-2xl border border-slate-200/80 bg-white/75 px-3 py-3 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Workspace</p>
+              <p className="mt-1 text-sm font-semibold text-slate-900">Primary operating areas</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">Move through today, jobs, planning, and records from here, then use each page toolbar for deeper actions.</p>
+            </div>
+          )}
           {visibleNavItems.map((item) => {
             const isActive = location.pathname === item.path || 
               (item.path !== '/dashboard' && location.pathname.startsWith(item.path))
@@ -121,6 +128,12 @@ export function Sidebar() {
               </div>
             )}
           </div>
+
+          {!sidebarCollapsed && (
+            <p className="rounded-2xl border border-slate-200/70 bg-white/75 px-3 py-2.5 text-xs leading-5 text-slate-500">
+              Need account or admin changes? Open Settings from the rail, then return here to keep moving across the core workspace.
+            </p>
+          )}
 
           {!sidebarCollapsed && (
             <button
