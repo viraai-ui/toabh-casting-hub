@@ -15,28 +15,35 @@ import {
   Star,
   Users,
   CheckSquare,
+  Sparkles,
+  ArrowRight,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useOverlay } from '@/hooks/useOverlayManager'
 import { getSessionUser, isAdminUser, logout } from '@/lib/api'
 
-// Main bottom nav: Today, Jobs, Calendar, More
 const mainItems = [
-  { icon: LayoutDashboard, label: 'Today', path: '/dashboard' },
-  { icon: Briefcase, label: 'Jobs', path: '/castings' },
+  { icon: LayoutDashboard, label: 'Today', path: '/dashboard', hint: 'Urgency' },
+  { icon: Briefcase, label: 'Jobs', path: '/castings', hint: 'Pipeline' },
   { icon: Plus, label: '', path: '', isFab: true },
-  { icon: Calendar, label: 'Calendar', path: '/calendar' },
-  { icon: MoreHorizontal, label: 'More', path: '#' },
+  { icon: Calendar, label: 'Calendar', path: '/calendar', hint: 'Schedule' },
+  { icon: MoreHorizontal, label: 'More', path: '#', hint: 'Records' },
 ]
 
-// More sheet: Inbox, Talent, Tasks, Clients, Reports, Settings
+const primaryHintMap: Record<string, string> = {
+  '/dashboard': 'Urgency',
+  '/castings': 'Pipeline',
+  '/calendar': 'Schedule',
+  '#': 'Records',
+}
+
 const moreItems = [
-  { icon: Activity, label: 'Inbox', path: '/activity' },
-  { icon: Star, label: 'Talents', path: '/talents' },
-  { icon: CheckSquare, label: 'Tasks', path: '/tasks' },
-  { icon: Users, label: 'Clients', path: '/clients' },
-  { icon: BarChart3, label: 'Reports', path: '/reports' },
-  { icon: Settings, label: 'Settings', path: '/settings' },
+  { icon: Activity, label: 'Inbox', path: '/activity', hint: 'Recent movement' },
+  { icon: Star, label: 'Talents', path: '/talents', hint: 'Roster and discovery' },
+  { icon: CheckSquare, label: 'Tasks', path: '/tasks', hint: 'Action items' },
+  { icon: Users, label: 'Clients', path: '/clients', hint: 'Accounts and contacts' },
+  { icon: BarChart3, label: 'Reports', path: '/reports', hint: 'Performance view' },
+  { icon: Settings, label: 'Settings', path: '/settings', hint: 'Admin controls' },
 ]
 
 export function BottomNav() {
@@ -46,8 +53,8 @@ export function BottomNav() {
   const { openOverlay, closeOverlay } = useOverlay()
   const currentUser = getSessionUser()
   const visibleMoreItems = moreItems.filter((item) => item.path !== '/settings' || isAdminUser(currentUser))
+  const [fabMenuOpen, setFabMenuOpen] = useState(false)
 
-  // Register/unregister More sheet with overlay manager
   useEffect(() => {
     if (moreOpen) {
       openOverlay('bottom-nav-more-sheet', () => setMoreOpen(false))
@@ -56,9 +63,6 @@ export function BottomNav() {
     }
   }, [moreOpen, openOverlay, closeOverlay])
 
-  const [fabMenuOpen, setFabMenuOpen] = useState(false)
-
-  // Close FAB menu when navigating away
   useEffect(() => {
     if (fabMenuOpen) {
       openOverlay('fab-menu', () => setFabMenuOpen(false))
@@ -67,7 +71,6 @@ export function BottomNav() {
     }
   }, [fabMenuOpen, openOverlay, closeOverlay])
 
-  // FAB selection: routes to correct page with ?new=true
   const handleFabSelect = (route: string) => {
     setFabMenuOpen(false)
     navigate(route)
@@ -78,10 +81,13 @@ export function BottomNav() {
     navigate('/login')
   }
 
+  const activePrimaryItem = mainItems.find((item) => item.path && item.path !== '#' && (location.pathname === item.path || (item.path !== '/dashboard' && location.pathname.startsWith(item.path))))
+  const activePrimaryLabel = activePrimaryItem?.label || 'More'
+
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden glass border-t border-white/20 pb-safe">
-        <div className="flex items-center justify-around h-16">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/20 glass pb-safe lg:hidden">
+        <div className="flex h-16 items-center justify-around px-1">
           {mainItems.map((item) => {
             const isActive =
               item.path && item.path !== '#'
@@ -92,22 +98,19 @@ export function BottomNav() {
             if (item.isFab) {
               return (
                 <div key="fab" className="relative -mt-6">
-                  {/* FAB Button */}
                   <button
                     onClick={() => setFabMenuOpen((v) => !v)}
-                    className="focus:outline-none active:scale-95 transition-transform"
+                    className="transition-transform focus:outline-none active:scale-95"
                     aria-label="Quick create"
                   >
-                    <div className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg bg-gradient-to-br from-amber-500 to-amber-600 hover:shadow-xl">
-                      <Plus className="w-7 h-7 text-white" />
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg hover:shadow-xl">
+                      <Plus className="h-7 w-7 text-white" />
                     </div>
                   </button>
 
-                  {/* FAB Menu — drops up on mobile */}
                   <AnimatePresence>
                     {fabMenuOpen && (
                       <>
-                        {/* Backdrop */}
                         <motion.div
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
@@ -116,34 +119,39 @@ export function BottomNav() {
                           onClick={() => setFabMenuOpen(false)}
                           className="fixed inset-0 z-40"
                         />
-                        {/* Menu items */}
                         <motion.div
                           initial={{ opacity: 0, scale: 0.9, y: 8 }}
                           animate={{ opacity: 1, scale: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.9, y: 8 }}
                           transition={{ duration: 0.15 }}
-                          className="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col gap-2 z-50"
+                          className="absolute bottom-16 left-1/2 z-50 flex -translate-x-1/2 flex-col gap-2"
                         >
                           <button
                             onClick={() => {
                               setFabMenuOpen(false)
                               window.dispatchEvent(new CustomEvent('toabh-global-action', { detail: { action: 'open-casting-modal' } }))
                             }}
-                            className="min-w-[180px] flex items-center gap-2.5 glass-dark rounded-xl px-4 py-2.5 shadow-xl active:scale-[0.97] transition-transform"
+                            className="glass-dark flex min-w-[190px] items-center gap-2.5 rounded-xl px-4 py-2.5 shadow-xl transition-transform active:scale-[0.97]"
                           >
-                            <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                              <Briefcase className="w-4 h-4 text-amber-400" />
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20">
+                              <Briefcase className="h-4 w-4 text-amber-400" />
                             </div>
-                            <span className="text-sm font-medium text-white">New Casting</span>
+                            <div className="text-left">
+                              <span className="block text-sm font-medium text-white">New Casting</span>
+                              <span className="block text-[11px] text-white/65">Open a fresh job brief</span>
+                            </div>
                           </button>
                           <button
                             onClick={() => handleFabSelect('/tasks?new=true')}
-                            className="min-w-[180px] flex items-center gap-2.5 glass-dark rounded-xl px-4 py-2.5 shadow-xl active:scale-[0.97] transition-transform"
+                            className="glass-dark flex min-w-[190px] items-center gap-2.5 rounded-xl px-4 py-2.5 shadow-xl transition-transform active:scale-[0.97]"
                           >
-                            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                              <CheckSquare className="w-4 h-4 text-emerald-400" />
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20">
+                              <CheckSquare className="h-4 w-4 text-emerald-400" />
                             </div>
-                            <span className="text-sm font-medium text-white">New Task</span>
+                            <div className="text-left">
+                              <span className="block text-sm font-medium text-white">New Task</span>
+                              <span className="block text-[11px] text-white/65">Capture a follow-up fast</span>
+                            </div>
                           </button>
                         </motion.div>
                       </>
@@ -164,19 +172,19 @@ export function BottomNav() {
                   }
                 }}
                 className={cn(
-                  'flex flex-col items-center justify-center w-16 h-16 gap-1 transition-colors focus:outline-none',
+                  'flex h-16 min-w-[60px] flex-1 flex-col items-center justify-center gap-0.5 px-1 transition-colors focus:outline-none',
                   isActive ? 'text-amber-600' : 'text-slate-500 active:text-slate-700'
                 )}
               >
-                <item.icon className="w-5 h-5" />
-                <span className="text-[10px] font-medium">{item.label}</span>
+                <item.icon className="h-5 w-5" />
+                <span className="text-[10px] font-medium leading-none">{item.label}</span>
+                {isActive && item.hint && <span className="text-[8px] leading-none text-amber-500/80">{item.hint}</span>}
               </button>
             )
           })}
         </div>
       </nav>
 
-      {/* More Sheet */}
       <AnimatePresence>
         {moreOpen && (
           <>
@@ -192,25 +200,36 @@ export function BottomNav() {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 z-50 glass rounded-t-3xl border-t border-white/20 p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:hidden"
+              className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl border-t border-white/20 glass p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:hidden"
             >
-              {/* Drag handle */}
-              <div className="flex justify-center mb-5">
-                <div className="w-9 h-1 bg-slate-200 rounded-full" />
+              <div className="mb-5 flex justify-center">
+                <div className="h-1 w-9 rounded-full bg-slate-200" />
               </div>
 
-              <div className="flex items-center justify-between mb-5">
+              <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700">More space</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-900">Secondary areas and admin tools</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-600">You are currently navigating from {activePrimaryLabel}{activePrimaryItem?.path ? ` (${primaryHintMap[activePrimaryItem.path] || 'Primary nav'})` : ''}. Use this sheet for records, reporting, and admin surfaces.</p>
+                  </div>
+                  <Sparkles className="h-4 w-4 shrink-0 text-amber-600" />
+                </div>
+              </div>
+
+              <div className="mb-5 flex items-center justify-between">
                 <h3 className="text-base font-semibold text-slate-900">More</h3>
                 <button
                   onClick={() => setMoreOpen(false)}
-                  className="p-2 rounded-full hover:bg-slate-100 transition-colors"
+                  className="rounded-full p-2 transition-colors hover:bg-slate-100"
                   aria-label="Close menu"
                 >
-                  <X className="w-5 h-5 text-slate-500" />
+                  <X className="h-5 w-5 text-slate-500" />
                 </button>
               </div>
 
               <div className="space-y-1">
+                <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Browse</p>
                 {visibleMoreItems.map((item) => {
                   const isActive = location.pathname === item.path
                   return (
@@ -221,14 +240,18 @@ export function BottomNav() {
                         setMoreOpen(false)
                       }}
                       className={cn(
-                        'w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-colors active:scale-[0.98]',
+                        'flex w-full items-center gap-4 rounded-xl px-4 py-3 transition-colors active:scale-[0.98]',
                         isActive
                           ? 'bg-amber-500/10 text-amber-600'
                           : 'text-slate-600 hover:bg-slate-50'
                       )}
                     >
-                      <item.icon className="w-5 h-5" />
-                      <span className="font-medium">{item.label}</span>
+                      <item.icon className="h-5 w-5" />
+                      <div className="min-w-0 flex-1 text-left">
+                        <span className="block font-medium">{item.label}</span>
+                        <span className="block truncate text-xs text-slate-400">{item.hint}</span>
+                      </div>
+                      <ArrowRight className={cn('h-4 w-4', isActive ? 'text-amber-500' : 'text-slate-300')} />
                     </button>
                   )
                 })}
@@ -237,9 +260,9 @@ export function BottomNav() {
 
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-colors active:scale-[0.98]"
+                  className="flex w-full items-center gap-4 rounded-xl px-4 py-3 text-red-600 transition-colors hover:bg-red-50 active:scale-[0.98]"
                 >
-                  <LogOut className="w-5 h-5" />
+                  <LogOut className="h-5 w-5" />
                   <span className="font-medium">Logout</span>
                 </button>
               </div>
