@@ -617,16 +617,19 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                             <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">End Date</p><p className="text-xs sm:text-sm text-slate-900">{casting.shoot_date_end || '—'}</p></div>
                           </div>
                           <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Location</p><p className="text-xs sm:text-sm text-slate-900">{casting.location || '—'}</p></div>
-                          <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                            <div>
-                              <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Status</p>
-                              <span className={cn('inline-flex px-2 py-0.5 rounded-full text-xs font-semibold',
-                                casting.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
-                                casting.status === 'IN_PROGRESS' ? 'bg-amber-100 text-amber-700' :
-                                'bg-blue-100 text-blue-700'
-                              )}>{casting.status || '—'}</span>
+                          <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2 sm:p-3">
+                            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">Current state</p>
+                            <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                              <div>
+                                <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Status</p>
+                                <span className={cn('inline-flex px-2 py-0.5 rounded-full text-xs font-semibold',
+                                  casting.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
+                                  casting.status === 'IN_PROGRESS' ? 'bg-amber-100 text-amber-700' :
+                                  'bg-blue-100 text-blue-700'
+                                )}>{casting.status || '—'}</span>
+                              </div>
+                              <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Lead Source</p><p className="text-xs sm:text-sm text-slate-900">{casting.source || '—'}</p></div>
                             </div>
-                            <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Lead Source</p><p className="text-xs sm:text-sm text-slate-900">{casting.source || '—'}</p></div>
                           </div>
                         </div>
                       )}
