@@ -218,7 +218,10 @@ export function BottomNav() {
               </div>
 
               <div className="mb-5 flex items-center justify-between">
-                <h3 className="text-base font-semibold text-slate-900">More</h3>
+                <div>
+                  <h3 className="text-base font-semibold text-slate-900">More</h3>
+                  <p className="mt-1 text-xs text-slate-500">Use this mobile sheet for secondary workstreams while the bottom bar stays focused on daily actions.</p>
+                </div>
                 <button
                   onClick={() => setMoreOpen(false)}
                   className="rounded-full p-2 transition-colors hover:bg-slate-100"
@@ -229,6 +232,9 @@ export function BottomNav() {
               </div>
 
               <div className="space-y-1">
+                <div className="mb-2 rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-[11px] font-medium leading-5 text-slate-500 shadow-sm">
+                  Pick a secondary area below, then return to the main bar for quick navigation between today, jobs, and calendar.
+                </div>
                 <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">Browse</p>
                 {visibleMoreItems.map((item) => {
                   const isActive = location.pathname === item.path
