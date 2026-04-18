@@ -192,6 +192,12 @@ export function Settings() {
         </div>
       </section>
 
+      <div className="rounded-[24px] border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-600 shadow-sm">
+        {query.trim() || focusGroup !== 'All'
+          ? `The settings surface is currently narrowed${focusGroup !== 'All' ? ` to the ${focusGroup} group` : ''} so you can reach the right admin area faster.`
+          : 'Use search when you know the control you need, or browse by group when you want to review the broader operating system.'}
+      </div>
+
       <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start lg:gap-6">
         <div className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
           <aside className="rounded-[28px] border border-slate-200/80 bg-white p-3 shadow-sm">
@@ -289,6 +295,12 @@ export function Settings() {
               <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-700 shadow-sm sm:text-sm">
                 {activeTabMeta?.label || 'Settings'} selected
               </div>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-600 shadow-sm">
+              {activeTabMeta
+                ? `${activeTabMeta.label} is the active control area. Review the framing here first, then adjust the module below with confidence.`
+                : 'Choose a control area to load its admin module and configuration context.'}
             </div>
 
             <div className="mt-4 grid gap-3 md:grid-cols-3">
