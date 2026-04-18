@@ -184,10 +184,10 @@ export function Profile() {
   }
 
   const statCards = useMemo(() => [
-    { label: 'Total Jobs', value: profile.stats?.total_jobs ?? 0 },
-    { label: 'Active Jobs', value: profile.stats?.active_jobs ?? 0 },
-    { label: 'Completed Jobs', value: profile.stats?.completed_jobs ?? 0 },
-    { label: 'Pending Tasks', value: profile.stats?.pending_tasks ?? 0 },
+    { label: 'Total Jobs', value: profile.stats?.total_jobs ?? 0, helper: 'All assignments tied to your account' },
+    { label: 'Active Jobs', value: profile.stats?.active_jobs ?? 0, helper: 'Live work currently in motion' },
+    { label: 'Completed Jobs', value: profile.stats?.completed_jobs ?? 0, helper: 'Delivered or closed work' },
+    { label: 'Pending Tasks', value: profile.stats?.pending_tasks ?? 0, helper: 'Open actions still needing follow-up' },
   ], [profile.stats])
 
   if (loading) {
@@ -208,6 +208,9 @@ export function Profile() {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Profile</p>
               <h1 className="mt-1 truncate text-2xl font-semibold text-slate-900">{profile.name || 'My Profile'}</h1>
               <p className="mt-1 text-sm text-slate-500">{profile.role}</p>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">
+                Keep your account details, password, and day-to-day workload in one place so operations never stall waiting on admin cleanup.
+              </p>
             </div>
           </div>
 
@@ -263,6 +266,7 @@ export function Profile() {
               <div key={card.label} className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{card.label}</p>
                 <p className="mt-2 text-2xl font-semibold text-slate-900">{card.value}</p>
+                <p className="mt-1 text-xs leading-5 text-slate-500">{card.helper}</p>
               </div>
             ))}
           </div>
@@ -372,7 +376,9 @@ export function Profile() {
               <h2 className="text-sm font-semibold text-slate-900">Activity Summary</h2>
               <div className="mt-4 space-y-3">
                 {profile.recent_activity.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">No recent activity yet.</div>
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
+                    No recent activity yet. New profile edits, task movement, and delivery actions will appear here once work starts moving through your account.
+                  </div>
                 ) : profile.recent_activity.map((item) => {
                   const activityUserName = item.user_name?.trim() || 'System'
                   return (
@@ -415,7 +421,9 @@ export function Profile() {
               <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
                 <div className="space-y-3">
                   {filteredTasks.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">No tasks in this category.</div>
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
+                      No tasks in this category. Once work is assigned, this queue becomes your fastest way to spot pending follow-ups and overdue production tasks.
+                    </div>
                   ) : filteredTasks.map((task) => {
                     const overdue = isOverdue(task)
                     return (
