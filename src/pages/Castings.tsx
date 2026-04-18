@@ -410,6 +410,16 @@ export function Castings() {
       </section>
 
       {/* Toolbar */}
+      <div className="rounded-[24px] border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-600 shadow-sm">
+        {searchQuery.trim() || activeFilterCount > 0
+          ? `Showing a narrowed jobs view${activeFilterCount > 0 ? ` with ${activeFilterCount} active filter${activeFilterCount === 1 ? '' : 's'}` : ''} so the team can focus on the most relevant work right now.`
+          : castingViewMode === 'kanban'
+            ? 'Kanban is best for stage-by-stage movement and spotting bottlenecks across the live pipeline.'
+            : castingViewMode === 'grid'
+              ? 'Grid view keeps the active queue visual and fast to scan when you want a broader snapshot.'
+              : 'List view is best for dense scanning, quick sorting, and precise operations across active jobs.'}
+      </div>
+
       <div className="flex flex-col gap-3 sm:flex-row">
         {/* Search */}
         <div className="relative flex-1">
@@ -478,7 +488,11 @@ export function Castings() {
       ) : filteredCastings.length === 0 ? (
         <div className="rounded-[28px] border border-slate-200 bg-white px-5 py-16 text-center shadow-sm">
           <p className="text-sm font-medium text-slate-700">No jobs found</p>
-          <p className="mt-1 text-sm text-slate-500">Try clearing filters, changing search, or creating a new job.</p>
+          <p className="mt-1 text-sm text-slate-500">
+            {searchQuery.trim() || activeFilterCount > 0
+              ? 'Try widening the search or clearing filters to bring more jobs back into the queue.'
+              : 'Create a new job to start building the live work queue.'}
+          </p>
         </div>
       ) : castingViewMode === 'kanban' ? (
         <KanbanBoard
@@ -491,27 +505,41 @@ export function Castings() {
           onCastingsChange={setCastings}
         />
       ) : castingViewMode === 'grid' ? (
-        <GridView
-          castings={gridListCastings}
-          setCastings={setCastings}
-          pipeline={pipeline}
-          onCastingClick={(c) => {
-            setSelectedCasting(c)
-            setDetailModalOpen(true)
-          }}
-        />
+        gridListCastings.length === 0 ? (
+          <div className="rounded-[28px] border border-slate-200 bg-white px-5 py-16 text-center shadow-sm">
+            <p className="text-sm font-medium text-slate-700">No open jobs in this view</p>
+            <p className="mt-1 text-sm text-slate-500">The current results only include won or lost records. Switch to Kanban to review every stage, including closed outcomes.</p>
+          </div>
+        ) : (
+          <GridView
+            castings={gridListCastings}
+            setCastings={setCastings}
+            pipeline={pipeline}
+            onCastingClick={(c) => {
+              setSelectedCasting(c)
+              setDetailModalOpen(true)
+            }}
+          />
+        )
       ) : (
-        <ListView
-          castings={gridListCastings}
-          pipeline={pipeline}
-          setCastings={setCastings}
-          sortConfig={sortConfig}
-          onSort={handleSort}
-          onCastingClick={(c) => {
-            setSelectedCasting(c)
-            setDetailModalOpen(true)
-          }}
-        />
+        gridListCastings.length === 0 ? (
+          <div className="rounded-[28px] border border-slate-200 bg-white px-5 py-16 text-center shadow-sm">
+            <p className="text-sm font-medium text-slate-700">No open jobs in this view</p>
+            <p className="mt-1 text-sm text-slate-500">The current results only include won or lost records. Switch to Kanban to review every stage, including closed outcomes.</p>
+          </div>
+        ) : (
+          <ListView
+            castings={gridListCastings}
+            pipeline={pipeline}
+            setCastings={setCastings}
+            sortConfig={sortConfig}
+            onSort={handleSort}
+            onCastingClick={(c) => {
+              setSelectedCasting(c)
+              setDetailModalOpen(true)
+            }}
+          />
+        )
       )}
 
       {/* Casting Modal */}
