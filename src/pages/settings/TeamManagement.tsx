@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Pencil, Trash2, Loader2, Mail } from 'lucide-react'
+import { Loader2, Mail, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import { useOverlay } from '@/hooks/useOverlayManager'
@@ -18,6 +18,8 @@ export function TeamManagement() {
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState('Booker')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
 
   const fetchTeam = async () => {
     try {
@@ -35,7 +37,6 @@ export function TeamManagement() {
     fetchTeam()
   }, [])
 
-  // Register invite/add member modal with overlay manager
   useEffect(() => {
     if (modalOpen) {
       openOverlay('team-management-modal', () => setModalOpen(false))
@@ -71,96 +72,172 @@ export function TeamManagement() {
     }
   }
 
+  const activeCount = useMemo(() => team.filter((member) => member.is_active !== false).length, [team])
+  const inactiveCount = team.length - activeCount
+  const filteredTeam = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    return team.filter((member) => {
+      const matchesQuery = !query || [member.name, member.email, member.role].filter(Boolean).some((value) => value!.toLowerCase().includes(query))
+      const isActive = member.is_active !== false
+      const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' ? isActive : !isActive)
+      return matchesQuery && matchesStatus
+    })
+  }, [searchQuery, statusFilter, team])
+
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
-      </div>
-    )
+    return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-amber-500" /></div>
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-base sm:text-lg font-semibold text-slate-900 truncate">Team Management</h2>
-          <p className="text-xs sm:text-sm text-slate-400">{team.length} member{team.length !== 1 ? 's' : ''}</p>
+          <h2 className="text-xl font-semibold text-slate-900">Team management</h2>
+          <p className="text-sm text-slate-500">Manage the operating roster, invite new teammates, and keep ownership structure clear.</p>
         </div>
         <button
           onClick={() => { setEditingMember(null); setModalOpen(true) }}
-          className="btn-primary flex items-center gap-1.5 text-xs sm:text-sm shrink-0"
+          className="btn-primary flex shrink-0 items-center gap-1.5 text-xs sm:text-sm"
         >
-          <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          <span className="hidden sm:inline">Add Member</span>
+          <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">Add member</span>
           <span className="sm:hidden">Add</span>
         </button>
       </div>
 
-      {/* Invite Form */}
-      <div className="bg-white rounded-xl border border-slate-100 px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 shrink-0" />
-          <input
-            type="email"
-            value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-            placeholder="Invite via email..."
-            className="flex-1 min-w-0 px-2.5 py-1.5 sm:px-3 sm:py-2 border border-slate-200 rounded-xl bg-white text-xs sm:text-sm"
-          />
-          <select
-            value={inviteRole}
-            onChange={(e) => setInviteRole(e.target.value)}
-            className="px-2 py-1.5 sm:px-3 sm:py-2 border border-slate-200 rounded-xl bg-white text-xs sm:text-sm shrink-0"
-          >
-            <option value="Admin">Admin</option>
-            <option value="Booker">Booker</option>
-            <option value="Viewer">Viewer</option>
-          </select>
-          <button onClick={handleInvite} disabled={!inviteEmail.trim()} className="btn-primary">
-            Invite
-          </button>
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-slate-500">
+            <Users className="h-4 w-4" />
+            <p className="text-xs font-semibold uppercase tracking-[0.2em]">Roster</p>
+          </div>
+          <p className="mt-2 text-base font-semibold text-slate-900">{team.length} members</p>
+          <p className="mt-1 text-sm text-slate-500">Treat this as the live ownership map for TOABH operations.</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Status mix</p>
+          <p className="mt-2 text-base font-semibold text-slate-900">{activeCount} active, {inactiveCount} inactive</p>
+          <p className="mt-1 text-sm text-slate-500">Keeping inactive members visible helps preserve historical ownership context.</p>
+        </div>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Management tip</p>
+          <p className="mt-2 text-sm font-medium text-slate-900">Invite by role first, then refine permissions only where needed.</p>
+          <p className="mt-1 text-sm text-slate-600">That keeps onboarding faster and avoids overcomplicating team setup too early.</p>
         </div>
       </div>
 
-      {/* Team List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {team.map((member) => (
-          <motion.div
-            key={member.id}
-            layout
-            className={cn(
-              'flex items-center gap-3 bg-white rounded-xl border border-slate-100 px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm hover:shadow-md transition-all',
-              !member.is_active && 'opacity-60'
-            )}
-          >
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white font-semibold text-sm shrink-0">
-              {getInitials(member.name)}
+      <div className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">Roster controls</h3>
+            <p className="text-sm text-slate-500">Invite teammates, then filter the roster to keep audits and ownership checks quick.</p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 shadow-sm sm:w-64">
+              <Search className="h-4 w-4 text-slate-400" />
+              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search team" className="w-full bg-transparent text-slate-700 outline-none placeholder:text-slate-400" />
+            </label>
+            <div className="inline-flex rounded-2xl border border-slate-200 bg-slate-50 p-1 shadow-sm">
+              {(['all', 'active', 'inactive'] as const).map((option) => (
+                <button
+                  key={option}
+                  onClick={() => setStatusFilter(option)}
+                  className={cn('rounded-xl px-3 py-1.5 text-xs font-medium capitalize transition', statusFilter === option ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700')}
+                >
+                  {option}
+                </button>
+              ))}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-slate-900 text-sm sm:text-[15px] truncate">{member.name}</p>
-              <p className="text-xs text-slate-400 truncate">{member.email || member.role}</p>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 sm:px-4 sm:py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2 text-slate-400">
+              <Mail className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="text-sm font-medium text-slate-600">Quick invite</span>
             </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={() => { setEditingMember(member); setModalOpen(true) }}
-                title="Edit"
-                className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl hover:bg-amber-50 text-slate-400 hover:text-amber-600 active:scale-95 transition-all"
-              >
-                <Pencil className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => handleDelete(member)}
-                title="Delete"
-                className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl hover:bg-red-50 text-slate-400 hover:text-red-500 active:scale-95 transition-all"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+            <input
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              placeholder="Invite via email..."
+              className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+            />
+            <select
+              value={inviteRole}
+              onChange={(e) => setInviteRole(e.target.value)}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm sm:min-w-[140px]"
+            >
+              <option value="Admin">Admin</option>
+              <option value="Booker">Booker</option>
+              <option value="Viewer">Viewer</option>
+            </select>
+            <button onClick={handleInvite} disabled={!inviteEmail.trim()} className="btn-primary self-start sm:self-auto">
+              Invite
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          {team.length === 0 ? (
+            <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-8 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Team setup</p>
+              <p className="mt-3 text-sm font-semibold text-slate-900 sm:text-base">No team members added yet</p>
+              <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">Invite your core casting team so permissions, ownership, and communication stay clear from day one.</p>
+              <p className="mx-auto mt-2 max-w-md text-xs text-slate-400">This becomes the operating roster for assignment clarity, approvals, and role-based access as the workspace scales.</p>
             </div>
-          </motion.div>
-        ))}
+          ) : filteredTeam.length > 0 ? filteredTeam.map((member) => (
+            <motion.div
+              key={member.id}
+              layout
+              className={cn(
+                'flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-3 py-3 shadow-sm transition-all hover:shadow-md sm:px-4',
+                member.is_active === false && 'opacity-60'
+              )}
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-sm font-semibold text-white sm:h-11 sm:w-11">
+                {getInitials(member.name)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="truncate text-sm font-semibold text-slate-900 sm:text-[15px]">{member.name}</p>
+                  <span className={cn(
+                    'rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+                    member.is_active === false ? 'bg-slate-100 text-slate-500' : 'bg-emerald-100 text-emerald-700'
+                  )}>
+                    {member.is_active === false ? 'Inactive' : 'Active'}
+                  </span>
+                </div>
+                <p className="truncate text-xs text-slate-400">{member.email || member.role}</p>
+                {member.role && <p className="mt-1 text-xs text-slate-500">Role: {member.role}</p>}
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  onClick={() => { setEditingMember(member); setModalOpen(true) }}
+                  title="Edit"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition-all hover:bg-amber-50 hover:text-amber-600 sm:h-11 sm:w-11"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => handleDelete(member)}
+                  title="Delete"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition-all hover:bg-red-50 hover:text-red-500 sm:h-11 sm:w-11"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </motion.div>
+          )) : (
+            <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-8 text-center">
+              <p className="text-sm font-semibold text-slate-900">No team members match this view</p>
+              <p className="mt-2 text-sm text-slate-500">Try a different search or switch the active filter.</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Member Modal */}
       {modalOpen && (
         <TeamMemberModal
           member={editingMember}
@@ -241,57 +318,26 @@ function TeamMemberModal({
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div onClick={handleModalClose} className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="relative w-full max-w-md glass rounded-2xl p-6"
-      >
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">
-          {member ? 'Edit Member' : 'Add Member'}
-        </h2>
+      <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass relative w-full max-w-md rounded-2xl p-6">
+        <h2 className="mb-4 text-lg font-semibold text-slate-900">{member ? 'Edit member' : 'Add member'}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Name *</label>
-            <input
-              type="text"
-              required
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-xl"
-            />
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Name *</label>
+            <input type="text" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full rounded-xl border border-slate-200 px-3 py-2" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-xl"
-            />
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Email</label>
+            <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full rounded-xl border border-slate-200 px-3 py-2" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Phone</label>
-            <input
-              type="tel"
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-xl"
-            />
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Phone</label>
+            <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full rounded-xl border border-slate-200 px-3 py-2" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Role</label>
-            <select
-              value={form.role}
-              onChange={(e) => setForm({ ...form, role: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-200 rounded-xl"
-            >
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Role</label>
+            <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="w-full rounded-xl border border-slate-200 px-3 py-2">
               <option value="">Select role</option>
               {roleOptions.map((r) => (
                 <option key={r} value={r}>{r}</option>
