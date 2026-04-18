@@ -260,6 +260,16 @@ export function Calendar() {
         </div>
       </div>
 
+      <div className="rounded-[24px] border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-600 shadow-sm">
+        {activeFilterCount === 0
+          ? view === 'month'
+            ? 'Month view is best for planning the bigger picture. Switch to week or day when you need tighter execution detail.'
+            : view === 'week'
+              ? 'Week view helps the team spot timing collisions and workload gaps before the day gets busy.'
+              : 'Day view keeps today focused, especially on mobile when you only need the immediate schedule.'
+          : `Showing ${activeFilterCount} active filter${activeFilterCount === 1 ? '' : 's'} so the schedule stays focused on the jobs that matter right now.`}
+      </div>
+
       {/* ── Calendar views ───────────────────────────────────────────── */}
       <div className="min-h-0 flex-1 w-full">
         {view === 'month' && (
@@ -283,6 +293,7 @@ export function Calendar() {
             currentDate={currentDate}
             castings={filteredCastings}
             onCastingClick={openDetail}
+            hasActiveFilters={activeFilterCount > 0}
           />
         )}
       </div>
@@ -492,10 +503,12 @@ function DayView({
   currentDate,
   castings,
   onCastingClick,
+  hasActiveFilters,
 }: {
   currentDate: Date
   castings: Casting[]
   onCastingClick: (c: Casting) => void
+  hasActiveFilters: boolean
 }) {
   const dayCastings = castings.filter(
     (c) => c.shoot_date_start && isSameDay(parseISO(c.shoot_date_start), currentDate)
@@ -507,7 +520,11 @@ function DayView({
         {format(currentDate, 'EEE, MMM d')}
       </h3>
       {dayCastings.length === 0 ? (
-        <p className="text-slate-400 text-sm py-8 text-center">No jobs scheduled</p>
+        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center text-sm text-slate-400">
+          {hasActiveFilters
+            ? 'No jobs match the current filters for this day. Clear or adjust filters to widen the schedule view.'
+            : 'No jobs scheduled for this day yet. When new castings are assigned, they will appear here in a clean agenda view.'}
+        </div>
       ) : (
         <div className="space-y-2">
           {dayCastings.map((casting) => (
