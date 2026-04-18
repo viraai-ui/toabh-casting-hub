@@ -268,6 +268,9 @@ export function GlobalSearch() {
                 className="h-7 flex-1 bg-transparent text-base text-slate-900 outline-none placeholder:text-slate-400 sm:text-lg"
               />
             </div>
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              Search across jobs, clients, team, and talent from one command surface. Use arrow keys to move and Enter to jump straight in.
+            </p>
           </div>
 
           <div className="max-h-[min(68vh,560px)] overflow-y-auto px-5 pb-6 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
@@ -289,6 +292,12 @@ export function GlobalSearch() {
               </div>
             )}
 
+            {!query && recentSearches.length > 0 && (
+              <div className="mb-4 rounded-[20px] border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-600 shadow-sm">
+                Recent searches stay here so repeated lookups take one tap instead of a fresh search.
+              </div>
+            )}
+
             {!query && recentSearches.length === 0 && (
               <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-[24px] border border-dashed border-slate-200/90 bg-slate-50/75 px-8 py-8 text-center">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-[0_12px_30px_-20px_rgba(15,23,42,0.35)]">
@@ -296,7 +305,7 @@ export function GlobalSearch() {
                 </div>
                 <div className="max-w-sm">
                   <p className="text-base font-semibold tracking-tight text-slate-900">Search everything instantly</p>
-                  <p className="mt-1.5 text-sm leading-6 text-slate-500">Find jobs, clients, phone numbers, emails, and team members in one place.</p>
+                  <p className="mt-1.5 text-sm leading-6 text-slate-500">Find jobs, clients, phone numbers, emails, and team members in one place. Start typing to turn this into a fast command surface.</p>
                 </div>
               </div>
             )}
@@ -308,7 +317,7 @@ export function GlobalSearch() {
                 </div>
                 <div className="max-w-sm">
                   <p className="text-base font-semibold tracking-tight text-slate-900">No matches found</p>
-                  <p className="mt-1.5 text-sm leading-6 text-slate-500">Try a project name, client, phone number, or email.</p>
+                  <p className="mt-1.5 text-sm leading-6 text-slate-500">Try a project name, client, phone number, or email. Shorter terms usually bring broader results.</p>
                 </div>
               </div>
             )}
