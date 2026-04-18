@@ -656,6 +656,9 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                         <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
                           Client <span className="text-red-500">*</span>
                         </label>
+                        <p className="mb-2 text-xs leading-5 text-slate-500">
+                          Choose the client before filling the rest of the brief so contact details and downstream setup stay tied to the right account.
+                        </p>
                         <select
                           value={form.client_name}
                           onChange={(e) => {
@@ -726,6 +729,9 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                         <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
                           Description
                         </label>
+                        <p className="mb-2 text-xs leading-5 text-slate-500">
+                          Capture the core brief here, including requirements, references, or important notes the team should see before assignments begin.
+                        </p>
                         <textarea
                           value={form.description}
                           onChange={(e) => setForm({ ...form, description: e.target.value })}
