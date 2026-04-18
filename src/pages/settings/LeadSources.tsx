@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { AlertCircle, Check, Loader2, Pencil, Plus, Radio, Trash2, X } from 'lucide-react'
+import { AlertCircle, Check, Loader2, Pencil, Plus, Radio, Search, Trash2, X } from 'lucide-react'
 import { api } from '@/lib/api'
 
 const escapeHtml = (str: string) =>
@@ -284,6 +284,11 @@ export function LeadSources() {
   const sources = Array.from(sourcesMap.values())
   const sourcesCount = sources.length
   const draftCount = useMemo(() => sources.filter((source) => source.isEditing).length, [sources])
+  const filteredSources = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return sources
+    return sources.filter((source) => source.name.toLowerCase().includes(query))
+  }, [searchQuery, sources])
 
   if (loading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-amber-500" /></div>
@@ -328,85 +333,110 @@ export function LeadSources() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <AnimatePresence>
-          {sources.map((source) => (
-            <motion.div key={source.id} layout initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} transition={{ duration: 0.15 }}>
-              {source.isEditing ? (
-                <SourceEditRow
-                  source={source}
-                  onSave={() => saveEdit(source.id)}
-                  onCancel={() => cancelEdit(source.id)}
-                  onChange={(v) => updateLocal(source.id, v)}
-                  isSaving={saving === source.id}
-                  error={validationError && !source.localChanges.name.trim() ? validationError : undefined}
-                />
-              ) : (
-                <SourceCard
-                  source={source}
-                  onEdit={() => startEdit(source.id)}
-                  onDelete={() => deleteSource(source.id)}
-                  isSaving={saving === source.id}
-                  feedback={feedback.get(source.id)}
-                />
-              )}
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {isAdding && (
-            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-              <div className="rounded-xl border-2 border-amber-300 bg-amber-50/60 px-3 py-2.5 sm:px-4 sm:py-3">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="min-w-0 flex-1">
-                    <input
-                      type="text"
-                      value={newItem}
-                      onChange={(e) => { setNewItem(e.target.value); setValidationError('') }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && newItem.trim()) handleAdd()
-                        if (e.key === 'Escape') handleCancelAdd()
-                      }}
-                      placeholder="Source name"
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50 sm:py-2.5 sm:text-[15px]"
-                      autoFocus
-                    />
-                    {validationError && (
-                      <p className="mt-0.5 flex items-center gap-1 text-xs text-red-500">
-                        <AlertCircle className="h-3 w-3" />
-                        {validationError}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    onClick={handleAdd}
-                    disabled={saving === -1 || !newItem.trim()}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white transition-all hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-40 sm:h-11 sm:w-11"
-                  >
-                    {saving === -1 ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  </button>
-                  <button
-                    onClick={handleCancelAdd}
-                    disabled={saving === -1}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition-all hover:bg-slate-200 disabled:opacity-40 sm:h-11 sm:w-11"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {sources.length === 0 && !isAdding && (
-          <div className="rounded-2xl border border-slate-100 bg-white px-6 py-12 text-center shadow-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Lead pipeline</p>
-            <p className="mt-3 text-sm font-semibold text-slate-900 sm:text-base">No lead sources added yet</p>
-            <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">Add your first source to keep inbound leads organized across referrals, Instagram, agencies, and direct outreach.</p>
-            <p className="mx-auto mt-2 max-w-md text-xs text-slate-400">Once sources are defined, this becomes the intake map for where the strongest TOABH demand is coming from.</p>
+      <div className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">Source directory</h3>
+            <p className="text-sm text-slate-500">Search, edit, and clean up the labels that power intake attribution.</p>
           </div>
-        )}
+          <label className="flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 shadow-sm sm:max-w-xs">
+            <Search className="h-4 w-4 text-slate-400" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search sources"
+              className="w-full bg-transparent text-slate-700 outline-none placeholder:text-slate-400"
+            />
+          </label>
+        </div>
+
+        <div className="mt-4 flex flex-col gap-2">
+          <AnimatePresence>
+            {filteredSources.map((source) => (
+              <motion.div key={source.id} layout initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} transition={{ duration: 0.15 }}>
+                {source.isEditing ? (
+                  <SourceEditRow
+                    source={source}
+                    onSave={() => saveEdit(source.id)}
+                    onCancel={() => cancelEdit(source.id)}
+                    onChange={(v) => updateLocal(source.id, v)}
+                    isSaving={saving === source.id}
+                    error={validationError && !source.localChanges.name.trim() ? validationError : undefined}
+                  />
+                ) : (
+                  <SourceCard
+                    source={source}
+                    onEdit={() => startEdit(source.id)}
+                    onDelete={() => deleteSource(source.id)}
+                    isSaving={saving === source.id}
+                    feedback={feedback.get(source.id)}
+                  />
+                )}
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {isAdding && (
+              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+                <div className="rounded-xl border-2 border-amber-300 bg-amber-50/60 px-3 py-2.5 sm:px-4 sm:py-3">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="min-w-0 flex-1">
+                      <input
+                        type="text"
+                        value={newItem}
+                        onChange={(e) => { setNewItem(e.target.value); setValidationError('') }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && newItem.trim()) handleAdd()
+                          if (e.key === 'Escape') handleCancelAdd()
+                        }}
+                        placeholder="Source name"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500/50 sm:py-2.5 sm:text-[15px]"
+                        autoFocus
+                      />
+                      {validationError && (
+                        <p className="mt-0.5 flex items-center gap-1 text-xs text-red-500">
+                          <AlertCircle className="h-3 w-3" />
+                          {validationError}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleAdd}
+                      disabled={saving === -1 || !newItem.trim()}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white transition-all hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-40 sm:h-11 sm:w-11"
+                    >
+                      {saving === -1 ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    </button>
+                    <button
+                      onClick={handleCancelAdd}
+                      disabled={saving === -1}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition-all hover:bg-slate-200 disabled:opacity-40 sm:h-11 sm:w-11"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {sources.length === 0 && !isAdding && (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-6 py-12 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Lead pipeline</p>
+              <p className="mt-3 text-sm font-semibold text-slate-900 sm:text-base">No lead sources added yet</p>
+              <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">Add your first source to keep inbound leads organized across referrals, Instagram, agencies, and direct outreach.</p>
+              <p className="mx-auto mt-2 max-w-md text-xs text-slate-400">Once sources are defined, this becomes the intake map for where the strongest TOABH demand is coming from.</p>
+            </div>
+          )}
+
+          {sources.length > 0 && filteredSources.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-6 py-10 text-center">
+              <p className="text-sm font-semibold text-slate-900">No sources match that search</p>
+              <p className="mt-2 text-sm text-slate-500">Try a shorter term or clear the search to see every configured source.</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

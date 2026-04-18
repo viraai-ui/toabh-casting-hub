@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Loader2, Mail, Pencil, Plus, Trash2, Users } from 'lucide-react'
+import { Loader2, Mail, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn, getInitials } from '@/lib/utils'
 import { useOverlay } from '@/hooks/useOverlayManager'
@@ -18,6 +18,8 @@ export function TeamManagement() {
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState('Booker')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
 
   const fetchTeam = async () => {
     try {
@@ -72,6 +74,15 @@ export function TeamManagement() {
 
   const activeCount = useMemo(() => team.filter((member) => member.is_active !== false).length, [team])
   const inactiveCount = team.length - activeCount
+  const filteredTeam = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    return team.filter((member) => {
+      const matchesQuery = !query || [member.name, member.email, member.role].filter(Boolean).some((value) => value!.toLowerCase().includes(query))
+      const isActive = member.is_active !== false
+      const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' ? isActive : !isActive)
+      return matchesQuery && matchesStatus
+    })
+  }, [searchQuery, statusFilter, team])
 
   if (loading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-amber-500" /></div>
@@ -115,85 +126,116 @@ export function TeamManagement() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-100 bg-white px-3 py-3 shadow-sm sm:px-4 sm:py-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2 text-slate-400">
-            <Mail className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span className="text-sm font-medium text-slate-600">Quick invite</span>
+      <div className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">Roster controls</h3>
+            <p className="text-sm text-slate-500">Invite teammates, then filter the roster to keep audits and ownership checks quick.</p>
           </div>
-          <input
-            type="email"
-            value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-            placeholder="Invite via email..."
-            className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
-          />
-          <select
-            value={inviteRole}
-            onChange={(e) => setInviteRole(e.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm sm:min-w-[140px]"
-          >
-            <option value="Admin">Admin</option>
-            <option value="Booker">Booker</option>
-            <option value="Viewer">Viewer</option>
-          </select>
-          <button onClick={handleInvite} disabled={!inviteEmail.trim()} className="btn-primary self-start sm:self-auto">
-            Invite
-          </button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 shadow-sm sm:w-64">
+              <Search className="h-4 w-4 text-slate-400" />
+              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search team" className="w-full bg-transparent text-slate-700 outline-none placeholder:text-slate-400" />
+            </label>
+            <div className="inline-flex rounded-2xl border border-slate-200 bg-slate-50 p-1 shadow-sm">
+              {(['all', 'active', 'inactive'] as const).map((option) => (
+                <button
+                  key={option}
+                  onClick={() => setStatusFilter(option)}
+                  className={cn('rounded-xl px-3 py-1.5 text-xs font-medium capitalize transition', statusFilter === option ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700')}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {team.length === 0 ? (
-          <div className="md:col-span-2 rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Team setup</p>
-            <p className="mt-3 text-sm font-semibold text-slate-900 sm:text-base">No team members added yet</p>
-            <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">Invite your core casting team so permissions, ownership, and communication stay clear from day one.</p>
-            <p className="mx-auto mt-2 max-w-md text-xs text-slate-400">This becomes the operating roster for assignment clarity, approvals, and role-based access as the workspace scales.</p>
+        <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 sm:px-4 sm:py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2 text-slate-400">
+              <Mail className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="text-sm font-medium text-slate-600">Quick invite</span>
+            </div>
+            <input
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              placeholder="Invite via email..."
+              className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+            />
+            <select
+              value={inviteRole}
+              onChange={(e) => setInviteRole(e.target.value)}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm sm:min-w-[140px]"
+            >
+              <option value="Admin">Admin</option>
+              <option value="Booker">Booker</option>
+              <option value="Viewer">Viewer</option>
+            </select>
+            <button onClick={handleInvite} disabled={!inviteEmail.trim()} className="btn-primary self-start sm:self-auto">
+              Invite
+            </button>
           </div>
-        ) : team.map((member) => (
-          <motion.div
-            key={member.id}
-            layout
-            className={cn(
-              'flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-3 py-3 shadow-sm transition-all hover:shadow-md sm:px-4',
-              member.is_active === false && 'opacity-60'
-            )}
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-sm font-semibold text-white sm:h-11 sm:w-11">
-              {getInitials(member.name)}
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          {team.length === 0 ? (
+            <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-8 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Team setup</p>
+              <p className="mt-3 text-sm font-semibold text-slate-900 sm:text-base">No team members added yet</p>
+              <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">Invite your core casting team so permissions, ownership, and communication stay clear from day one.</p>
+              <p className="mx-auto mt-2 max-w-md text-xs text-slate-400">This becomes the operating roster for assignment clarity, approvals, and role-based access as the workspace scales.</p>
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="truncate text-sm font-semibold text-slate-900 sm:text-[15px]">{member.name}</p>
-                <span className={cn(
-                  'rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
-                  member.is_active === false ? 'bg-slate-100 text-slate-500' : 'bg-emerald-100 text-emerald-700'
-                )}>
-                  {member.is_active === false ? 'Inactive' : 'Active'}
-                </span>
+          ) : filteredTeam.length > 0 ? filteredTeam.map((member) => (
+            <motion.div
+              key={member.id}
+              layout
+              className={cn(
+                'flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-3 py-3 shadow-sm transition-all hover:shadow-md sm:px-4',
+                member.is_active === false && 'opacity-60'
+              )}
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-sm font-semibold text-white sm:h-11 sm:w-11">
+                {getInitials(member.name)}
               </div>
-              <p className="truncate text-xs text-slate-400">{member.email || member.role}</p>
-              {member.role && <p className="mt-1 text-xs text-slate-500">Role: {member.role}</p>}
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="truncate text-sm font-semibold text-slate-900 sm:text-[15px]">{member.name}</p>
+                  <span className={cn(
+                    'rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+                    member.is_active === false ? 'bg-slate-100 text-slate-500' : 'bg-emerald-100 text-emerald-700'
+                  )}>
+                    {member.is_active === false ? 'Inactive' : 'Active'}
+                  </span>
+                </div>
+                <p className="truncate text-xs text-slate-400">{member.email || member.role}</p>
+                {member.role && <p className="mt-1 text-xs text-slate-500">Role: {member.role}</p>}
+              </div>
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  onClick={() => { setEditingMember(member); setModalOpen(true) }}
+                  title="Edit"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition-all hover:bg-amber-50 hover:text-amber-600 sm:h-11 sm:w-11"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => handleDelete(member)}
+                  title="Delete"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition-all hover:bg-red-50 hover:text-red-500 sm:h-11 sm:w-11"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </motion.div>
+          )) : (
+            <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-8 text-center">
+              <p className="text-sm font-semibold text-slate-900">No team members match this view</p>
+              <p className="mt-2 text-sm text-slate-500">Try a different search or switch the active filter.</p>
             </div>
-            <div className="flex shrink-0 items-center gap-1">
-              <button
-                onClick={() => { setEditingMember(member); setModalOpen(true) }}
-                title="Edit"
-                className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition-all hover:bg-amber-50 hover:text-amber-600 sm:h-11 sm:w-11"
-              >
-                <Pencil className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => handleDelete(member)}
-                title="Delete"
-                className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 transition-all hover:bg-red-50 hover:text-red-500 sm:h-11 sm:w-11"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          </motion.div>
-        ))}
+          )}
+        </div>
       </div>
 
       {modalOpen && (

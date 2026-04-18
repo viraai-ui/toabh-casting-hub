@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Loader2, Shield, ShieldCheck, Users } from 'lucide-react'
+import { Loader2, Search, Shield, ShieldCheck, Users } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import type { Role } from '@/types'
@@ -32,6 +32,7 @@ export function RolesPermissions() {
   const [saving, setSaving] = useState(false)
   const [feedback, setFeedback] = useState<{msg: string; type: 'success'|'error'} | null>(null)
   const [snapshot, setSnapshot] = useState<Role[] | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const fetchRoles = async () => {
     try {
@@ -65,6 +66,11 @@ export function RolesPermissions() {
     () => roles.reduce((count, role) => count + role.permissions.length, 0),
     [roles]
   )
+  const filteredPermissions = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return permissions
+    return permissions.filter((permission) => permission.name.toLowerCase().includes(query))
+  }, [searchQuery])
 
   const togglePermission = (roleId: number, permissionId: string) => {
     setRoles((prev) => prev.map((role) => {
@@ -165,7 +171,17 @@ export function RolesPermissions() {
         </div>
       </div>
 
-      <div className="card overflow-hidden">
+      <div className="rounded-[28px] border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-3 border-b border-slate-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">Permission matrix</h3>
+            <p className="text-sm text-slate-500">Review grants by role and trim access before it turns into long-term sprawl.</p>
+          </div>
+          <label className="flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 sm:max-w-xs">
+            <Search className="h-4 w-4 text-slate-400" />
+            <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search permissions" className="w-full bg-transparent text-slate-700 outline-none placeholder:text-slate-400" />
+          </label>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[720px]">
             <thead>
@@ -188,7 +204,7 @@ export function RolesPermissions() {
                   </td>
                 </tr>
               )}
-              {permissions.map((permission, index) => (
+              {filteredPermissions.map((permission, index) => (
                 <tr key={permission.id} className={cn('border-b border-slate-50', index % 2 === 1 && 'bg-slate-50/40')}>
                   <td className="px-4 py-3 text-sm font-medium text-slate-700">{permission.name}</td>
                   {roles.map((role) => {
@@ -215,6 +231,13 @@ export function RolesPermissions() {
                   })}
                 </tr>
               ))}
+              {roles.length > 0 && filteredPermissions.length === 0 && (
+                <tr>
+                  <td colSpan={roles.length + 1} className="px-4 py-10 text-center text-sm text-slate-500">
+                    No permissions match that search.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { AlertCircle, Check, ChevronDown, ChevronUp, GitBranch, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { AlertCircle, Check, ChevronDown, ChevronUp, GitBranch, Loader2, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
 import { api } from '@/lib/api'
 
 export interface PipelineStage {
@@ -424,6 +424,11 @@ export function PipelineStages() {
   }
 
   const stageNames = useMemo(() => stages.map((stage) => stage.name).join(' → '), [stages])
+  const filteredStages = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return stages
+    return stages.filter((stage) => stage.name.toLowerCase().includes(query))
+  }, [searchQuery, stages])
 
   if (loading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-amber-500" /></div>
@@ -468,52 +473,75 @@ export function PipelineStages() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <AnimatePresence>
-          {stages.map((stage, index) => (
-            <motion.div key={stage.id} layout initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} transition={{ duration: 0.15 }}>
-              {stage.isEditing ? (
-                <StageEditRow
-                  stage={stage}
-                  onSave={() => saveEdit(stage.id)}
-                  onCancel={() => cancelEdit(stage.id)}
-                  onColorChange={(color) => updateLocal(stage.id, 'color', color)}
-                  onNameChange={(name) => updateLocal(stage.id, 'name', name)}
-                  isSaving={savingSet.has(stage.id)}
-                />
-              ) : (
-                <StageCard
-                  stage={stage}
-                  index={index}
-                  totalCount={stages.length}
-                  onEdit={() => startEdit(stage.id)}
-                  onDelete={() => deleteStage(stage.id)}
-                  onMoveUp={() => moveUp(index)}
-                  onMoveDown={() => moveDown(index)}
-                  isSaving={savingSet.has(stage.id)}
-                  feedback={feedback.get(stage.id)}
-                />
-              )}
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {isAdding && (
-            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-              <AddStageForm onAdd={handleAdd} onCancel={() => { setIsAdding(false); setAddError('') }} isSaving={savingSet.has(-1)} error={addError} />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {stages.length === 0 && !isAdding && (
-          <div className="rounded-2xl border border-slate-100 bg-white px-6 py-12 text-center shadow-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Pipeline setup</p>
-            <p className="mt-3 text-sm font-semibold text-slate-900 sm:text-base">No stages added yet</p>
-            <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">Add the first stage to define how TOABH should move a casting from intake to confirmed outcome.</p>
-            <p className="mx-auto mt-2 max-w-md text-xs text-slate-400">This becomes the backbone for kanban, reporting, status filters, and operator handoffs.</p>
+      <div className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">Stage order</h3>
+            <p className="text-sm text-slate-500">Keep the funnel easy to scan, especially when operators are working on mobile.</p>
           </div>
-        )}
+          <label className="flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 shadow-sm sm:max-w-xs">
+            <Search className="h-4 w-4 text-slate-400" />
+            <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search stages" className="w-full bg-transparent text-slate-700 outline-none placeholder:text-slate-400" />
+          </label>
+        </div>
+
+        <div className="mt-4 flex flex-col gap-2">
+          <AnimatePresence>
+            {filteredStages.map((stage) => {
+              const index = stages.findIndex((item) => item.id === stage.id)
+              return (
+                <motion.div key={stage.id} layout initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} transition={{ duration: 0.15 }}>
+                  {stage.isEditing ? (
+                    <StageEditRow
+                      stage={stage}
+                      onSave={() => saveEdit(stage.id)}
+                      onCancel={() => cancelEdit(stage.id)}
+                      onColorChange={(color) => updateLocal(stage.id, 'color', color)}
+                      onNameChange={(name) => updateLocal(stage.id, 'name', name)}
+                      isSaving={savingSet.has(stage.id)}
+                    />
+                  ) : (
+                    <StageCard
+                      stage={stage}
+                      index={index}
+                      totalCount={stages.length}
+                      onEdit={() => startEdit(stage.id)}
+                      onDelete={() => deleteStage(stage.id)}
+                      onMoveUp={() => moveUp(index)}
+                      onMoveDown={() => moveDown(index)}
+                      isSaving={savingSet.has(stage.id)}
+                      feedback={feedback.get(stage.id)}
+                    />
+                  )}
+                </motion.div>
+              )
+            })}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {isAdding && (
+              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+                <AddStageForm onAdd={handleAdd} onCancel={() => { setIsAdding(false); setAddError('') }} isSaving={savingSet.has(-1)} error={addError} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {stages.length === 0 && !isAdding && (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-6 py-12 text-center">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Pipeline setup</p>
+              <p className="mt-3 text-sm font-semibold text-slate-900 sm:text-base">No stages added yet</p>
+              <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">Add the first stage to define how TOABH should move a casting from intake to confirmed outcome.</p>
+              <p className="mx-auto mt-2 max-w-md text-xs text-slate-400">This becomes the backbone for kanban, reporting, status filters, and operator handoffs.</p>
+            </div>
+          )}
+
+          {stages.length > 0 && filteredStages.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 px-6 py-10 text-center">
+              <p className="text-sm font-semibold text-slate-900">No stages match that search</p>
+              <p className="mt-2 text-sm text-slate-500">Clear the search to review the full sequence and reorder it.</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
