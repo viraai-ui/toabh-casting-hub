@@ -1114,6 +1114,9 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                         <label className="block text-[11px] sm:text-xs font-medium text-slate-500 mb-1.5 sm:mb-2 uppercase tracking-wide">
                           Select Team Members <span className="text-red-500">*</span>
                         </label>
+                        <p className="mb-2.5 text-xs leading-5 text-slate-500">
+                          Assign at least one owner here so the casting has clear coverage before outreach, scheduling, and follow-ups begin.
+                        </p>
                         <div className="grid grid-cols-2 gap-2 sm:gap-3">
                           {teamMembers.map((member) => (
                             <label
@@ -1167,6 +1170,9 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                           </svg>
                           <span>Linked Talents</span>
                         </div>
+                        <p className="mb-2 text-xs leading-5 text-slate-500">
+                          Link the shortlist here once the owners are set, so the team can move from assignment straight into talent outreach.
+                        </p>
                         <TalentPicker
                           selectedIds={selectedTalentIds}
                           onChange={setSelectedTalentIds}
