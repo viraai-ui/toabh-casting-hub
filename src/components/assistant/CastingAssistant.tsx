@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowUpRight, ChevronDown, Mic, MicOff, Minimize2, SendHorizonal, Sparkles, X } from 'lucide-react'
+import { ArrowUpRight, ChevronDown, Mic, MicOff, SendHorizonal, Sparkles, X } from 'lucide-react'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { ASSISTANT_SUGGESTIONS, queryAssistant, type AssistantMessage } from '@/lib/assistant'
 import { useVoice, processVoiceQuery } from '@/hooks/useVoice'
@@ -139,7 +139,7 @@ export function CastingAssistant() {
             transition={{ duration: 0.18 }}
             className="fixed bottom-24 right-4 z-50 flex max-h-[88vh] w-[calc(100vw-1rem)] max-w-[430px] flex-col overflow-hidden rounded-[30px] border border-white/60 bg-slate-950 text-white shadow-[0_30px_90px_rgba(15,23,42,0.42)] ring-1 ring-black/10 backdrop-blur-2xl sm:w-[calc(100vw-2rem)] lg:bottom-6 lg:right-6"
           >
-            <div className="relative shrink-0 overflow-hidden border-b border-white/10 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.24),_transparent_52%),linear-gradient(135deg,rgba(15,23,42,0.98),rgba(30,41,59,0.94))] px-4 pb-4 pt-3.5 sm:px-5">
+            <div className="relative shrink-0 overflow-hidden border-b border-white/10 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.24),_transparent_52%),linear-gradient(135deg,rgba(15,23,42,0.98),rgba(30,41,59,0.94))] px-4 pb-3.5 pt-3.5 sm:px-5">
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/80 to-transparent" />
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-3">
@@ -150,43 +150,26 @@ export function CastingAssistant() {
                     <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-amber-200/75">Casting operations</p>
                     <h2 className="truncate text-base font-semibold leading-tight text-white">Casting Concierge</h2>
                     <p className="mt-1 text-[11px] leading-5 text-slate-300">
-                      Fast answers for queue, delays, assignments, and casting details.
+                      Fast answers for queue, delays, assignments, and next actions.
                     </p>
                   </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setOpen(false)}
-                    className="rounded-full border border-white/10 bg-white/5 p-1.5 text-slate-300 transition hover:bg-white/10 hover:text-white"
-                    aria-label="Minimize assistant"
-                  >
-                    <Minimize2 className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setOpen(false)}
-                    className="rounded-full border border-white/10 bg-white/5 p-1.5 text-slate-300 transition hover:bg-white/10 hover:text-white"
-                    aria-label="Close assistant"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="shrink-0 rounded-full border border-white/10 bg-white/5 p-1.5 text-slate-300 transition hover:bg-white/10 hover:text-white"
+                  aria-label="Close assistant"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
               </div>
 
               <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-slate-300/80">
-                <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">Live workspace helper</span>
                 <span className="rounded-full border border-amber-300/20 bg-amber-400/10 px-2.5 py-1 text-amber-200">{conversationCount} exchanges</span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">Queue, delays, assignments</span>
                 {loading && (
                   <span className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2.5 py-1 text-emerald-200">Analyzing now</span>
                 )}
-              </div>
-
-              <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 px-3.5 py-3 shadow-inner shadow-black/10">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300/75">Best for</p>
-                <p className="mt-1 text-[12px] leading-5 text-slate-200">
-                  Quick operational answers before you open deeper casting records or jump into edits.
-                </p>
               </div>
             </div>
 
@@ -303,10 +286,7 @@ export function CastingAssistant() {
             <div className="shrink-0 border-t border-white/10 bg-slate-950/95 px-3 pb-3 pt-2.5 sm:px-4 sm:pb-4">
               <div className="mb-2.5 rounded-[22px] border border-white/10 bg-white/[0.04] px-3 py-3 shadow-inner shadow-black/10">
                 <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Quick questions</p>
-                    <p className="mt-1 text-[11px] leading-5 text-slate-500">Use a prompt to jump straight into a useful answer.</p>
-                  </div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Quick questions</p>
                   <button
                     type="button"
                     onClick={() => setShowSuggestions((v) => !v)}
@@ -343,10 +323,6 @@ export function CastingAssistant() {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
-
-              <div className="mb-2.5 rounded-[20px] border border-white/10 bg-black/15 px-3 py-2.5 text-[11px] leading-5 text-slate-400">
-                Ask about delays, assignments, next actions, or the current queue to get a fast operational read.
               </div>
 
               {isListening && liveTranscript && (
