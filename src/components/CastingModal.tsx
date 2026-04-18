@@ -538,9 +538,14 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
           >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-slate-200 bg-slate-50">
-              <h2 className="text-base sm:text-lg font-semibold text-slate-900">
-                {!casting ? 'New Casting' : isEditing ? 'Edit Casting' : 'Casting Details'}
-              </h2>
+              <div>
+                <h2 className="text-base sm:text-lg font-semibold text-slate-900">
+                  {!casting ? 'New Casting' : isEditing ? 'Edit Casting' : 'Casting Details'}
+                </h2>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  Move through overview, team, and budget in order so the casting is ready for staffing and follow-through.
+                </p>
+              </div>
               <button
                 onClick={handleModalClose}
                 disabled={saving}
