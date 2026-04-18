@@ -256,6 +256,24 @@ export function Talents() {
     }
   }, [filteredTalents])
 
+  const rosterSignals = [
+    {
+      label: 'Roster focus',
+      value: focusFilter === 'all' ? 'Full roster view' : focusFilter === 'needs-attention' ? 'Needs attention' : focusFilter === 'ops-ready' ? 'Ops-ready only' : focusFilter === 'contactable' ? 'Contactable only' : 'Missing Instagram',
+      note: focusFilter === 'all' ? 'You are looking at the broadest talent bench.' : 'The roster is narrowed to a specific readiness slice right now.',
+    },
+    {
+      label: 'Search state',
+      value: searchQuery.trim() ? 'Search active' : 'No search applied',
+      note: searchQuery.trim() ? 'The visible roster is narrowed before you assess profile readiness.' : 'No search filter is trimming the current roster view.',
+    },
+    {
+      label: 'Visible bench',
+      value: `${filteredTalents.length}/${talents.length} visible`,
+      note: talents.length === 0 ? 'The talent database has not been seeded yet.' : 'This shows how much of the roster is visible inside the current lens.',
+    },
+  ]
+
   const handleSort = (key: string) => {
     setSortConfig((prev) =>
       prev.key === key
@@ -356,6 +374,16 @@ export function Talents() {
         </div>
       </section>
 
+      <section className="grid gap-4 xl:grid-cols-3">
+        {rosterSignals.map((signal) => (
+          <div key={signal.label} className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{signal.label}</p>
+            <p className="mt-3 text-lg font-semibold tracking-tight text-slate-950">{signal.value}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{signal.note}</p>
+          </div>
+        ))}
+      </section>
+
       {/* Toolbar */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-col sm:flex-row gap-3">
@@ -431,8 +459,10 @@ export function Talents() {
             <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500">
               <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{talents.length} total talents</span>
               <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">Focus: {focusFilter}</span>
+              <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">Search: {searchQuery ? 'on' : 'off'}</span>
             </div>
-            <p className="mt-3 text-xs text-slate-400">Once the database fills out, this becomes the casting bench for discovery, outreach, and shortlist depth.</p>
+            <p className="mt-3 text-xs text-slate-400">If the roster should be visible here, clear search first, then reset the focus chips. Otherwise, this usually means the selected talent slice is already clean.</p>
+            <p className="mt-2 text-xs text-slate-400">Once the database fills out, this becomes the casting bench for discovery, outreach, and shortlist depth.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
