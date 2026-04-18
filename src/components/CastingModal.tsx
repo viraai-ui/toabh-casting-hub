@@ -1296,6 +1296,9 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                     </button>
                   </div>
                   <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-500">
+                      Create a client here when the account is missing, then continue the casting without breaking setup flow.
+                    </div>
                     <div>
                       <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">Name <span className="text-red-500">*</span></label>
                       <input
@@ -1337,6 +1340,9 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                         placeholder="Company name (optional)"
                       />
                     </div>
+                    <p className="text-xs leading-5 text-slate-500">
+                      Only name is required. Add phone, email, or company now if the team needs contact context immediately.
+                    </p>
                   </div>
                   <div className="flex items-center justify-end gap-2 px-4 py-2.5 sm:px-5 sm:py-3 border-t border-slate-200 bg-slate-50">
                     <button
