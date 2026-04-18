@@ -628,6 +628,9 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                         <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
                           Project Title <span className="text-red-500">*</span>
                         </label>
+                        <p className="mb-2 text-xs leading-5 text-slate-500">
+                          Use the clearest working title here, the one the team will recognize quickly in jobs, calendar, inbox, and search.
+                        </p>
                         <input
                           type="text"
                           value={form.project_name}
