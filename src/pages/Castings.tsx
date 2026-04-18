@@ -666,6 +666,24 @@ export function Castings() {
     }
   }, [workflowSummary])
 
+  const queueSignals = useMemo(() => ([
+    {
+      label: 'View mode',
+      value: castingViewMode === 'kanban' ? 'Kanban workflow' : castingViewMode === 'grid' ? 'Grid scan' : 'List operations',
+      note: castingViewMode === 'kanban' ? 'Best for stage-by-stage flow control and drag movement.' : castingViewMode === 'grid' ? 'Best for quicker visual scanning across live jobs.' : 'Best for denser operational detail and sorting.',
+    },
+    {
+      label: 'Search + filters',
+      value: searchQuery.trim() || activeFilterCount > 0 ? `${searchQuery.trim() ? 'Search active' : 'No search'}, ${activeFilterCount} filter${activeFilterCount === 1 ? '' : 's'}` : 'Full queue view',
+      note: searchQuery.trim() || activeFilterCount > 0 ? 'The current queue is narrowed before workflow health is calculated.' : 'You are looking at the broadest jobs operating picture right now.',
+    },
+    {
+      label: 'Queue readiness',
+      value: workflowSummary.total === 0 ? 'No jobs in scope' : `${workflowSummary.readyForTalent}/${workflowSummary.total} ready`,
+      note: workflowSummary.total === 0 ? 'As jobs are added, this will track how many are ready for clean submission movement.' : 'This shows how much of the current queue is structured enough for active ops execution.',
+    },
+  ]), [activeFilterCount, castingViewMode, searchQuery, workflowSummary.readyForTalent, workflowSummary.total])
+
   const handleSort = (key: string) => {
     setSortConfig((prev) =>
       prev.key === key
@@ -819,6 +837,16 @@ export function Castings() {
         </div>
       </section>
 
+      <section className="grid gap-4 xl:grid-cols-3">
+        {queueSignals.map((signal) => (
+          <div key={signal.label} className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{signal.label}</p>
+            <p className="mt-3 text-lg font-semibold tracking-tight text-slate-950">{signal.value}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{signal.note}</p>
+          </div>
+        ))}
+      </section>
+
       {/* Toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row">
         {/* Search */}
@@ -894,8 +922,10 @@ export function Castings() {
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500">
             <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{castings.length} total jobs</span>
             <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">View: {castingViewMode}</span>
+            <span className="rounded-full bg-slate-100 px-3 py-1.5 ring-1 ring-slate-200">{activeFilterCount} active filter{activeFilterCount === 1 ? '' : 's'}</span>
           </div>
-          <p className="mt-3 text-xs text-slate-400">Once jobs are live, this becomes the main operating queue for movement, ownership, and attachments.</p>
+          <p className="mt-3 text-xs text-slate-400">If the full queue should be visible here, clear search and filters first. Otherwise, this usually means the selected slice is already clean.</p>
+          <p className="mt-2 text-xs text-slate-400">Once jobs are live, this becomes the main operating queue for movement, ownership, and attachments.</p>
         </div>
       ) : castingViewMode === 'kanban' ? (
         <KanbanBoard
