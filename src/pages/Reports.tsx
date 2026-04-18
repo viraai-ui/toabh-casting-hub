@@ -223,6 +223,9 @@ export function Reports() {
         <div>
           <h2 className="text-xl font-semibold text-slate-900">Reports</h2>
           <p className="text-sm text-slate-500">Analytics and insights for your castings</p>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+            Review scheduling flow, team coverage, and revenue movement in one place before exporting a shareable report.
+          </p>
         </div>
         <span title={exportDisabledReason}>
           <button
@@ -300,11 +303,22 @@ export function Reports() {
         )}
       </div>
 
+      <div className="rounded-[24px] border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-600 shadow-sm">
+        {dateRange === 'week' && 'This week focuses on immediate delivery pressure, fast wins, and anything that needs intervention now.'}
+        {dateRange === 'month' && 'This month is the best default for spotting broader pipeline shape, team load, and revenue momentum.'}
+        {dateRange === '30days' && 'Last 30 days smooths calendar edges so recent performance is easier to compare at a glance.'}
+        {dateRange === 'quarter' && 'This quarter helps leadership review bigger trend movement across scheduling, outcomes, and billing value.'}
+        {dateRange === 'custom' && 'Custom range is best when you need a clean export for a specific campaign, client window, or review period.'}
+      </div>
+
       {isCustomRangeInvalid ? null : filteredCastings.length === 0 ? (
         <div className="card p-8 text-center">
           <h3 className="text-lg font-semibold text-slate-900">No scheduled castings in this date range</h3>
           <p className="mt-2 text-sm text-slate-500">
             Try a broader range or adjust the custom dates to see report data.
+          </p>
+          <p className="mt-3 text-xs leading-5 text-slate-400">
+            Export stays disabled until this range contains reportable castings, so downloaded CSVs stay useful instead of empty.
           </p>
         </div>
       ) : (
@@ -348,7 +362,7 @@ export function Reports() {
           <div className="h-[300px]">
             {statusData.length === 0 ? (
               <div className="flex h-full items-center justify-center text-center text-sm text-slate-500">
-                No status data in this report range yet.
+                No status data in this report range yet. Once castings move through stages, this chart will show the current workflow mix.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
@@ -391,7 +405,7 @@ export function Reports() {
           <div className="h-[300px]">
             {teamData.length === 0 ? (
               <div className="flex h-full items-center justify-center text-center text-sm text-slate-500">
-                No assigned team members in this report range yet.
+                No assigned team members in this report range yet. Assign owners to castings and this view will turn into a quick workload snapshot.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
@@ -423,7 +437,7 @@ export function Reports() {
           <div className="h-[300px]">
             {revenueData.length === 0 ? (
               <div className="flex h-full items-center justify-center text-center text-sm text-slate-500">
-                No budgeted castings in this report range yet.
+                No budgeted castings in this report range yet. Add budgets to live work and this chart will start reflecting revenue movement.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
