@@ -857,10 +857,10 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                               <div className="min-w-0">
                                 <p className="text-sm font-semibold text-slate-900">Drag and drop files here</p>
                                 <p className="mt-1 text-xs text-slate-500">
-                                  PDF, images, PPT, Excel, Word, ZIP and other reference files.
+                                  Add briefs, decks, references, budgets, or ZIP bundles so the team has context before outreach starts.
                                 </p>
                                 <p className="mt-1 text-[11px] text-slate-400">
-                                  Files are linked to this casting when you save.
+                                  Files stay queued here and link to this casting when you save.
                                 </p>
                               </div>
                             </div>
@@ -894,6 +894,9 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
 
                         {queuedAttachments.length > 0 && (
                           <div className="mt-3 space-y-2">
+                            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs leading-5 text-slate-500">
+                              Review the upload list before saving. Ready files will attach with the casting, and any failed file will stay here for another try.
+                            </div>
                             {queuedAttachments.map((attachment) => {
                               const AttachmentIcon = attachmentIconForFile(attachment.file)
                               const statusMeta = attachmentStatusMeta(attachment.status)
@@ -946,6 +949,12 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                                 </div>
                               )
                             })}
+                          </div>
+                        )}
+
+                        {queuedAttachments.length === 0 && !uploadNotice && (
+                          <div className="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-500">
+                            No files queued yet. Add references here if the team needs briefs, decks, or documents attached from the start.
                           </div>
                         )}
                       </div>
