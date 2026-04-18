@@ -612,11 +612,14 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                             <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Description</p>
                             <p className="text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">{casting.requirements || '—'}</p>
                           </div>
-                          <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                            <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Shoot Date</p><p className="text-xs sm:text-sm text-slate-900">{casting.shoot_date_start || '—'}</p></div>
-                            <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">End Date</p><p className="text-xs sm:text-sm text-slate-900">{casting.shoot_date_end || '—'}</p></div>
+                          <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2 sm:p-3">
+                            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">Schedule snapshot</p>
+                            <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                              <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Shoot Date</p><p className="text-xs sm:text-sm text-slate-900">{casting.shoot_date_start || '—'}</p></div>
+                              <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">End Date</p><p className="text-xs sm:text-sm text-slate-900">{casting.shoot_date_end || '—'}</p></div>
+                            </div>
+                            <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Location</p><p className="text-xs sm:text-sm text-slate-900">{casting.location || '—'}</p></div>
                           </div>
-                          <div><p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Location</p><p className="text-xs sm:text-sm text-slate-900">{casting.location || '—'}</p></div>
                           <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2 sm:p-3">
                             <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">Current state</p>
                             <div className="grid grid-cols-2 gap-2 sm:gap-4">
