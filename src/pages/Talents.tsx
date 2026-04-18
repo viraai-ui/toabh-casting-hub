@@ -140,6 +140,12 @@ export function Talents() {
       </section>
 
       {/* Toolbar */}
+      <div className="rounded-[24px] border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-600 shadow-sm">
+        {searchQuery
+          ? 'Search is narrowing the roster so you can reach the right talent faster by name, phone, email, or Instagram.'
+          : 'Use this roster as the fast lookup layer for outreach, shortlist review, and profile management.'}
+      </div>
+
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -172,9 +178,11 @@ export function Talents() {
         {filteredTalents.length === 0 ? (
           <div className="py-16 text-center">
             <p className="text-5xl mb-3">🎭</p>
-            <p className="text-sm font-medium text-slate-700">No talent yet</p>
-            <p className="text-xs text-slate-500 mt-1">
-              {searchQuery ? 'No results match your search.' : 'Add your first talent or import a CSV to get started.'}
+            <p className="text-sm font-medium text-slate-700">{searchQuery ? 'No matching talent found' : 'No talent yet'}</p>
+            <p className="mt-1 text-xs text-slate-500">
+              {searchQuery
+                ? 'Try a broader name, contact detail, or Instagram search to widen the roster results.'
+                : 'Add your first talent or import a CSV to start building a searchable roster for casting and outreach.'}
             </p>
           </div>
         ) : (
