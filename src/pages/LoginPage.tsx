@@ -199,12 +199,19 @@ export function LoginPage() {
           )}
 
           {mode === 'forgot' && (
-            <motion.div key="forgot" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="glass rounded-3xl p-8 shadow-xl">
-              <button onClick={() => { setMode('login'); setError(''); setSuccess('') }} className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-6"><ArrowLeft className="w-4 h-4" />Back to login</button>
-              <div className="flex flex-col items-center mb-6">
-<ToabhLogo size={60} />
-                <h2 className="text-xl font-bold text-slate-900 mt-3">Reset Password</h2>
-                <p className="text-sm text-slate-500 mt-1 text-center">Enter your email and we'll send a reset link.</p>
+            <motion.div key="forgot" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="glass rounded-[2rem] border border-white/60 p-8 shadow-2xl shadow-slate-200/70 backdrop-blur-xl">
+              <button onClick={() => { setMode('login'); setError(''); setSuccess('') }} className="mb-6 inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-sm text-slate-500 transition hover:bg-white/70 hover:text-slate-700"><ArrowLeft className="w-4 h-4" />Back to login</button>
+              <div className="mb-6 flex flex-col items-center text-center">
+                <ToabhLogo size={60} />
+                <div className="mt-4 inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700">
+                  Password recovery
+                </div>
+                <h2 className="mt-4 text-2xl font-bold tracking-tight text-slate-900">Reset your password</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-500">Enter your work email and we&apos;ll send a secure reset link so you can get back into TOABH quickly.</p>
+              </div>
+              <div className="mb-6 rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 text-xs leading-5 text-slate-600">
+                <div className="font-semibold text-slate-800">Need access fast?</div>
+                <div className="mt-1">Use the email connected to your TOABH account. If the link does not arrive, check spam or ask an admin to confirm your login details.</div>
               </div>
               <form onSubmit={handleForgot} className="space-y-4">
                 <div><label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label><input type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} placeholder="you@example.com" autoFocus className="w-full px-4 py-2.5 border rounded-xl bg-white/50 focus:outline-none focus:ring-2 border-slate-200 focus:ring-amber-500/50 focus:border-amber-500" /></div>
@@ -212,17 +219,24 @@ export function LoginPage() {
                   {error && (<motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-1.5 text-sm text-red-600"><AlertCircle className="w-4 h-4" />{error}</motion.p>)}
                   {success && (<motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-emerald-600 font-medium">{success}</motion.p>)}
                 </AnimatePresence>
-                <button type="submit" disabled={loading} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 transition-all disabled:opacity-60 flex items-center justify-center gap-2">{loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Send Reset Link'}</button>
+                <button type="submit" disabled={loading} className="w-full py-3 rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-amber-600 text-white font-semibold shadow-lg shadow-slate-900/20 hover:shadow-slate-900/30 transition-all disabled:opacity-60 flex items-center justify-center gap-2">{loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Send Reset Link'}</button>
               </form>
             </motion.div>
           )}
 
           {mode === 'reset' && (
-            <motion.div key="reset" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-3xl p-8 shadow-xl">
-              <div className="flex flex-col items-center mb-6">
-<ToabhLogo size={60} />
-                <h2 className="text-xl font-bold text-slate-900 mt-3">Set New Password</h2>
-                <p className="text-sm text-slate-500 mt-1">Enter your new password below.</p>
+            <motion.div key="reset" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-[2rem] border border-white/60 p-8 shadow-2xl shadow-slate-200/70 backdrop-blur-xl">
+              <div className="mb-6 flex flex-col items-center text-center">
+                <ToabhLogo size={60} />
+                <div className="mt-4 inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700">
+                  Secure reset
+                </div>
+                <h2 className="mt-4 text-2xl font-bold tracking-tight text-slate-900">Set a new password</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-500">Choose a fresh password for your TOABH account. Once saved, you&apos;ll be sent straight back to sign in.</p>
+              </div>
+              <div className="mb-6 rounded-2xl border border-slate-200/80 bg-white/70 px-4 py-3 text-xs leading-5 text-slate-600">
+                <div className="font-semibold text-slate-800">Password tips</div>
+                <div className="mt-1">Use at least 6 characters and avoid reusing an old shared password so admin and talent operations stay protected.</div>
               </div>
               <form onSubmit={handleReset} className="space-y-4">
                 <div><label className="block text-sm font-medium text-slate-700 mb-1.5">New Password</label><input type="password" value={resetPw} onChange={e => setResetPw(e.target.value)} placeholder="At least 6 characters" autoFocus className="w-full px-4 py-2.5 border rounded-xl bg-white/50 focus:outline-none focus:ring-2 border-slate-200 focus:ring-amber-500/50 focus:border-amber-500" /></div>
@@ -231,7 +245,7 @@ export function LoginPage() {
                   {error && (<motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-1.5 text-sm text-red-600"><AlertCircle className="w-4 h-4" />{error}</motion.p>)}
                   {success && (<motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-emerald-600 font-medium">{success}</motion.p>)}
                 </AnimatePresence>
-                <button type="submit" disabled={loading} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 transition-all disabled:opacity-60 flex items-center justify-center gap-2">{loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Reset Password'}</button>
+                <button type="submit" disabled={loading} className="w-full py-3 rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-amber-600 text-white font-semibold shadow-lg shadow-slate-900/20 hover:shadow-slate-900/30 transition-all disabled:opacity-60 flex items-center justify-center gap-2">{loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Reset Password'}</button>
               </form>
             </motion.div>
           )}
