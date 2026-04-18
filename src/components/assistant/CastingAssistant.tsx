@@ -8,7 +8,7 @@ import { useVoice, processVoiceQuery } from '@/hooks/useVoice'
 const WELCOME_MESSAGE: AssistantMessage = {
   id: 'assistant-welcome',
   role: 'assistant',
-  text: "Ask about today's queue, delays, weekly work, or any casting detail.",
+  text: "Ask about today's queue, delays, weekly workload, or the next casting that needs attention.",
   createdAt: new Date().toISOString(),
 }
 
@@ -183,7 +183,7 @@ export function CastingAssistant() {
                     <div>
                       <p className="text-sm font-semibold text-white">Start with a quick operational prompt</p>
                       <p className="mt-1 text-[12px] leading-5 text-slate-300">
-                        Ask for delays, who is next in queue, assignment pressure, or what needs attention now.
+                        Ask for delays, who is next in queue, weekly workload pressure, or which casting needs attention first.
                       </p>
                     </div>
                   </div>
@@ -286,7 +286,10 @@ export function CastingAssistant() {
             <div className="shrink-0 border-t border-white/10 bg-slate-950/95 px-3 pb-3 pt-2.5 sm:px-4 sm:pb-4">
               <div className="mb-2.5 rounded-[22px] border border-white/10 bg-white/[0.04] px-3 py-3 shadow-inner shadow-black/10">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Quick questions</p>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Quick questions</p>
+                    <p className="mt-1 text-[11px] leading-5 text-slate-500">Open a suggestion when you want a fast operational check without typing from scratch.</p>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setShowSuggestions((v) => !v)}
