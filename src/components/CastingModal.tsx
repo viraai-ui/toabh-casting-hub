@@ -599,10 +599,13 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                             <p className="text-sm text-slate-900">{casting.client_name || '—'}</p>
                           </div>
                           {(casting.client_contact || casting.client_email || casting.client_company) && (
-                            <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2 sm:p-3">
+                              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">Client contact snapshot</p>
+                              <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 sm:gap-3">
                               <div><p className="text-[11px] sm:text-xs text-slate-500">Phone</p><p className="text-xs sm:text-sm text-slate-900">{casting.client_contact || '—'}</p></div>
                               <div><p className="text-[11px] sm:text-xs text-slate-500">Email</p><p className="text-xs sm:text-sm text-slate-900 truncate">{casting.client_email || '—'}</p></div>
                               <div><p className="text-[11px] sm:text-xs text-slate-500">Company</p><p className="text-xs sm:text-sm text-slate-900 truncate">{casting.client_company || '—'}</p></div>
+                              </div>
                             </div>
                           )}
                           <div>
