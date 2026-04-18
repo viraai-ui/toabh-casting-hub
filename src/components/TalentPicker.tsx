@@ -76,6 +76,9 @@ export function TalentPicker({ selectedIds, onChange, disabled = false }: Talent
   return (
     <div ref={wrapperRef} className="space-y-2">
       <label className="text-xs font-medium text-slate-500 block">Linked Talents</label>
+      <p className="text-xs leading-5 text-slate-500">
+        Search and attach the strongest matches here so the casting team can move straight from setup into outreach.
+      </p>
 
       {/* Selected chips */}
       {selectedTalents.length > 0 && (
@@ -149,13 +152,21 @@ export function TalentPicker({ selectedIds, onChange, disabled = false }: Talent
       )}
 
       {dropdownOpen && !disabled && !loading && available.length === 0 && search.trim() && (
-        <div className="px-3 py-2 text-xs text-slate-400">No matching talents found</div>
+        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-500">
+          No matching talents found. Try a shorter name, phone fragment, email, or Instagram handle.
+        </div>
       )}
 
       {loading && (
         <div className="flex items-center gap-2 text-xs text-slate-400">
           <Loader2 className="w-3 h-3 animate-spin" />
           Loading talents...
+        </div>
+      )}
+
+      {!loading && !disabled && selectedTalents.length === 0 && !search.trim() && (
+        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-500">
+          No talents linked yet. Start with a name, phone, email, or Instagram handle to build the shortlist.
         </div>
       )}
     </div>
