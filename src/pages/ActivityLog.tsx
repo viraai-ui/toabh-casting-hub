@@ -143,6 +143,56 @@ export function ActivityLog() {
 
   const activeFilterCount = Object.values(filters).filter(Boolean).length
 
+  const inboxPriority = useMemo(() => {
+    if (activeFilterCount > 0 && activities.length === 0) {
+      return {
+        label: 'Filters are hiding the inbox right now',
+        note: 'The current filter stack has narrowed the feed to zero items, so widening it is the fastest way back to visibility.',
+        tone: 'border-amber-200 bg-amber-50 text-amber-700',
+      }
+    }
+
+    if (inboxStats.assignmentCount > 0) {
+      return {
+        label: 'Ownership changes deserve first attention',
+        note: `${inboxStats.assignmentCount} assignment update${inboxStats.assignmentCount === 1 ? '' : 's'} are visible in the current feed.`,
+        tone: 'border-blue-200 bg-blue-50 text-blue-700',
+      }
+    }
+
+    if (inboxStats.commentCount > 0) {
+      return {
+        label: 'Discussion context is accumulating',
+        note: `${inboxStats.commentCount} comment or note update${inboxStats.commentCount === 1 ? '' : 's'} are visible and may need a quick review.`,
+        tone: 'border-cyan-200 bg-cyan-50 text-cyan-700',
+      }
+    }
+
+    return {
+      label: 'Inbox is calm right now',
+      note: 'This feed is ready to act as the workspace command log as fresh movement lands.',
+      tone: 'border-slate-200 bg-slate-50 text-slate-700',
+    }
+  }, [activeFilterCount, activities.length, inboxStats.assignmentCount, inboxStats.commentCount])
+
+  const inboxSignals = useMemo(() => ([
+    {
+      label: 'Quick view',
+      value: activeQuickFilter === 'all' ? 'Full inbox' : quickFilters.find((option) => option.key === activeQuickFilter)?.label || 'Focused feed',
+      note: activeQuickFilter === 'all' ? 'You are looking at the broadest workspace activity view.' : 'The feed is narrowed to a single operating lens right now.',
+    },
+    {
+      label: 'Human vs system mix',
+      value: activities.length === 0 ? 'No activity loaded' : `${Math.max(activities.length - inboxStats.systemCount, 0)} human / ${inboxStats.systemCount} system`,
+      note: activities.length === 0 ? 'Once activity loads, this helps separate human action from automatic updates.' : 'This makes it easier to spot where direct team action is happening versus background system movement.',
+    },
+    {
+      label: 'Filter state',
+      value: activeFilterCount === 0 ? 'No advanced filters' : `${activeFilterCount} active filter${activeFilterCount === 1 ? '' : 's'}`,
+      note: activeFilterCount === 0 ? 'The inbox is showing the default operational feed.' : 'Advanced filters are trimming the inbox to a narrower context.',
+    },
+  ]), [activeFilterCount, activeQuickFilter, activities.length, inboxStats.systemCount])
+
   const activeQuickFilter = useMemo(() => {
     if (filters.type === 'ASSIGNED') return 'ASSIGNED'
     if (filters.type === 'COMMENTED') return 'COMMENTED'
@@ -216,6 +266,31 @@ export function ActivityLog() {
           tone="border-slate-200/70 bg-slate-50 text-slate-600"
           icon={Clock3}
         />
+      </section>
+
+      <section className={cn('rounded-3xl border px-5 py-4 shadow-sm', inboxPriority.tone)}>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-75">Inbox priority</p>
+            <p className="mt-1 text-base font-semibold text-slate-950">{inboxPriority.label}</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600">{inboxPriority.note}</p>
+          </div>
+          <div className="rounded-2xl border border-white/60 bg-white/70 px-4 py-3 text-sm text-slate-600 shadow-sm backdrop-blur">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Loaded feed health</p>
+            <p className="mt-1 font-semibold text-slate-900">{activities.length} visible item{activities.length === 1 ? '' : 's'}</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">Use quick filters for a fast scan, then advanced filters when you need a narrower audit trail.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-3">
+        {inboxSignals.map((signal) => (
+          <div key={signal.label} className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{signal.label}</p>
+            <p className="mt-3 text-lg font-semibold tracking-tight text-slate-950">{signal.value}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{signal.note}</p>
+          </div>
+        ))}
       </section>
 
       <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -316,6 +391,7 @@ export function ActivityLog() {
           <p className="mt-2 text-sm leading-6 text-slate-500">Try widening the filters or switch back to the full activity feed.</p>
           <p className="mt-2 text-xs text-slate-400">Filters here help narrow the feed into approvals, uploads, status changes, and team handoffs.</p>
           <p className="mt-2 text-xs text-slate-400">Once work starts moving, this becomes the running record for notes, updates, and handoffs.</p>
+          <p className="mt-2 text-xs text-slate-400">When the feed is quiet, use quick filters first, then reset advanced filters before assuming the inbox is genuinely empty.</p>
         </div>
       ) : (
         <>
