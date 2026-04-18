@@ -1198,6 +1198,9 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                       {isEditing && (
                     <div className="space-y-3 sm:space-y-4">
                       <p className="text-xs sm:text-sm text-slate-500">Budget is optional. Leave blank if not applicable.</p>
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-500">
+                        Add a range when the team needs budget guardrails for negotiations, talent fit, or client approvals. Leave both fields empty if commercials are still open.
+                      </div>
                       <div className="grid grid-cols-2 gap-2 sm:gap-4">
                         <div>
                           <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
@@ -1224,6 +1227,9 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                           />
                         </div>
                       </div>
+                      <p className="text-[11px] leading-5 text-slate-400">
+                        Tip: enter a min and max only when both ends are known. A single working number is better kept in notes until the range is confirmed.
+                      </p>
                     </div>
                       )}
                     </>
