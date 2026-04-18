@@ -590,13 +590,16 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                           <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs leading-5 text-slate-500">
                             Review the brief here before switching to edit. This overview is meant for quick context checks across client, schedule, status, and setup details.
                           </div>
-                          <div>
-                            <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Project Title</p>
-                            <p className="text-sm sm:text-base font-semibold text-slate-900">{casting.project_name || '—'}</p>
-                          </div>
-                          <div>
-                            <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Client</p>
-                            <p className="text-sm text-slate-900">{casting.client_name || '—'}</p>
+                          <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2 sm:p-3">
+                            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">Casting snapshot</p>
+                            <div>
+                              <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Project Title</p>
+                              <p className="text-sm sm:text-base font-semibold text-slate-900">{casting.project_name || '—'}</p>
+                            </div>
+                            <div>
+                              <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Client</p>
+                              <p className="text-sm text-slate-900">{casting.client_name || '—'}</p>
+                            </div>
                           </div>
                           {(casting.client_contact || casting.client_email || casting.client_company) && (
                             <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2 sm:p-3">
