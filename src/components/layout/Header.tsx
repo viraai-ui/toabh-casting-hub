@@ -235,6 +235,10 @@ export function Header() {
             </span>
           </button>
 
+          <div className="hidden xl:flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-medium text-slate-500 shadow-sm">
+            Search with Ctrl+K, review alerts here, then jump straight into the next action.
+          </div>
+
           <div className="relative">
             <button
               ref={notificationTriggerRef}
@@ -290,7 +294,7 @@ export function Header() {
                           <Bell className="h-5 w-5 text-slate-300" />
                           <div>
                             <p className="text-sm font-medium text-slate-800">No notifications yet</p>
-                            <p className="mt-1 text-xs text-slate-500">New activity will show up here automatically.</p>
+                            <p className="mt-1 text-xs text-slate-500">New activity will show up here automatically. Keep this panel for quick triage without opening the full inbox.</p>
                           </div>
                         </div>
                       ) : (
