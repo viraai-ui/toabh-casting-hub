@@ -608,9 +608,12 @@ export function CastingModal({ open, onClose, casting, onSave, readOnly = false 
                               </div>
                             </div>
                           )}
-                          <div>
-                            <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Description</p>
-                            <p className="text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">{casting.requirements || '—'}</p>
+                          <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2 sm:p-3">
+                            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">Brief summary</p>
+                            <div>
+                              <p className="text-[11px] sm:text-xs font-medium text-slate-500 mb-0.5">Description</p>
+                              <p className="text-xs sm:text-sm text-slate-800 whitespace-pre-wrap">{casting.requirements || '—'}</p>
+                            </div>
                           </div>
                           <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-2 sm:p-3">
                             <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">Schedule snapshot</p>
