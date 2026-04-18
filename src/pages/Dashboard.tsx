@@ -154,6 +154,9 @@ export function Dashboard() {
               <div className="mt-1 font-medium text-slate-700">
                 {lastUpdated ? formatRelativeTime(lastUpdated.toISOString()) : 'Just now'}
               </div>
+              <div className="mt-1 text-xs leading-5 text-slate-400">
+                Pull fresh numbers whenever the team has just moved jobs, tasks, or assignments.
+              </div>
             </div>
             <button
               type="button"
@@ -166,6 +169,12 @@ export function Dashboard() {
           </div>
         </div>
       </section>
+
+      <div className="rounded-[24px] border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-600 shadow-sm">
+        {refreshing
+          ? 'Refreshing the operating view now so the latest job movement and team activity come back into focus.'
+          : 'Use this dashboard as the morning scan for urgent work, live pipeline movement, and current team load.'}
+      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {todayCards.map((card) => (
@@ -222,7 +231,7 @@ export function Dashboard() {
               icon={Star}
               title="Pipeline movement"
               value={pipeline[0]?.count ?? 0}
-              description={pipeline[0] ? `${pipeline[0].name} is the heaviest stage right now.` : 'Pipeline data will appear here once jobs start moving.'}
+              description={pipeline[0] ? `${pipeline[0].name} is the heaviest stage right now.` : 'Pipeline data will appear here once jobs start moving through active stages.'}
               actionLabel="Open jobs"
               onClick={() => navigate('/castings')}
             />
@@ -288,7 +297,7 @@ export function Dashboard() {
           {recentActivity.length === 0 ? (
             <EmptyState
               title="No fresh activity yet"
-              description="New job movement, notes, and updates will land here as the team starts operating."
+              description="New job movement, notes, and updates will land here as the team starts operating. Refresh if work was just updated elsewhere and has not landed yet."
               ctaLabel="Create a job"
               onClick={() => window.dispatchEvent(new CustomEvent('toabh-global-action', { detail: { action: 'open-casting-modal' } }))}
             />
