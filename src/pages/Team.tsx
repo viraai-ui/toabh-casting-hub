@@ -192,7 +192,18 @@ export function Team() {
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex flex-col gap-4 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-end sm:justify-between sm:p-6">
+        <div className="max-w-3xl">
+          <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-amber-700">
+            Team
+          </div>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]">
+            Manage the people behind every casting, follow-up, and delivery handoff.
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+            Keep roster status, contact details, and workload visible so staffing decisions stay fast and clean.
+          </p>
+        </div>
         <button
           onClick={() => {
             setEditingMember(null)
@@ -212,7 +223,10 @@ export function Team() {
         </div>
       ) : team.length === 0 ? (
         <div className="card p-12 text-center">
-          <p className="text-slate-500">No team members yet</p>
+          <h3 className="text-lg font-semibold text-slate-900">No team members yet</h3>
+          <p className="mt-2 text-sm text-slate-500">
+            Add your first team member to start assigning castings, tracking workload, and keeping invite status visible.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
@@ -560,7 +574,7 @@ function MemberViewModal({
             Assigned Castings ({assignedCastings.length})
           </p>
           {assignedCastings.length === 0 ? (
-            <p className="text-sm text-slate-400 italic">No castings assigned</p>
+            <p className="text-sm text-slate-400 italic">No castings assigned yet. Once this person is staffed onto active work, their assignments will appear here.</p>
           ) : (
             <div className="space-y-2">
               {assignedCastings.slice(0, 5).map((c) => (
@@ -734,6 +748,9 @@ function TeamMemberModal({
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <p className="text-sm leading-6 text-slate-500">
+                Add the essential contact and role details first, then keep roster access current so production handoffs stay organized.
+              </p>
               {/* Avatar upload */}
               <div className="flex flex-col items-center gap-3">
                 <div className="relative">
