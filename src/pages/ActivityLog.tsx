@@ -144,7 +144,12 @@ export function ActivityLog() {
       </section>
 
       {/* Filters */}
-      <div className="card p-4">
+      <div className="card p-4 space-y-3">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-600 shadow-sm">
+          {filters.date_from || filters.date_to || filters.user_id || filters.type
+            ? 'The inbox is currently narrowed so you can isolate a teammate, date window, or activity type more quickly.'
+            : 'Use filters to isolate a person, date range, or activity type when you need a tighter audit trail.'}
+        </div>
         <div className="flex items-center gap-3 flex-wrap">
           <Filter className="w-4 h-4 text-slate-500" />
           <input
@@ -202,7 +207,12 @@ export function ActivityLog() {
         </div>
       ) : activities.length === 0 ? (
         <div className="card p-12 text-center">
-          <p className="text-slate-500">No inbox activity found</p>
+          <p className="text-slate-700 font-medium">No inbox activity found</p>
+          <p className="mt-2 text-sm text-slate-500">
+            {filters.date_from || filters.date_to || filters.user_id || filters.type
+              ? 'Try widening the filters to bring more activity back into view.'
+              : 'New edits, comments, assignments, and status changes will appear here as the team keeps moving.'}
+          </p>
         </div>
       ) : (
         <>
