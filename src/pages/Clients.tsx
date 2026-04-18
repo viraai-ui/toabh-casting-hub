@@ -278,7 +278,13 @@ export function Clients() {
       </section>
 
       <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+        <div className="rounded-[24px] border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm text-slate-600 shadow-sm">
+          {searchQuery.trim() || selectedFilterTagIds.length > 0
+            ? `Showing a narrowed client view${selectedFilterTagIds.length > 0 ? ` with ${selectedFilterTagIds.length} active tag filter${selectedFilterTagIds.length === 1 ? '' : 's'}` : ''} so outreach and relationship review stay focused.`
+            : 'Use this workspace to scan relationships quickly, move between client records, and keep tag-based segmentation tidy.'}
+        </div>
+
+        <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -375,8 +381,12 @@ export function Clients() {
         </div>
       ) : filteredClients.length === 0 ? (
         <div className="rounded-[28px] border border-slate-200 bg-white px-4 py-16 text-center shadow-sm">
-          <p className="text-sm font-medium text-slate-700">No clients found</p>
-          <p className="mt-1 text-sm text-slate-500">{clients.length === 0 && !searchQuery.trim() && selectedFilterTagIds.length === 0 ? 'Add your first client to start building the workspace.' : 'Try changing the search or tag filters.'}</p>
+          <p className="text-sm font-medium text-slate-700">{clients.length === 0 && !searchQuery.trim() && selectedFilterTagIds.length === 0 ? 'No clients yet' : 'No clients found'}</p>
+          <p className="mt-1 text-sm text-slate-500">
+            {clients.length === 0 && !searchQuery.trim() && selectedFilterTagIds.length === 0
+              ? 'Add your first client to start building the workspace for relationship tracking, contact details, and active casting history.'
+              : 'Try widening the search or clearing tag filters to bring more client records back into view.'}
+          </p>
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
@@ -540,7 +550,7 @@ function ClientGridCard({
                       />
                     ))
                   ) : (
-                    <span className="text-xs text-slate-400">No tags</span>
+                    <span className="text-xs text-slate-400">No tags yet</span>
                   )}
 
                   {availableTags.length > 0 && (
@@ -702,7 +712,7 @@ function ClientListRow({
                   <ClientTagPill key={tag.id} tag={tag} onRemove={() => onRemoveTag(tag.id)} className="max-w-full" />
                 ))
               ) : (
-                <span className="text-xs text-slate-400">No tags</span>
+                <span className="text-xs text-slate-400">No tags yet</span>
               )}
               {availableTags.length > 0 && (
                 <button
