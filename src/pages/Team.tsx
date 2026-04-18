@@ -207,6 +207,56 @@ export function Team() {
     })
   }, [teamWithInvite, searchQuery, focusFilter, castings])
 
+  const teamPriority = useMemo(() => {
+    if (teamWithInvite.length === 0) {
+      return {
+        label: 'Build the team board first',
+        note: 'Adding the first operator unlocks ownership, invite tracking, and workload balancing across the platform.',
+        tone: 'border-slate-200 bg-slate-50 text-slate-700',
+      }
+    }
+
+    if (teamStats.pendingInvites > 0) {
+      return {
+        label: 'Pending invites are the biggest team gap',
+        note: `${teamStats.pendingInvites} teammate${teamStats.pendingInvites === 1 ? '' : 's'} still need to complete access setup before they can carry work safely.`,
+        tone: 'border-amber-200 bg-amber-50 text-amber-700',
+      }
+    }
+
+    if (teamStats.unassignedCount > 0) {
+      return {
+        label: 'You have free capacity to deploy',
+        note: `${teamStats.unassignedCount} teammate${teamStats.unassignedCount === 1 ? '' : 's'} currently have no casting ownership, so workload can be redistributed.`,
+        tone: 'border-blue-200 bg-blue-50 text-blue-700',
+      }
+    }
+
+    return {
+      label: 'Team coverage looks healthy',
+      note: 'Invites and ownership are aligned well enough for this page to act like a live staffing board.',
+      tone: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    }
+  }, [teamStats.pendingInvites, teamStats.unassignedCount, teamWithInvite.length])
+
+  const teamSignals = useMemo(() => ([
+    {
+      label: 'Focus view',
+      value: focusFilter === 'all' ? 'Full team board' : focusFilter === 'active' ? 'Active owners' : focusFilter === 'pending' ? 'Pending invites' : 'Free capacity',
+      note: focusFilter === 'all' ? 'You are looking at the broadest staffing picture.' : 'This board is narrowed to a specific staffing slice right now.',
+    },
+    {
+      label: 'Search state',
+      value: searchQuery.trim() ? 'Search active' : 'No search applied',
+      note: searchQuery.trim() ? 'The roster is narrowed before you assess ownership and invite health.' : 'No search filter is trimming the current team view.',
+    },
+    {
+      label: 'Visible roster',
+      value: `${filteredTeam.length}/${teamWithInvite.length} visible`,
+      note: teamWithInvite.length === 0 ? 'The team roster has not been created yet.' : 'This shows how much of the roster is visible inside the current focus view.',
+    },
+  ]), [filteredTeam.length, focusFilter, searchQuery, teamWithInvite.length])
+
   return (
     <div className="space-y-4">
       <section className="card overflow-hidden p-5 sm:p-6">
@@ -240,6 +290,31 @@ export function Team() {
         <TeamStatCard label="Active owners" value={teamStats.assignedCount} note="Members currently carrying at least one casting." tone="border-amber-200/70 bg-amber-50 text-amber-700" />
         <TeamStatCard label="Pending invites" value={teamStats.pendingInvites} note="People who still need to complete access setup." tone="border-blue-200/70 bg-blue-50 text-blue-700" />
         <TeamStatCard label="Free capacity" value={teamStats.unassignedCount} note="Members with zero casting assignments right now." tone="border-emerald-200/70 bg-emerald-50 text-emerald-700" />
+      </section>
+
+      <section className={cn('rounded-3xl border px-5 py-4 shadow-sm', teamPriority.tone)}>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] opacity-75">Team priority</p>
+            <p className="mt-1 text-base font-semibold text-slate-950">{teamPriority.label}</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600">{teamPriority.note}</p>
+          </div>
+          <div className="rounded-2xl border border-white/60 bg-white/70 px-4 py-3 text-sm text-slate-600 shadow-sm backdrop-blur">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">Staffing snapshot</p>
+            <p className="mt-1 font-semibold text-slate-900">{teamStats.assignedCount} active owner{teamStats.assignedCount === 1 ? '' : 's'}</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">Track invite completion, free capacity, and live ownership from the same surface.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-3">
+        {teamSignals.map((signal) => (
+          <div key={signal.label} className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-sm">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">{signal.label}</p>
+            <p className="mt-3 text-lg font-semibold tracking-tight text-slate-950">{signal.value}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{signal.note}</p>
+          </div>
+        ))}
       </section>
 
       <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -299,6 +374,7 @@ export function Team() {
           <p className="mt-3 text-sm font-semibold text-slate-900">Nothing matches this view</p>
           <p className="mt-2 text-sm text-slate-500">Adjust the search or switch filters to bring the right owners back into focus.</p>
           <p className="mt-2 text-xs text-slate-400">Use this view to isolate exactly who is active, overloaded, or currently off the board.</p>
+          <p className="mt-2 text-xs text-slate-400">If the full roster should be visible here, clear search first, then reset the focus chips.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
